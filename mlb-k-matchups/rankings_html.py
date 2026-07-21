@@ -190,107 +190,96 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
     return rows
 
 
-def _render_pitch_matrix(row: dict[str, Any]) -> str:
+def _render_pitch_matrix(row: dict[str, Any], uid: str) -> str:
+    """Vertical pitch picker + batter list (no horizontal scrolling)."""
     arsenal = row.get("pitch_lineup_avg") or row.get("arsenal") or []
     if not arsenal:
         return '<p class="hint">No arsenal pitch breakdown available.</p>'
 
-    chips = []
-    for p in arsenal:
+    batters = row.get("batters") or []
+    picker: list[str] = []
+    panels: list[str] = []
+    show_rules: list[str] = []
+
+    for i, p in enumerate(arsenal):
+        pt = p.get("pitch_type")
+        pname = p.get("pitch_name") or pt
         avg_k = p.get("lineup_k_pct")
-        avg_txt = f"{_fmt(avg_k, 1)}% lineup K" if avg_k is not None else "no lineup sample"
-        chips.append(
-            "<div class='arsenal-chip'>"
-            f"<span class='name'>{_esc(p.get('pitch_name') or p.get('pitch_type'))}</span>"
-            f"<span class='meta'>{_fmt(p.get('usage_pct'), 1)}% usage · {_esc(avg_txt)}</span>"
+        avg_txt = (
+            f"{_fmt(avg_k, 1)}% lineup avg" if avg_k is not None else "no lineup avg"
+        )
+        pid = f"pitch-{uid}-{i}"
+        checked = " checked" if i == 0 else ""
+        picker.append(
+            f"<input type='radio' name='pitch-{uid}' id='{pid}'{checked} />"
+            f"<label class='pitch-tab' for='{pid}'>"
+            f"<span class='name'>{_esc(pname)}</span>"
+            f"<span class='meta'>{_fmt(p.get('usage_pct'), 1)}% · {_esc(avg_txt)}</span>"
+            f"</label>"
+        )
+        show_rules.append(
+            f".pitch-switch:has(#{pid}:checked) "
+            f".pitch-panel[data-panel='{pid}']{{display:block;}}"
+        )
+
+        rows_html: list[str] = []
+        for b in batters:
+            side = _hand_label(b.get("bat_side"), "B")
+            side_html = f" <span class='hand'>{_esc(side)}</span>" if side else ""
+            hit = next(
+                (x for x in (b.get("pitches") or []) if x.get("pitch_type") == pt),
+                {},
+            )
+            k = hit.get("k_percent")
+            src = hit.get("k_source") or ""
+            marker = "†" if src in {"league_pitch", "league_platoon"} else ""
+            k_txt = "—" if k is None else f"{_fmt(k, 1)}%{marker}"
+            width = 0 if k is None else max(4, min(100, float(k)))
+            pa = hit.get("pa")
+            pa_txt = "—" if pa is None else _fmt(pa, 0)
+            rows_html.append(
+                "<div class='pitch-row'>"
+                "<div class='who'>"
+                f"<span class='slot'>{_esc(b.get('slot'))}.</span>"
+                f"<span class='name'>{_esc(b.get('batter') or '—')}{side_html}</span>"
+                "</div>"
+                "<div class='meter'>"
+                f"<span class='bar' style='width:{width:.0f}%;{_heat_style(k)}'></span>"
+                "</div>"
+                f"<div class='kval' title='source {_esc(src or 'pitch')} · PA {_esc(pa_txt)}'>"
+                f"{k_txt}</div>"
+                "</div>"
+            )
+
+        width_avg = 0 if avg_k is None else max(4, min(100, float(avg_k)))
+        rows_html.append(
+            "<div class='pitch-row avg'>"
+            "<div class='who'><span class='name'>Lineup avg</span></div>"
+            "<div class='meter'>"
+            f"<span class='bar' style='width:{width_avg:.0f}%;{_heat_style(avg_k)}'></span>"
+            "</div>"
+            f"<div class='kval'>{'—' if avg_k is None else _fmt(avg_k, 1) + '%'}</div>"
+            "</div>"
+        )
+        panels.append(
+            f"<div class='pitch-panel' data-panel='{pid}'>"
+            f"<div class='pitch-list'>{''.join(rows_html)}</div>"
             "</div>"
         )
 
-    head_cells = ["<th>Batter</th>"]
-    for p in arsenal:
-        head_cells.append(
-            "<th>"
-            f"{_esc(p.get('pitch_name') or p.get('pitch_type'))}"
-            f"<span class='usage'>{_fmt(p.get('usage_pct'), 1)}% usage</span>"
-            "</th>"
-        )
-    head_cells.append("<th>vs arsenal</th>")
-
-    body_rows = []
-    for b in row.get("batters") or []:
-        side = _hand_label(b.get("bat_side"), "B")
-        side_html = f" <span class='hand'>{_esc(side)}</span>" if side else ""
-        cells = [
-            "<td class='batter-cell'>"
-            f"<span class='slot'>{_esc(b.get('slot'))}.</span>{_esc(b.get('batter') or '—')}"
-            f"{side_html}"
-            "</td>"
-        ]
-        pitches = {p.get("pitch_type"): p for p in (b.get("pitches") or [])}
-        for p in arsenal:
-            hit = pitches.get(p.get("pitch_type")) or {}
-            k = hit.get("k_percent")
-            src = hit.get("k_source") or ""
-            marker = ""
-            if src in {"league_pitch", "league_platoon"}:
-                marker = "†"
-            title = (
-                "No Savant sample vs this pitch"
-                if k is None
-                else (
-                    f"K% {_fmt(k, 1)} · whiff {_fmt(hit.get('whiff_percent'), 1)}% "
-                    f"· PA {hit.get('pa') if hit.get('pa') is not None else '—'} "
-                    f"· source {src or 'pitch'}"
-                )
-            )
-            cells.append(
-                f"<td class='heat' style='{_heat_style(k)}' title='{_esc(title)}'>"
-                f"{'—' if k is None else _fmt(k, 1)}{marker}"
-                "</td>"
-            )
-        vs = (
-            f"{_fmt(b.get('expected_k_pct'), 1)}%"
-            if b.get("status") == "ok"
-            else "n/a"
-        )
-        cells.append(f"<td class='heat'>{vs}</td>")
-        body_rows.append("<tr>" + "".join(cells) + "</tr>")
-
-    avg_cells = ["<td class='batter-cell'>Lineup avg</td>"]
-    for p in arsenal:
-        k = p.get("lineup_k_pct")
-        avg_cells.append(
-            f"<td class='heat' style='{_heat_style(k)}'>"
-            f"{'—' if k is None else _fmt(k, 1)}"
-            "</td>"
-        )
-    avg_cells.append(f"<td class='heat'>{_fmt(row.get('expected_k_pct'), 1)}%</td>")
-    body_rows.append("<tr class='avg-row'>" + "".join(avg_cells) + "</tr>")
-
     return (
-        "<div class='scroll-shell'>"
-        "<div class='scroll-toolbar'>"
-        "<span class='cue'>Swipe / drag sideways for more pitches →</span>"
-        "<div class='btns'>"
-        "<button type='button' class='scroll-btn' data-dir='-1' aria-label='Scroll left'>←</button>"
-        "<button type='button' class='scroll-btn' data-dir='1' aria-label='Scroll right'>→</button>"
-        "</div>"
-        "</div>"
-        f"<div class='arsenal-strip'>{''.join(chips)}</div>"
-        "<div class='matrix-wrap'>"
-        "<table class='matrix'>"
-        f"<thead><tr>{''.join(head_cells)}</tr></thead>"
-        f"<tbody>{''.join(body_rows)}</tbody>"
-        "</table>"
-        "</div>"
-        "<p class='hint'>Heat map = each batter’s strikeout rate vs that pitch type. "
-        "Darker green = more K-prone. <code>†</code> = no direct sample vs that pitch, "
-        "so same-handed league-average K% vs that pitch is used (more accurate than "
-        "copying another pitch from the same batter). "
-        "Handedness shown as LHB/RHB next to each batter. "
-        "Use ← → or swipe inside the table to see every pitch column.</p>"
+        "<div class='pitch-switch'>"
+        f"<style>{''.join(show_rules)}</style>"
+        f"<div class='pitch-tabs'>{''.join(picker)}</div>"
+        f"{''.join(panels)}"
+        "<p class='hint'>"
+        "Pick a pitch above, then scroll normally through each batter’s K% vs that pitch. "
+        "Longer/darker bar = more K-prone. "
+        "<code>†</code> = same-handed league average (no direct sample vs that pitch)."
+        "</p>"
         "</div>"
     )
+
 
 
 def _render_lineup_panel(row: dict[str, Any]) -> str:
@@ -377,7 +366,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"<label class='tab' for='tab-{uid}-pitches'>Pitch weaknesses</label>"
         f"<input type='radio' name='tab-{uid}' id='tab-{uid}-lineup' />"
         f"<label class='tab' for='tab-{uid}-lineup'>Lineup K%</label>"
-        f"<div class='tab-panel panel-pitches'>{_render_pitch_matrix(row)}</div>"
+        f"<div class='tab-panel panel-pitches'>{_render_pitch_matrix(row, uid)}</div>"
         f"<div class='tab-panel panel-lineup'>{_render_lineup_panel(row)}</div>"
         f"</div>"
     )
@@ -682,94 +671,89 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .batter.missing { opacity: 0.55; }
   .batter .slot { color: var(--muted); min-width: 1.2rem; }
   .batter .k { font-weight: 700; color: var(--accent); }
-  .arsenal-strip { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.75rem; }
-  .arsenal-chip {
-    display: inline-flex; flex-direction: column; gap: 0.1rem; min-width: 5.5rem;
-    padding: 0.45rem 0.6rem; border-radius: 12px; border: 1px solid var(--line);
+  .pitch-switch { margin-top: 0.15rem; width: 100%; min-width: 0; }
+  .pitch-tabs > input[type="radio"] {
+    position: absolute; opacity: 0; pointer-events: none;
+  }
+  .pitch-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+  }
+  .pitch-tab {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.12rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+    border: 1px solid var(--line);
     background: rgba(255,255,255,0.7);
-  }
-  .arsenal-chip .name { font-weight: 700; font-size: 0.82rem; }
-  .arsenal-chip .meta { color: var(--muted); font-size: 0.72rem; }
-  .scroll-shell {
-    position: relative;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-  }
-  .scroll-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.45rem;
-  }
-  .scroll-toolbar .cue {
     color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 600;
-  }
-  .scroll-toolbar .btns {
-    display: flex;
-    gap: 0.35rem;
-  }
-  .scroll-btn {
-    border: 1px solid var(--line);
-    background: rgba(255,255,255,0.85);
-    color: var(--ink);
-    border-radius: 999px;
-    padding: 0.35rem 0.7rem;
-    font: inherit;
-    font-size: 0.8rem;
-    font-weight: 700;
     cursor: pointer;
+    line-height: 1.2;
   }
-  .scroll-btn:hover { border-color: rgba(15, 106, 77, 0.35); }
-  .matrix-wrap {
-    display: block;
-    width: 100%;
-    max-width: 100%;
+  .pitch-tab .name { font-weight: 700; font-size: 0.84rem; color: var(--ink); }
+  .pitch-tab .meta { font-size: 0.7rem; font-weight: 500; }
+  .pitch-tabs > input[type="radio"]:checked + .pitch-tab {
+    border-color: var(--accent);
+    background: rgba(15, 106, 77, 0.1);
+    color: var(--accent);
+  }
+  .pitch-tabs > input[type="radio"]:checked + .pitch-tab .name { color: var(--accent); }
+  .pitch-panel { display: none; }
+  .pitch-list { display: grid; gap: 0; }
+  .pitch-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 36%) 3.6rem;
+    gap: 0.55rem;
+    align-items: center;
+    padding: 0.5rem 0.15rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .pitch-row:last-child { border-bottom: 0; }
+  .pitch-row.avg {
+    margin-top: 0.2rem;
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+    font-weight: 700;
+  }
+  .pitch-row .who {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem 0.45rem;
     min-width: 0;
-    overflow-x: scroll;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    touch-action: pan-x pan-y;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: rgba(255,255,255,0.55);
-    scrollbar-gutter: stable;
   }
-  .matrix-wrap::-webkit-scrollbar { height: 10px; }
-  .matrix-wrap::-webkit-scrollbar-thumb {
-    background: rgba(15, 106, 77, 0.35);
+  .pitch-row .slot { color: var(--muted); font-weight: 500; font-size: 0.8rem; }
+  .pitch-row .name { font-size: 0.9rem; font-weight: 650; }
+  .meter {
+    height: 0.55rem;
     border-radius: 999px;
+    background: rgba(20, 32, 26, 0.08);
+    overflow: hidden;
   }
-  .matrix-wrap.is-dragging {
-    cursor: grabbing;
-    user-select: none;
+  .bar {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    min-width: 0;
   }
-  table.matrix {
-    width: max-content;
-    min-width: 640px;
-    border-collapse: collapse;
+  .kval {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 0.88rem;
   }
-  table.matrix th, table.matrix td {
-    padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line);
-    border-right: 1px solid var(--line); font-size: 0.82rem; text-align: center;
-    white-space: nowrap;
+  @media (max-width: 560px) {
+    .pitch-row {
+      grid-template-columns: minmax(0, 1fr) 3rem;
+      grid-template-rows: auto auto;
+    }
+    .meter { grid-column: 1 / -1; grid-row: 2; }
+    .kval { grid-column: 2; grid-row: 1; }
   }
-  table.matrix th:last-child, table.matrix td:last-child { border-right: none; }
-  table.matrix thead th {
-    background: rgba(248, 244, 236, 0.96); text-align: center; color: var(--ink);
-    font-size: 0.78rem;
-  }
-  table.matrix thead th .usage {
-    display: block; color: var(--muted); font-weight: 500; font-size: 0.7rem; margin-top: 0.15rem;
-  }
-  table.matrix td.batter-cell { text-align: left; font-weight: 600; min-width: 9rem; }
-  table.matrix td.batter-cell .slot { color: var(--muted); font-weight: 500; margin-right: 0.25rem; }
-  table.matrix td.heat { font-weight: 700; font-variant-numeric: tabular-nums; }
-  table.matrix tr.avg-row td { background: rgba(15, 106, 77, 0.06); font-weight: 700; }
   .hint { margin: 0.65rem 0 0; color: var(--muted); font-size: 0.78rem; }
   .empty { padding: 1.2rem; text-align: center; color: var(--muted); }
   .footnote { margin-top: 1rem; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
@@ -792,8 +776,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
     <noscript>
       <p class="noscript">
-        JavaScript is off or blocked — rankings and heatmaps still work.
-        Expand any pitcher below, then use the <strong>Pitch weaknesses</strong> tab.
+        JavaScript is off or blocked — rankings still work.
+        Expand any pitcher, open <strong>Pitch weaknesses</strong>, and pick a pitch.
       </p>
     </noscript>
 
@@ -911,45 +895,6 @@ __MATCHUP_CARDS__
       statusFilter.addEventListener("change", apply);
       sort.addEventListener("change", apply);
       apply();
-
-      // Horizontal heat-map scrolling (buttons + click-drag).
-      board.addEventListener("click", (e) => {
-        const btn = e.target.closest(".scroll-btn");
-        if (!btn) return;
-        e.preventDefault();
-        e.stopPropagation();
-        const shell = btn.closest(".scroll-shell");
-        const scroller = shell && shell.querySelector(".matrix-wrap");
-        if (!scroller) return;
-        const dir = Number(btn.dataset.dir || 1);
-        scroller.scrollBy({ left: dir * Math.max(180, scroller.clientWidth * 0.7), behavior: "smooth" });
-      });
-
-      board.querySelectorAll(".matrix-wrap").forEach((scroller) => {
-        let dragging = false;
-        let startX = 0;
-        let startLeft = 0;
-        scroller.addEventListener("pointerdown", (e) => {
-          if (e.pointerType === "touch") return; // native swipe
-          dragging = true;
-          startX = e.clientX;
-          startLeft = scroller.scrollLeft;
-          scroller.classList.add("is-dragging");
-          scroller.setPointerCapture(e.pointerId);
-        });
-        scroller.addEventListener("pointermove", (e) => {
-          if (!dragging) return;
-          scroller.scrollLeft = startLeft - (e.clientX - startX);
-        });
-        const endDrag = (e) => {
-          if (!dragging) return;
-          dragging = false;
-          scroller.classList.remove("is-dragging");
-          try { scroller.releasePointerCapture(e.pointerId); } catch (_) {}
-        };
-        scroller.addEventListener("pointerup", endDrag);
-        scroller.addEventListener("pointercancel", endDrag);
-      });
     })();
   </script>
 </body>

@@ -67,6 +67,10 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "expected_k_pct": _json_safe(r.get("expected_k_pct")),
                 "expected_ks_1x": _json_safe(r.get("expected_ks_1x")),
                 "expected_whiff_pct": _json_safe(r.get("expected_whiff_pct")),
+                "projected_ip": _json_safe(r.get("projected_ip")),
+                "projected_bf": _json_safe(r.get("projected_bf")),
+                "times_through_order": _json_safe(r.get("times_through_order")),
+                "outing_source": r.get("outing_source"),
                 "lineup_batters": _json_safe(r.get("lineup_batters")),
                 "lineup_scored": _json_safe(r.get("lineup_scored")),
                 "lineup_coverage": _json_safe(r.get("lineup_coverage")),
@@ -84,12 +88,21 @@ def write_interactive_html(
     df: pd.DataFrame,
     *,
     game_date: str,
-    batters_faced: float,
+    batters_faced: float | None = None,
 ) -> None:
+    scored = df[df["status"].eq("ok") & df["expected_ks"].notna()] if "status" in df else df
+    avg_ip = float(scored["projected_ip"].mean()) if "projected_ip" in scored and len(scored) else None
+    avg_tto = (
+        float(scored["times_through_order"].mean())
+        if "times_through_order" in scored and len(scored)
+        else None
+    )
     payload = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         "game_date": game_date,
-        "batters_faced": batters_faced,
+        "batters_faced_override": batters_faced,
+        "avg_projected_ip": avg_ip,
+        "avg_times_through": avg_tto,
         "rows": rows_for_html(df),
     }
     data_json = json.dumps(payload, ensure_ascii=False)
@@ -380,8 +393,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <header class="hero">
       <h1 class="brand">K-<span>Matchup</span></h1>
       <p class="lede">
-        Expected strikeouts for today’s starters against the opposing batting order —
-        arsenal-weighted batter K rates, no league fill-in.
+        Full-outing strikeout projections: each starter’s pitch mix against the
+        opposing batting order for their projected innings / times through the order.
       </p>
       <div class="meta" id="meta"></div>
     </header>
@@ -408,6 +421,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <select id="sort">
           <option value="expected_ks:desc">Expected Ks ↓</option>
           <option value="expected_ks:asc">Expected Ks ↑</option>
+          <option value="projected_ip:desc">Proj IP ↓</option>
+          <option value="times_through_order:desc">TTO ↓</option>
           <option value="expected_k_pct:desc">Lineup K% ↓</option>
           <option value="rank:asc">Rank</option>
           <option value="pitcher:asc">Pitcher A–Z</option>
@@ -423,9 +438,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             <th data-key="pitcher">Pitcher <span class="arrow">↕</span></th>
             <th data-key="game">Game <span class="arrow">↕</span></th>
             <th data-key="expected_ks">Exp. Ks <span class="arrow">↕</span></th>
-            <th data-key="expected_k_pct">K% <span class="arrow">↕</span></th>
+            <th data-key="projected_ip">Proj IP <span class="arrow">↕</span></th>
+            <th data-key="times_through_order">TTO <span class="arrow">↕</span></th>
+            <th data-key="expected_k_pct">Lineup K% <span class="arrow">↕</span></th>
             <th data-key="lineup_source">Lineup <span class="arrow">↕</span></th>
-            <th data-key="lineup_coverage">Cover <span class="arrow">↕</span></th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -434,8 +450,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
 
     <p class="footnote">
-      Click a row to expand the opposing nine. <code>expected_ks</code> walks the batting order
-      for the assumed batters faced. Re-run
+      <strong>Exp. Ks</strong> walks the opposing nine for the starter’s projected
+      batters faced (from season IP &amp; BF per start unless overridden).
+      TTO = times through the order. Click a row for each batter’s arsenal-weighted K%.
+      Re-run
       <code>python3 mlb-k-matchups/k_matchups.py --date YYYY-MM-DD --html rankings.html</code>
       after lineups post to refresh.
     </p>
@@ -491,10 +509,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       const rows = DATA.rows || [];
       const scored = rows.filter(r => r.status === "ok" && r.expected_ks != null);
       const official = scored.filter(r => r.lineup_source === "official").length;
+      const avgIp = DATA.avg_projected_ip != null ? Number(DATA.avg_projected_ip).toFixed(1) : "—";
+      const avgTto = DATA.avg_times_through != null ? Number(DATA.avg_times_through).toFixed(2) + "×" : "—";
       el.meta.innerHTML = [
         chip("Date", DATA.game_date),
         chip("Generated", DATA.generated_at),
-        chip("BF assumed", DATA.batters_faced),
+        chip("Avg proj IP", avgIp),
+        chip("Avg TTO", avgTto),
         chip("Scored", scored.length),
         chip("Official lineups", `${official}/${scored.length}`),
       ].join("");
@@ -564,14 +585,22 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             </td>
             <td>${r.game || "—"}</td>
             <td class="num ks">${fmt(r.expected_ks)}</td>
+            <td class="num">${fmt(r.projected_ip, 1)}</td>
+            <td class="num">${r.times_through_order == null ? "—" : fmt(r.times_through_order) + "×"}</td>
             <td class="num">${fmt(r.expected_k_pct)}</td>
             <td><span class="badge ${kind}">${lineupLabel(r.lineup_source)}</span></td>
-            <td class="num">${pct(r.lineup_coverage)}</td>
           </tr>
           <tr class="detail-row">
-            <td colspan="7">
+            <td colspan="8">
               <div class="detail">
-                <h3>Opposing lineup · 1× trip ${fmt(r.expected_ks_1x)} Ks · BF scored ${r.bf_scored ?? "—"}/${r.batters_faced_assumed ?? "—"}</h3>
+                <h3>
+                  Projected outing ${fmt(r.projected_ip, 1)} IP ·
+                  ${r.times_through_order == null ? "—" : fmt(r.times_through_order) + "×"} through order ·
+                  BF ${r.projected_bf ?? r.batters_faced_assumed ?? "—"}
+                  (${r.outing_source || "n/a"}) ·
+                  lineup cover ${pct(r.lineup_coverage)} ·
+                  1× reference ${fmt(r.expected_ks_1x)} Ks
+                </h3>
                 <div class="batter-grid">${batters || "<div class='empty'>No batter detail</div>"}</div>
               </div>
             </td>

@@ -1,6 +1,6 @@
 # MLB K-Matchups
 
-Rank starting pitchers by **expected strikeouts against the opposing starting lineup**, using each batter’s vulnerability to that starter’s pitch mix.
+Rank starting pitchers by **expected strikeouts against the opposing starting lineup**, using each batter’s vulnerability to that starter’s pitch mix over a projected full outing (innings / times through the order).
 
 **Score (per batter)**
 
@@ -8,13 +8,22 @@ Rank starting pitchers by **expected strikeouts against the opposing starting li
 batter_k_pct = Σ (pitcher_usage_pct × that_batter_K%_vs_that_pitch_type)
 ```
 
+**Outing length**
+
+```
+projected_ip = season_IP / games_started          # per starter (Stats API)
+projected_bf = season_BF / games_started          # batters faced per start
+times_through_order = projected_bf / 9
+```
+
+Fallbacks: `--ip` / `--batters-faced` overrides, else `5.5 IP × 4.25 BF/IP`.
+
 **Lineup rollup**
 
 ```
 expected_k_pct = mean(batter_k_pct over lineup batters with Savant rates)
-expected_ks_1x = Σ batter_k_pct / 100                   # one time through the order
-expected_ks    = Σ batter_k_pct / 100 over batting-order walk for N batters faced
-                                                    # default N=22; missing-rate slots skipped
+expected_ks    = Σ batter_k_pct/100 while walking the batting order for projected_bf
+expected_ks_1x = Σ batter_k_pct/100 for one trip through the nine (reference only)
 ```
 
 No league-average blending: rates come only from the opposing lineup’s batters.
@@ -55,7 +64,8 @@ Useful flags:
 | `--year` | Savant season (default: year of `--date`, else current year) |
 | `--min-pa` | Savant leaderboard PA floor (default: 50) |
 | `--min-usage` | Drop pitcher pitches below this usage % (default: 5) |
-| `--batters-faced` | Assumed BF for order-walk `expected_ks` (default: 22) |
+| `--ip` | Force the same projected IP for every starter |
+| `--batters-faced` | Force a fixed BF for every starter (skips season BF/GS) |
 | `--lineup-lookback` | Days to search for a prior lineup if today’s isn’t posted (default: 14) |
 | `--require-official-lineup` | Skip games without an official lineup for the date |
 | `--detail` | Print each lineup batter’s arsenal-weighted K% |
@@ -73,5 +83,6 @@ Useful flags:
 
 - [Baseball Savant Pitch Arsenal Stats](https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats) (pitcher + batter CSVs)
 - [MLB Stats API schedule](https://statsapi.mlb.com/api/v1/schedule) with `hydrate=probablePitcher,team,lineups`
+- [MLB Stats API people](https://statsapi.mlb.com/api/v1/people) season pitching splits for IP / BF per start
 
 Pitchers resolve by MLBAM `player_id` first, then name (`First Last` / `Last, First`). Missing arsenals get `missing_arsenal` / `unresolved` instead of crashing.

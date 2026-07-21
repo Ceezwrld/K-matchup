@@ -69,7 +69,8 @@ Useful flags:
 | Flag | Meaning |
 |------|---------|
 | `--year` | Savant season (default: year of `--date`, else current year) |
-| `--min-pa` | Savant leaderboard PA floor (default: 50) |
+| `--min-pa` | Savant PA floor for **pitcher** arsenal (default: 50) |
+| `--min-pa-batter` | Savant PA floor for **batter** pitch K% (default: 1; lower = fuller heatmaps) |
 | `--min-usage` | Drop pitcher pitches below this usage % (default: 5) |
 | `--ip` | Force the same projected IP for every starter |
 | `--batters-faced` | Force a fixed BF for every starter (skips season BF/GS) |

@@ -32,6 +32,7 @@ PEOPLE_STATS_URL = (
     "?personIds={ids}"
     "&hydrate=stats(group=[pitching],type=[season],season={year})"
 )
+PEOPLE_URL = "https://statsapi.mlb.com/api/v1/people?personIds={ids}"
 
 USER_AGENT = (
     "mlb-k-matchups/1.0 (+https://github.com; research; "
@@ -70,6 +71,7 @@ DEFAULT_BF_PER_IP = 4.25
 MIN_GS_RELIABLE = 5
 MAX_PROJECTED_IP = 7.0
 MAX_PROJECTED_BF = 30
+DEFAULT_MIN_PA_BATTER = 1
 
 
 def log(verbose: bool, msg: str) -> None:
@@ -119,6 +121,32 @@ def parse_innings_pitched(value: Any) -> float | None:
         return float(text)
     except (TypeError, ValueError):
         return None
+
+
+def fetch_people_profiles(
+    player_ids: list[int], verbose: bool
+) -> dict[int, dict[str, Any]]:
+    """Handedness + name keyed by player_id."""
+    ids = sorted({int(pid) for pid in player_ids if pid is not None})
+    out: dict[int, dict[str, Any]] = {}
+    for i in range(0, len(ids), 50):
+        chunk = ids[i : i + 50]
+        url = PEOPLE_URL.format(ids=",".join(str(x) for x in chunk))
+        payload = fetch_json(url, verbose)
+        for person in payload.get("people", []):
+            pid = person.get("id")
+            if pid is None:
+                continue
+            pitch = person.get("pitchHand") or {}
+            bat = person.get("batSide") or {}
+            out[int(pid)] = {
+                "full_name": person.get("fullName"),
+                "pitch_hand": pitch.get("code"),
+                "pitch_hand_desc": pitch.get("description"),
+                "bat_side": bat.get("code"),
+                "bat_side_desc": bat.get("description"),
+            }
+    return out
 
 
 def fetch_pitcher_season_outings(
@@ -512,10 +540,35 @@ def pitcher_usage_weights(
 def score_batter_vs_arsenal(
     usage: pd.DataFrame, batter_rates: pd.DataFrame
 ) -> dict[str, Any] | None:
-    """Arsenal-weighted K%/whiff for one batter, plus per-pitch K breakdown."""
+    """Arsenal-weighted K%/whiff for one batter, plus per-pitch K breakdown.
+
+    When a batter lacks Savant sample vs a specific arsenal pitch, fall back to
+    that batter's PA-weighted K%/whiff across their available pitch types so the
+    heatmap stays populated (marked k_source='batter_avg').
+    """
     if batter_rates.empty:
         return None
     by_pitch = batter_rates.set_index("pitch_type")
+
+    fallback_k = None
+    fallback_whiff = None
+    valid = batter_rates.copy()
+    valid["_pa"] = pd.to_numeric(valid["pa"], errors="coerce")
+    valid["_k"] = pd.to_numeric(valid["k_percent"], errors="coerce")
+    valid["_wh"] = pd.to_numeric(valid["whiff_percent"], errors="coerce")
+    valid = valid.dropna(subset=["_pa", "_k"])
+    valid = valid[valid["_pa"] > 0]
+    if not valid.empty:
+        wpa = float(valid["_pa"].sum())
+        fallback_k = float((valid["_k"] * valid["_pa"]).sum() / wpa)
+        wh_ok = valid.dropna(subset=["_wh"])
+        if not wh_ok.empty:
+            fallback_whiff = float(
+                (wh_ok["_wh"] * wh_ok["_pa"]).sum() / float(wh_ok["_pa"].sum())
+            )
+        else:
+            fallback_whiff = fallback_k
+
     exp_k = 0.0
     exp_whiff = 0.0
     covered = 0.0
@@ -536,6 +589,7 @@ def score_batter_vs_arsenal(
             "k_percent": None,
             "whiff_percent": None,
             "pa": None,
+            "k_source": None,
         }
         if pt in by_pitch.index:
             k = float(by_pitch.loc[pt, "k_percent"])
@@ -544,11 +598,22 @@ def score_batter_vs_arsenal(
             entry["k_percent"] = k
             entry["whiff_percent"] = float(wh) if pd.notna(wh) else None
             entry["pa"] = float(pa) if pa is not None and pd.notna(pa) else None
+            entry["k_source"] = "pitch"
             exp_k += w * k
             if pd.notna(wh):
                 exp_whiff += w * float(wh)
             else:
                 exp_whiff += w * k
+            covered += w
+        elif fallback_k is not None:
+            entry["k_percent"] = fallback_k
+            entry["whiff_percent"] = fallback_whiff
+            entry["pa"] = None
+            entry["k_source"] = "batter_avg"
+            exp_k += w * fallback_k
+            exp_whiff += w * float(
+                fallback_whiff if fallback_whiff is not None else fallback_k
+            )
             covered += w
         pitch_breakdown.append(entry)
     if covered <= 0:
@@ -561,6 +626,7 @@ def score_batter_vs_arsenal(
         "expected_whiff_pct": exp_whiff,
         "usage_covered": covered,
         "pitch_breakdown": pitch_breakdown,
+        "fallback_k_pct": fallback_k,
     }
 
 
@@ -569,52 +635,61 @@ def score_vs_lineup(
     lineup: list[dict[str, Any]],
     batter_df: pd.DataFrame,
     batters_faced: float,
+    people: dict[int, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Score starter arsenal vs opposing starting nine over a full outing.
 
     Per batter: arsenal-weighted K%/whiff from Savant (no league fill-in).
+    Missing pitch-type samples fall back to that batter's own pitch-mix average.
 
     expected_k_pct       = mean arsenal-weighted K% across lineup batters with data
     expected_ks_1x       = known K expectation for one trip through the order
     expected_ks          = walk batting order for projected BF (innings/TTO based)
     times_through_order  = batters_faced / 9
     """
+    people = people or {}
     batter_scores: list[dict[str, Any]] = []
     missing: list[str] = []
 
+    def _empty_pitches() -> list[dict[str, Any]]:
+        empty_pitches = []
+        for _, row in usage.iterrows():
+            empty_pitches.append(
+                {
+                    "pitch_type": row["pitch_type"],
+                    "pitch_name": (
+                        str(row["pitch_name"])
+                        if "pitch_name" in row.index and pd.notna(row.get("pitch_name"))
+                        else str(row["pitch_type"])
+                    ),
+                    "usage_pct": float(row["pitch_usage"]),
+                    "usage_frac": float(row["usage_frac"]),
+                    "k_percent": None,
+                    "whiff_percent": None,
+                    "pa": None,
+                    "k_source": None,
+                }
+            )
+        return empty_pitches
+
     for slot_row in lineup:
         bid = int(slot_row["batter_id"])
-        name = slot_row.get("batter") or str(bid)
+        profile = people.get(bid) or {}
+        name = slot_row.get("batter") or profile.get("full_name") or str(bid)
+        bat_side = profile.get("bat_side")
         rates = batter_df[batter_df["player_id"] == bid]
         scored = score_batter_vs_arsenal(usage, rates)
         if scored is None:
             missing.append(name)
-            # Still expose arsenal pitch columns with null K% for the matrix UI.
-            empty_pitches = []
-            for _, row in usage.iterrows():
-                empty_pitches.append(
-                    {
-                        "pitch_type": row["pitch_type"],
-                        "pitch_name": (
-                            str(row["pitch_name"])
-                            if "pitch_name" in row.index and pd.notna(row.get("pitch_name"))
-                            else str(row["pitch_type"])
-                        ),
-                        "usage_pct": float(row["pitch_usage"]),
-                        "usage_frac": float(row["usage_frac"]),
-                        "k_percent": None,
-                        "whiff_percent": None,
-                        "pa": None,
-                    }
-                )
             batter_scores.append(
                 {
                     "slot": slot_row.get("slot"),
                     "batter_id": bid,
                     "batter": name,
+                    "bat_side": bat_side,
                     "expected_k_pct": float("nan"),
                     "status": "missing_rates",
-                    "pitches": empty_pitches,
+                    "pitches": _empty_pitches(),
                 }
             )
             continue
@@ -623,6 +698,7 @@ def score_vs_lineup(
                 "slot": slot_row.get("slot"),
                 "batter_id": bid,
                 "batter": name,
+                "bat_side": bat_side,
                 "expected_k_pct": scored["expected_k_pct"],
                 "expected_whiff_pct": scored["expected_whiff_pct"],
                 "status": "ok",
@@ -740,6 +816,7 @@ def format_table(df: pd.DataFrame) -> str:
         for c in [
             "rank",
             "pitcher",
+            "pitch_hand",
             "pitcher_team",
             "opponent",
             "game",
@@ -765,7 +842,12 @@ def format_batter_detail(row: dict[str, Any]) -> str:
     ip = row.get("projected_ip")
     tto = row.get("times_through_order")
     bf = row.get("projected_bf") or row.get("batters_faced_assumed")
-    header = f"  {row.get('pitcher')} vs {row.get('opponent')} ({row.get('lineup_source')})"
+    hand = row.get("pitch_hand")
+    hand_s = f" ({hand}HP)" if hand else ""
+    header = (
+        f"  {row.get('pitcher')}{hand_s} vs {row.get('opponent')} "
+        f"({row.get('lineup_source')})"
+    )
     if pd.notna(row.get("expected_ks")):
         header += f" expected_ks={float(row['expected_ks']):.2f}"
     if pd.notna(ip) and pd.notna(tto):
@@ -774,8 +856,10 @@ def format_batter_detail(row: dict[str, Any]) -> str:
     for b in detail:
         k = b.get("expected_k_pct")
         k_s = f"{float(k):.1f}%" if k is not None and pd.notna(k) else "  n/a"
+        side = b.get("bat_side")
+        side_s = f" ({side}HB)" if side else ""
         lines.append(
-            f"    {b.get('slot'):>2}. {b.get('batter'):<22} {k_s}  {b.get('status')}"
+            f"    {b.get('slot'):>2}. {b.get('batter')}{side_s:<6} {k_s}  {b.get('status')}"
         )
     return "\n".join(lines)
 
@@ -809,7 +893,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--min-pa",
         type=int,
         default=50,
-        help="Minimum PA filter for Savant arsenal leaderboards (default: 50)",
+        help="Minimum PA filter for Savant pitcher arsenal leaderboard (default: 50)",
+    )
+    p.add_argument(
+        "--min-pa-batter",
+        type=int,
+        default=DEFAULT_MIN_PA_BATTER,
+        help=(
+            "Minimum PA filter for Savant batter pitch rates "
+            f"(default: {DEFAULT_MIN_PA_BATTER}; lower = more complete heatmaps)"
+        ),
     )
     p.add_argument(
         "--min-usage",
@@ -903,8 +996,8 @@ def main(argv: list[str] | None = None) -> int:
     year = args.year or ref_year
     log(
         args.verbose,
-        f"Using Savant year={year}, min_pa={args.min_pa}, "
-        f"min_usage={args.min_usage}, "
+        f"Using Savant year={year}, min_pa_pitcher={args.min_pa}, "
+        f"min_pa_batter={args.min_pa_batter}, min_usage={args.min_usage}, "
         f"ip_override={args.ip}, bf_override={args.batters_faced}",
     )
 
@@ -913,12 +1006,13 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     arsenal = load_pitcher_arsenal(year, args.min_pa, args.verbose)
-    batter_df = load_batter_pitch_rates(year, args.min_pa, args.verbose)
+    batter_df = load_batter_pitch_rates(year, args.min_pa_batter, args.verbose)
     id_to_name, name_to_id = build_pitcher_indexes(arsenal)
 
-    # Resolve pitchers first so we can batch-fetch season outing lengths.
+    # Resolve pitchers first so we can batch-fetch season outing lengths + hands.
     resolved: list[dict[str, Any]] = []
     pitcher_ids: list[int] = []
+    batter_ids: list[int] = []
     for _, m in matchups.iterrows():
         pid, display, status = resolve_pitcher(
             m.get("pitcher"),
@@ -938,6 +1032,11 @@ def main(argv: list[str] | None = None) -> int:
             m.get("lineup_source"),
             prior_lineups,
         )
+        for b in lineup:
+            try:
+                batter_ids.append(int(b["batter_id"]))
+            except (KeyError, TypeError, ValueError):
+                pass
         resolved.append(
             {
                 "pitcher": display or m.get("pitcher"),
@@ -952,6 +1051,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     season_outings = fetch_pitcher_season_outings(pitcher_ids, year, args.verbose)
+    people = fetch_people_profiles(pitcher_ids + batter_ids, args.verbose)
 
     results: list[dict[str, Any]] = []
     for item in resolved:
@@ -968,11 +1068,13 @@ def main(argv: list[str] | None = None) -> int:
             ip_override=args.ip,
             bf_override=args.batters_faced,
         )
+        pitcher_hand = (people.get(pid) or {}).get("pitch_hand") if pid is not None else None
 
         row: dict[str, Any] = {
             "pitcher": item.get("pitcher"),
             "pitcher_id": pid if pid is not None else item.get("pitcher_id"),
             "pitcher_team": item.get("pitcher_team"),
+            "pitch_hand": pitcher_hand,
             "opponent": item.get("opponent"),
             "game": item.get("game"),
             "status": item.get("status"),
@@ -1016,7 +1118,11 @@ def main(argv: list[str] | None = None) -> int:
                 row["status"] = "missing_arsenal"
             else:
                 scores = score_vs_lineup(
-                    usage, lineup, batter_df, outing["projected_bf"]
+                    usage,
+                    lineup,
+                    batter_df,
+                    outing["projected_bf"],
+                    people=people,
                 )
                 detail = scores.pop("batter_detail", [])
                 row.update(scores)

@@ -78,6 +78,20 @@ def _lineup_label(src: Any) -> tuple[str, str]:
     return "miss", s
 
 
+def _hand_label(code: Any, role: str) -> str:
+    """role: 'P' -> LHP/RHP, 'B' -> LHB/RHB."""
+    if not code:
+        return ""
+    c = str(code).upper()
+    if c not in {"L", "R", "S"}:
+        return ""
+    if role == "P":
+        return f"{c}HP"
+    if c == "S":
+        return "SHB"
+    return f"{c}HB"
+
+
 def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for _, r in df.iterrows():
@@ -104,6 +118,7 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                         "k_percent": _json_safe(p.get("k_percent")),
                         "whiff_percent": _json_safe(p.get("whiff_percent")),
                         "pa": _json_safe(p.get("pa")),
+                        "k_source": p.get("k_source"),
                     }
                 )
             clean_detail.append(
@@ -111,6 +126,7 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "slot": _json_safe(b.get("slot")),
                     "batter_id": _json_safe(b.get("batter_id")),
                     "batter": b.get("batter"),
+                    "bat_side": b.get("bat_side"),
                     "expected_k_pct": _json_safe(b.get("expected_k_pct")),
                     "expected_whiff_pct": _json_safe(b.get("expected_whiff_pct")),
                     "status": b.get("status"),
@@ -147,6 +163,7 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "pitcher": r.get("pitcher"),
                 "pitcher_id": _json_safe(r.get("pitcher_id")),
                 "pitcher_team": r.get("pitcher_team"),
+                "pitch_hand": r.get("pitch_hand"),
                 "opponent": r.get("opponent"),
                 "game": r.get("game"),
                 "status": r.get("status"),
@@ -201,26 +218,32 @@ def _render_pitch_matrix(row: dict[str, Any]) -> str:
 
     body_rows = []
     for b in row.get("batters") or []:
+        side = _hand_label(b.get("bat_side"), "B")
+        side_html = f" <span class='hand'>{_esc(side)}</span>" if side else ""
         cells = [
             "<td class='batter-cell'>"
             f"<span class='slot'>{_esc(b.get('slot'))}.</span>{_esc(b.get('batter') or '—')}"
+            f"{side_html}"
             "</td>"
         ]
         pitches = {p.get("pitch_type"): p for p in (b.get("pitches") or [])}
         for p in arsenal:
             hit = pitches.get(p.get("pitch_type")) or {}
             k = hit.get("k_percent")
+            src = hit.get("k_source") or ""
+            marker = "*" if src == "batter_avg" else ""
             title = (
                 "No Savant sample vs this pitch"
                 if k is None
                 else (
                     f"K% {_fmt(k, 1)} · whiff {_fmt(hit.get('whiff_percent'), 1)}% "
-                    f"· PA {hit.get('pa') if hit.get('pa') is not None else '—'}"
+                    f"· PA {hit.get('pa') if hit.get('pa') is not None else '—'} "
+                    f"· source {src or 'pitch'}"
                 )
             )
             cells.append(
                 f"<td class='heat' style='{_heat_style(k)}' title='{_esc(title)}'>"
-                f"{'—' if k is None else _fmt(k, 1)}"
+                f"{'—' if k is None else _fmt(k, 1)}{marker}"
                 "</td>"
             )
         vs = (
@@ -249,8 +272,9 @@ def _render_pitch_matrix(row: dict[str, Any]) -> str:
         f"<tbody>{''.join(body_rows)}</tbody>"
         "</table></div>"
         "<p class='hint'>Heat map = each batter’s strikeout rate vs that pitch type. "
-        "Darker green = more K-prone. Columns are pitches this starter throws "
-        "(≥ min usage).</p>"
+        "Darker green = more K-prone. <code>*</code> = no direct sample vs that pitch, "
+        "so the batter’s own pitch-mix average K% is used. "
+        "Handedness shown as LHB/RHB next to each batter.</p>"
     )
 
 
@@ -259,9 +283,12 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
     for b in row.get("batters") or []:
         miss = b.get("status") != "ok"
         k = "n/a" if miss else f"{_fmt(b.get('expected_k_pct'), 1)}%"
+        side = _hand_label(b.get("bat_side"), "B")
+        side_html = f" <span class='hand'>{_esc(side)}</span>" if side else ""
         cards.append(
             f"<div class='batter {'missing' if miss else ''}'>"
-            f"<span><span class='slot'>{_esc(b.get('slot'))}.</span> {_esc(b.get('batter') or '—')}</span>"
+            f"<span><span class='slot'>{_esc(b.get('slot'))}.</span> "
+            f"{_esc(b.get('batter') or '—')}{side_html}</span>"
             f"<span class='k'>{k}</span>"
             "</div>"
         )
@@ -280,10 +307,15 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     tto_s = "—" if tto is None else f"{_fmt(tto)}×"
     status = row.get("status") or ""
     scored = status == "ok" and row.get("expected_ks") is not None
+    pitcher_hand = _hand_label(row.get("pitch_hand"), "P")
+    hand_html = (
+        f" <span class='hand'>{_esc(pitcher_hand)}</span>" if pitcher_hand else ""
+    )
     search = " ".join(
         str(x)
         for x in [
             row.get("pitcher"),
+            pitcher_hand,
             row.get("pitcher_team"),
             row.get("opponent"),
             row.get("game"),
@@ -298,7 +330,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "<div class='summary-grid'>"
         f"<div class='rank'>{_esc(row.get('rank') if row.get('rank') is not None else '—')}</div>"
         "<div class='who'>"
-        f"<div class='pitcher'>{_esc(row.get('pitcher') or '—')}</div>"
+        f"<div class='pitcher'>{_esc(row.get('pitcher') or '—')}{hand_html}</div>"
         f"<div class='sub'>{_esc(row.get('pitcher_team') or '?')} vs "
         f"{_esc(row.get('opponent') or '?')}"
         f"{'' if status in ('', 'ok') else ' · ' + _esc(status)}</div>"
@@ -530,6 +562,19 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   summary:hover { background: rgba(15, 106, 77, 0.05); }
   .rank { font-family: var(--display); color: var(--accent); font-size: 1.05rem; }
   .pitcher { font-weight: 700; }
+  .hand {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.7);
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+  }
   .sub { color: var(--muted); font-size: 0.8rem; margin-top: 0.12rem; }
   .num { font-variant-numeric: tabular-nums; font-weight: 700; }
   .ks { color: var(--accent); font-size: 1.05rem; }

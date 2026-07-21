@@ -258,17 +258,18 @@ def load_batter_pitch_rates(year: int, min_pa: int, verbose: bool) -> pd.DataFra
     df["team"] = df["team_name_alt"].map(normalize_team)
     df["name_last_first"] = df["last_name, first_name"].astype(str).str.strip()
     df = df.dropna(subset=["player_id", "pitch_type", "k_percent"])
-    return df[
-        [
-            "player_id",
-            "name_last_first",
-            "team",
-            "pitch_type",
-            "pa",
-            "k_percent",
-            "whiff_percent",
-        ]
+    cols = [
+        "player_id",
+        "name_last_first",
+        "team",
+        "pitch_type",
+        "pa",
+        "k_percent",
+        "whiff_percent",
     ]
+    if "pitch_name" in df.columns:
+        cols.insert(4, "pitch_name")
+    return df[cols]
 
 
 def parse_name_variants(name: str) -> set[str]:
@@ -502,31 +503,54 @@ def pitcher_usage_weights(
     if total <= 0:
         return None
     subset["usage_frac"] = subset["pitch_usage"] / total
-    return subset[["pitch_type", "usage_frac", "pitch_usage"]]
+    cols = ["pitch_type", "usage_frac", "pitch_usage"]
+    if "pitch_name" in subset.columns:
+        cols.insert(1, "pitch_name")
+    return subset[cols]
 
 
 def score_batter_vs_arsenal(
     usage: pd.DataFrame, batter_rates: pd.DataFrame
-) -> dict[str, float] | None:
-    """Arsenal-weighted K%/whiff for one batter. None if no overlapping pitch types."""
+) -> dict[str, Any] | None:
+    """Arsenal-weighted K%/whiff for one batter, plus per-pitch K breakdown."""
     if batter_rates.empty:
         return None
     by_pitch = batter_rates.set_index("pitch_type")
     exp_k = 0.0
     exp_whiff = 0.0
     covered = 0.0
+    pitch_breakdown: list[dict[str, Any]] = []
     for _, row in usage.iterrows():
         pt = row["pitch_type"]
         w = float(row["usage_frac"])
-        if pt not in by_pitch.index:
-            continue
-        exp_k += w * float(by_pitch.loc[pt, "k_percent"])
-        wh = by_pitch.loc[pt, "whiff_percent"]
-        if pd.notna(wh):
-            exp_whiff += w * float(wh)
-        else:
-            exp_whiff += w * float(by_pitch.loc[pt, "k_percent"])
-        covered += w
+        pitch_name = (
+            str(row["pitch_name"])
+            if "pitch_name" in row.index and pd.notna(row.get("pitch_name"))
+            else str(pt)
+        )
+        entry: dict[str, Any] = {
+            "pitch_type": pt,
+            "pitch_name": pitch_name,
+            "usage_pct": float(row["pitch_usage"]) if "pitch_usage" in row.index else w * 100.0,
+            "usage_frac": w,
+            "k_percent": None,
+            "whiff_percent": None,
+            "pa": None,
+        }
+        if pt in by_pitch.index:
+            k = float(by_pitch.loc[pt, "k_percent"])
+            wh = by_pitch.loc[pt, "whiff_percent"]
+            pa = by_pitch.loc[pt, "pa"] if "pa" in by_pitch.columns else None
+            entry["k_percent"] = k
+            entry["whiff_percent"] = float(wh) if pd.notna(wh) else None
+            entry["pa"] = float(pa) if pa is not None and pd.notna(pa) else None
+            exp_k += w * k
+            if pd.notna(wh):
+                exp_whiff += w * float(wh)
+            else:
+                exp_whiff += w * k
+            covered += w
+        pitch_breakdown.append(entry)
     if covered <= 0:
         return None
     if covered < 0.999:
@@ -536,6 +560,7 @@ def score_batter_vs_arsenal(
         "expected_k_pct": exp_k,
         "expected_whiff_pct": exp_whiff,
         "usage_covered": covered,
+        "pitch_breakdown": pitch_breakdown,
     }
 
 
@@ -564,6 +589,24 @@ def score_vs_lineup(
         scored = score_batter_vs_arsenal(usage, rates)
         if scored is None:
             missing.append(name)
+            # Still expose arsenal pitch columns with null K% for the matrix UI.
+            empty_pitches = []
+            for _, row in usage.iterrows():
+                empty_pitches.append(
+                    {
+                        "pitch_type": row["pitch_type"],
+                        "pitch_name": (
+                            str(row["pitch_name"])
+                            if "pitch_name" in row.index and pd.notna(row.get("pitch_name"))
+                            else str(row["pitch_type"])
+                        ),
+                        "usage_pct": float(row["pitch_usage"]),
+                        "usage_frac": float(row["usage_frac"]),
+                        "k_percent": None,
+                        "whiff_percent": None,
+                        "pa": None,
+                    }
+                )
             batter_scores.append(
                 {
                     "slot": slot_row.get("slot"),
@@ -571,6 +614,7 @@ def score_vs_lineup(
                     "batter": name,
                     "expected_k_pct": float("nan"),
                     "status": "missing_rates",
+                    "pitches": empty_pitches,
                 }
             )
             continue
@@ -582,6 +626,7 @@ def score_vs_lineup(
                 "expected_k_pct": scored["expected_k_pct"],
                 "expected_whiff_pct": scored["expected_whiff_pct"],
                 "status": "ok",
+                "pitches": scored.get("pitch_breakdown") or [],
             }
         )
 
@@ -590,6 +635,22 @@ def score_vs_lineup(
     n_scored = len(ok)
     bf_n = max(0, int(round(float(batters_faced))))
     tto = bf_n / 9.0 if bf_n else float("nan")
+
+    arsenal_pitches: list[dict[str, Any]] = []
+    for _, row in usage.sort_values("usage_frac", ascending=False).iterrows():
+        arsenal_pitches.append(
+            {
+                "pitch_type": row["pitch_type"],
+                "pitch_name": (
+                    str(row["pitch_name"])
+                    if "pitch_name" in row.index and pd.notna(row.get("pitch_name"))
+                    else str(row["pitch_type"])
+                ),
+                "usage_pct": float(row["pitch_usage"]),
+                "usage_frac": float(row["usage_frac"]),
+            }
+        )
+
     if n_scored == 0 or n_lineup == 0:
         return {
             "expected_k_pct": float("nan"),
@@ -602,6 +663,7 @@ def score_vs_lineup(
             "bf_scored": 0,
             "times_through_order": tto,
             "missing_batters": "; ".join(missing),
+            "arsenal": arsenal_pitches,
             "batter_detail": batter_scores,
         }
 
@@ -619,6 +681,23 @@ def score_vs_lineup(
         expected_ks += float(b["expected_k_pct"]) / 100.0
         bf_scored += 1
 
+    # Lineup-average K% vs each arsenal pitch (batters with that pitch rate only).
+    pitch_lineup_avg: list[dict[str, Any]] = []
+    for pitch in arsenal_pitches:
+        pt = pitch["pitch_type"]
+        vals = []
+        for b in ok:
+            for pb in b.get("pitches") or []:
+                if pb.get("pitch_type") == pt and pb.get("k_percent") is not None:
+                    vals.append(float(pb["k_percent"]))
+        pitch_lineup_avg.append(
+            {
+                **pitch,
+                "lineup_k_pct": (sum(vals) / len(vals)) if vals else None,
+                "batters_with_rate": len(vals),
+            }
+        )
+
     return {
         "expected_k_pct": mean_k,
         "expected_whiff_pct": mean_whiff,
@@ -630,6 +709,8 @@ def score_vs_lineup(
         "bf_scored": bf_scored,
         "times_through_order": tto,
         "missing_batters": "; ".join(missing),
+        "arsenal": arsenal_pitches,
+        "pitch_lineup_avg": pitch_lineup_avg,
         "batter_detail": batter_scores,
     }
 
@@ -910,6 +991,8 @@ def main(argv: list[str] | None = None) -> int:
             "bf_scored": 0,
             "missing_batters": "",
             "batters_faced_assumed": outing["projected_bf"],
+            "arsenal": [],
+            "pitch_lineup_avg": [],
             "batter_detail": [],
         }
 
@@ -982,8 +1065,11 @@ def main(argv: list[str] | None = None) -> int:
             if block:
                 print(block)
     if args.output:
-        # Drop nested batter_detail from CSV (ids/names columns already stored).
-        csv_out = out.drop(columns=["batter_detail"], errors="ignore")
+        # Drop nested objects from CSV (kept in HTML JSON payload).
+        csv_out = out.drop(
+            columns=["batter_detail", "arsenal", "pitch_lineup_avg"],
+            errors="ignore",
+        )
         csv_out.to_csv(args.output, index=False)
         log(True, f"Wrote {args.output}")
 

@@ -41,8 +41,28 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
         detail = r.get("batter_detail") or []
         if isinstance(detail, float) and pd.isna(detail):
             detail = []
+        arsenal = r.get("arsenal") or []
+        if isinstance(arsenal, float) and pd.isna(arsenal):
+            arsenal = []
+        pitch_avg = r.get("pitch_lineup_avg") or []
+        if isinstance(pitch_avg, float) and pd.isna(pitch_avg):
+            pitch_avg = []
+
         clean_detail = []
         for b in detail:
+            pitches = []
+            for p in b.get("pitches") or []:
+                pitches.append(
+                    {
+                        "pitch_type": p.get("pitch_type"),
+                        "pitch_name": p.get("pitch_name"),
+                        "usage_pct": _json_safe(p.get("usage_pct")),
+                        "usage_frac": _json_safe(p.get("usage_frac")),
+                        "k_percent": _json_safe(p.get("k_percent")),
+                        "whiff_percent": _json_safe(p.get("whiff_percent")),
+                        "pa": _json_safe(p.get("pa")),
+                    }
+                )
             clean_detail.append(
                 {
                     "slot": _json_safe(b.get("slot")),
@@ -51,8 +71,33 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "expected_k_pct": _json_safe(b.get("expected_k_pct")),
                     "expected_whiff_pct": _json_safe(b.get("expected_whiff_pct")),
                     "status": b.get("status"),
+                    "pitches": pitches,
                 }
             )
+
+        clean_arsenal = []
+        for p in arsenal:
+            clean_arsenal.append(
+                {
+                    "pitch_type": p.get("pitch_type"),
+                    "pitch_name": p.get("pitch_name"),
+                    "usage_pct": _json_safe(p.get("usage_pct")),
+                    "usage_frac": _json_safe(p.get("usage_frac")),
+                }
+            )
+        clean_pitch_avg = []
+        for p in pitch_avg:
+            clean_pitch_avg.append(
+                {
+                    "pitch_type": p.get("pitch_type"),
+                    "pitch_name": p.get("pitch_name"),
+                    "usage_pct": _json_safe(p.get("usage_pct")),
+                    "usage_frac": _json_safe(p.get("usage_frac")),
+                    "lineup_k_pct": _json_safe(p.get("lineup_k_pct")),
+                    "batters_with_rate": _json_safe(p.get("batters_with_rate")),
+                }
+            )
+
         rows.append(
             {
                 "rank": _json_safe(r.get("rank")),
@@ -77,6 +122,8 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "bf_scored": _json_safe(r.get("bf_scored")),
                 "batters_faced_assumed": _json_safe(r.get("batters_faced_assumed")),
                 "missing_batters": r.get("missing_batters") or "",
+                "arsenal": clean_arsenal,
+                "pitch_lineup_avg": clean_pitch_avg,
                 "batters": clean_detail,
             }
         )
@@ -331,17 +378,45 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .detail {
     display: none;
-    padding: 0.85rem 1rem 1.1rem 3.4rem;
+    padding: 0.85rem 1rem 1.1rem 1.1rem;
     animation: expand 0.28s ease both;
   }
   tr.open + tr.detail-row .detail { display: block; }
-  .detail h3 {
-    margin: 0 0 0.55rem;
+  .detail-head {
+    margin: 0 0 0.75rem;
     font-size: 0.78rem;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--muted);
+    line-height: 1.45;
   }
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.85rem;
+  }
+  .tab {
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.65);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 0.4rem 0.85rem;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .tab:hover { color: var(--ink); border-color: rgba(15, 106, 77, 0.35); }
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: expand 0.25s ease both; }
+
   .batter-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -364,6 +439,85 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     min-width: 1.2rem;
   }
   .batter .k { font-weight: 700; color: var(--accent); }
+
+  .arsenal-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 0.75rem;
+  }
+  .arsenal-chip {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 5.5rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.7);
+  }
+  .arsenal-chip .name { font-weight: 700; font-size: 0.82rem; }
+  .arsenal-chip .meta { color: var(--muted); font-size: 0.72rem; }
+
+  .matrix-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.55);
+  }
+  table.matrix {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 520px;
+  }
+  table.matrix th, table.matrix td {
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    font-size: 0.82rem;
+    text-align: center;
+    white-space: nowrap;
+  }
+  table.matrix th:last-child, table.matrix td:last-child { border-right: none; }
+  table.matrix thead th {
+    position: static;
+    background: rgba(248, 244, 236, 0.96);
+    cursor: default;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.78rem;
+    color: var(--ink);
+  }
+  table.matrix thead th .usage {
+    display: block;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 0.7rem;
+    margin-top: 0.15rem;
+  }
+  table.matrix td.batter-cell {
+    text-align: left;
+    font-weight: 600;
+    min-width: 9rem;
+  }
+  table.matrix td.batter-cell .slot {
+    color: var(--muted);
+    font-weight: 500;
+    margin-right: 0.25rem;
+  }
+  table.matrix td.heat {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  table.matrix tr.avg-row td {
+    background: rgba(15, 106, 77, 0.06);
+    font-weight: 700;
+  }
+  .hint {
+    margin: 0.65rem 0 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
 
   .empty {
     padding: 2rem 1rem;
@@ -452,8 +606,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <p class="footnote">
       <strong>Exp. Ks</strong> walks the opposing nine for the starter’s projected
       batters faced (from season IP &amp; BF per start unless overridden).
-      TTO = times through the order. Click a row for each batter’s arsenal-weighted K%.
-      Re-run
+      Expand a pitcher for <strong>Pitch weaknesses</strong> (batter K% vs each arsenal pitch)
+      or overall lineup K%. Re-run
       <code>python3 mlb-k-matchups/k_matchups.py --date YYYY-MM-DD --html rankings.html</code>
       after lineups post to refresh.
     </p>
@@ -469,6 +623,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       sortKey: "expected_ks",
       sortDir: "desc",
       openId: null,
+      tabById: {},
     };
 
     const el = {
@@ -562,6 +717,95 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       return rows;
     }
 
+    function heatStyle(k) {
+      if (k == null || Number.isNaN(k)) {
+        return { bg: "transparent", color: "var(--muted)" };
+      }
+      // Map ~8%–40% K into a green heat scale.
+      const t = Math.max(0, Math.min(1, (Number(k) - 8) / 32));
+      const alpha = 0.12 + t * 0.55;
+      return {
+        bg: `rgba(15, 106, 77, ${alpha.toFixed(3)})`,
+        color: t > 0.55 ? "#063828" : "var(--ink)",
+      };
+    }
+
+    function renderLineupPanel(r) {
+      const batters = (r.batters || []).map(b => {
+        const miss = b.status !== "ok";
+        return `<div class="batter ${miss ? "missing" : ""}">
+          <span><span class="slot">${b.slot ?? ""}.</span> ${b.batter || "—"}</span>
+          <span class="k">${miss ? "n/a" : fmt(b.expected_k_pct, 1) + "%"}</span>
+        </div>`;
+      }).join("");
+      return `<div class="batter-grid">${batters || "<div class='empty'>No batter detail</div>"}</div>
+        <p class="hint">Values are arsenal-weighted K% for each batter vs this starter’s pitch mix.</p>`;
+    }
+
+    function renderPitchPanel(r) {
+      const arsenal = r.arsenal || r.pitch_lineup_avg || [];
+      if (!arsenal.length) {
+        return `<div class="empty">No arsenal pitch breakdown available.</div>`;
+      }
+      const chips = arsenal.map(p => {
+        const avg = (r.pitch_lineup_avg || []).find(x => x.pitch_type === p.pitch_type);
+        const avgK = avg && avg.lineup_k_pct != null ? `${fmt(avg.lineup_k_pct, 1)}% lineup K` : "no lineup sample";
+        return `<div class="arsenal-chip">
+          <span class="name">${p.pitch_name || p.pitch_type}</span>
+          <span class="meta">${fmt(p.usage_pct, 1)}% usage · ${avgK}</span>
+        </div>`;
+      }).join("");
+
+      const head = `
+        <tr>
+          <th>Batter</th>
+          ${arsenal.map(p => `<th>${p.pitch_name || p.pitch_type}<span class="usage">${fmt(p.usage_pct, 1)}% usage</span></th>`).join("")}
+          <th>vs arsenal</th>
+        </tr>`;
+
+      const body = (r.batters || []).map(b => {
+        const cells = arsenal.map(p => {
+          const hit = (b.pitches || []).find(x => x.pitch_type === p.pitch_type);
+          const k = hit ? hit.k_percent : null;
+          const style = heatStyle(k);
+          const title = k == null
+            ? "No Savant sample vs this pitch"
+            : `K% ${fmt(k, 1)} · whiff ${fmt(hit.whiff_percent, 1)}% · PA ${hit.pa ?? "—"}`;
+          return `<td class="heat" style="background:${style.bg};color:${style.color}" title="${title}">${k == null ? "—" : fmt(k, 1)}</td>`;
+        }).join("");
+        const vs = b.status === "ok" ? fmt(b.expected_k_pct, 1) + "%" : "n/a";
+        return `<tr>
+          <td class="batter-cell"><span class="slot">${b.slot ?? ""}.</span>${b.batter || "—"}</td>
+          ${cells}
+          <td class="heat">${vs}</td>
+        </tr>`;
+      }).join("");
+
+      const avgRow = `<tr class="avg-row">
+        <td class="batter-cell">Lineup avg</td>
+        ${arsenal.map(p => {
+          const avg = (r.pitch_lineup_avg || []).find(x => x.pitch_type === p.pitch_type);
+          const k = avg ? avg.lineup_k_pct : null;
+          const style = heatStyle(k);
+          return `<td class="heat" style="background:${style.bg};color:${style.color}">${k == null ? "—" : fmt(k, 1)}</td>`;
+        }).join("")}
+        <td class="heat">${fmt(r.expected_k_pct, 1)}%</td>
+      </tr>`;
+
+      return `
+        <div class="arsenal-strip">${chips}</div>
+        <div class="matrix-wrap">
+          <table class="matrix">
+            <thead>${head}</thead>
+            <tbody>${body}${avgRow}</tbody>
+          </table>
+        </div>
+        <p class="hint">
+          Heat map = each batter’s strikeout rate vs that pitch type. Darker green = more K-prone.
+          Columns are only pitches this starter throws (≥ min usage).
+        </p>`;
+    }
+
     function render() {
       const rows = filtered();
       el.empty.hidden = rows.length > 0;
@@ -569,13 +813,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         const id = rowId(r, i);
         const open = state.openId === id ? "open" : "";
         const kind = lineupKind(r.lineup_source);
-        const batters = (r.batters || []).map(b => {
-          const miss = b.status !== "ok";
-          return `<div class="batter ${miss ? "missing" : ""}">
-            <span><span class="slot">${b.slot ?? ""}.</span> ${b.batter || "—"}</span>
-            <span class="k">${miss ? "n/a" : fmt(b.expected_k_pct, 1) + "%"}</span>
-          </div>`;
-        }).join("");
+        const tab = state.tabById[id] || "pitches";
         return `
           <tr class="matchup ${open}" data-id="${id}">
             <td class="rank">${r.rank ?? "—"}</td>
@@ -593,15 +831,23 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <tr class="detail-row">
             <td colspan="8">
               <div class="detail">
-                <h3>
+                <p class="detail-head">
                   Projected outing ${fmt(r.projected_ip, 1)} IP ·
                   ${r.times_through_order == null ? "—" : fmt(r.times_through_order) + "×"} through order ·
                   BF ${r.projected_bf ?? r.batters_faced_assumed ?? "—"}
                   (${r.outing_source || "n/a"}) ·
-                  lineup cover ${pct(r.lineup_coverage)} ·
-                  1× reference ${fmt(r.expected_ks_1x)} Ks
-                </h3>
-                <div class="batter-grid">${batters || "<div class='empty'>No batter detail</div>"}</div>
+                  lineup cover ${pct(r.lineup_coverage)}
+                </p>
+                <div class="tabs" data-id="${id}">
+                  <button type="button" class="tab ${tab === "pitches" ? "active" : ""}" data-tab="pitches">Pitch weaknesses</button>
+                  <button type="button" class="tab ${tab === "lineup" ? "active" : ""}" data-tab="lineup">Lineup K%</button>
+                </div>
+                <div class="tab-panel ${tab === "pitches" ? "active" : ""}" data-panel="pitches">
+                  ${renderPitchPanel(r)}
+                </div>
+                <div class="tab-panel ${tab === "lineup" ? "active" : ""}" data-panel="lineup">
+                  ${renderLineupPanel(r)}
+                </div>
               </div>
             </td>
           </tr>`;
@@ -613,10 +859,23 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
 
     el.tbody.addEventListener("click", (e) => {
+      const tabBtn = e.target.closest(".tab");
+      if (tabBtn) {
+        e.stopPropagation();
+        const tabs = tabBtn.closest(".tabs");
+        const id = tabs.dataset.id;
+        state.tabById[id] = tabBtn.dataset.tab;
+        state.openId = id;
+        render();
+        return;
+      }
       const tr = e.target.closest("tr.matchup");
       if (!tr) return;
       const id = tr.dataset.id;
       state.openId = state.openId === id ? null : id;
+      if (state.openId && !state.tabById[state.openId]) {
+        state.tabById[state.openId] = "pitches";
+      }
       render();
     });
 

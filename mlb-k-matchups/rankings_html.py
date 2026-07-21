@@ -190,16 +190,15 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
     return rows
 
 
-def _render_pitch_matrix(row: dict[str, Any], uid: str) -> str:
-    """Vertical pitch picker + batter list (no horizontal scrolling)."""
+def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
+    """Stacked pitch sections + batter lists (no tab chips / horizontal scroll)."""
+    _ = uid
     arsenal = row.get("pitch_lineup_avg") or row.get("arsenal") or []
     if not arsenal:
         return '<p class="hint">No arsenal pitch breakdown available.</p>'
 
     batters = row.get("batters") or []
-    picker: list[str] = []
-    panels: list[str] = []
-    show_rules: list[str] = []
+    blocks: list[str] = []
 
     for i, p in enumerate(arsenal):
         pt = p.get("pitch_type")
@@ -208,19 +207,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str) -> str:
         avg_txt = (
             f"{_fmt(avg_k, 1)}% lineup avg" if avg_k is not None else "no lineup avg"
         )
-        pid = f"pitch-{uid}-{i}"
-        checked = " checked" if i == 0 else ""
-        picker.append(
-            f"<input type='radio' name='pitch-{uid}' id='{pid}'{checked} />"
-            f"<label class='pitch-tab' for='{pid}'>"
-            f"<span class='name'>{_esc(pname)}</span>"
-            f"<span class='meta'>{_fmt(p.get('usage_pct'), 1)}% · {_esc(avg_txt)}</span>"
-            f"</label>"
-        )
-        show_rules.append(
-            f".pitch-switch:has(#{pid}:checked) "
-            f".pitch-panel[data-panel='{pid}']{{display:block;}}"
-        )
+        open_attr = " open" if i == 0 else ""
 
         rows_html: list[str] = []
         for b in batters:
@@ -261,19 +248,21 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str) -> str:
             f"<div class='kval'>{'—' if avg_k is None else _fmt(avg_k, 1) + '%'}</div>"
             "</div>"
         )
-        panels.append(
-            f"<div class='pitch-panel' data-panel='{pid}'>"
+        blocks.append(
+            f"<details class='pitch-block'{open_attr}>"
+            "<summary>"
+            f"<span class='pname'>{_esc(pname)}</span>"
+            f"<span class='pmeta'>{_fmt(p.get('usage_pct'), 1)}% usage · {_esc(avg_txt)}</span>"
+            "</summary>"
             f"<div class='pitch-list'>{''.join(rows_html)}</div>"
-            "</div>"
+            "</details>"
         )
 
     return (
-        "<div class='pitch-switch'>"
-        f"<style>{''.join(show_rules)}</style>"
-        f"<div class='pitch-tabs'>{''.join(picker)}</div>"
-        f"{''.join(panels)}"
+        "<div class='pitch-stack'>"
+        f"{''.join(blocks)}"
         "<p class='hint'>"
-        "Pick a pitch above, then scroll normally through each batter’s K% vs that pitch. "
+        "Open a pitch to see each batter’s K% vs that pitch. "
         "Longer/darker bar = more K-prone. "
         "<code>†</code> = same-handed league average (no direct sample vs that pitch)."
         "</p>"
@@ -641,7 +630,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     align-items: center;
     width: 100%;
   }
-  .tabs > input { position: absolute; opacity: 0; pointer-events: none; }
+  .tabs > input {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0; border: 0;
+    clip: rect(0 0 0 0);
+    overflow: hidden;
+    white-space: nowrap;
+  }
   .tab {
     display: inline-flex; align-items: center;
     border: 1px solid var(--line); background: rgba(255,255,255,0.65);
@@ -671,39 +667,55 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .batter.missing { opacity: 0.55; }
   .batter .slot { color: var(--muted); min-width: 1.2rem; }
   .batter .k { font-weight: 700; color: var(--accent); }
-  .pitch-switch { margin-top: 0.15rem; width: 100%; min-width: 0; }
-  .pitch-tabs > input[type="radio"] {
-    position: absolute; opacity: 0; pointer-events: none;
+  .pitch-stack {
+    display: grid;
+    gap: 0.45rem;
+    width: 100%;
+    min-width: 0;
   }
-  .pitch-tabs {
+  .pitch-block {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.72);
+    overflow: hidden;
+  }
+  .pitch-block > summary {
+    list-style: none;
+    cursor: pointer;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
-    margin-bottom: 0.75rem;
+    align-items: baseline;
+    gap: 0.25rem 0.65rem;
+    padding: 0.65rem 0.8rem;
+    line-height: 1.35;
   }
-  .pitch-tab {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.12rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 12px;
-    border: 1px solid var(--line);
-    background: rgba(255,255,255,0.7);
+  .pitch-block > summary::-webkit-details-marker { display: none; }
+  .pitch-block > summary::before {
+    content: "▸";
     color: var(--muted);
-    cursor: pointer;
-    line-height: 1.2;
+    font-size: 0.75rem;
+    margin-right: 0.15rem;
   }
-  .pitch-tab .name { font-weight: 700; font-size: 0.84rem; color: var(--ink); }
-  .pitch-tab .meta { font-size: 0.7rem; font-weight: 500; }
-  .pitch-tabs > input[type="radio"]:checked + .pitch-tab {
-    border-color: var(--accent);
-    background: rgba(15, 106, 77, 0.1);
-    color: var(--accent);
+  .pitch-block[open] > summary::before { content: "▾"; color: var(--accent); }
+  .pitch-block > summary .pname {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--ink);
   }
-  .pitch-tabs > input[type="radio"]:checked + .pitch-tab .name { color: var(--accent); }
-  .pitch-panel { display: none; }
-  .pitch-list { display: grid; gap: 0; }
+  .pitch-block > summary .pmeta {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+  .pitch-block[open] > summary {
+    border-bottom: 1px solid var(--line);
+    background: rgba(15, 106, 77, 0.06);
+  }
+  .pitch-list {
+    display: grid;
+    gap: 0;
+    padding: 0.15rem 0.8rem 0.55rem;
+  }
   .pitch-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 36%) 3.6rem;
@@ -777,7 +789,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <noscript>
       <p class="noscript">
         JavaScript is off or blocked — rankings still work.
-        Expand any pitcher, open <strong>Pitch weaknesses</strong>, and pick a pitch.
+        Expand any pitcher, open <strong>Pitch weaknesses</strong>, then open a pitch.
       </p>
     </noscript>
 

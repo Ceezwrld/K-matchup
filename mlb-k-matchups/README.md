@@ -50,7 +50,13 @@ python3 mlb-k-matchups/k_matchups.py --date $(date +%F) \
   -o rankings.csv --html rankings.html
 ```
 
-Open `rankings.html` in a browser. Re-run the same command after lineups post — official nines replace prior-day fallbacks automatically.
+Open `rankings.html` in a browser (**download the file and open it locally** — GitHub’s raw view blocks scripts and may show plain text).
+
+Interactive preview (renders in-browser):
+
+https://htmlpreview.github.io/?https://github.com/Ceezwrld/K-matchup/blob/cursor/interactive-rankings-html-106c/rankings.html
+
+Expand any pitcher → **Pitch weaknesses** tab shows the K% heat map vs that starter’s arsenal. Re-run the same command after lineups post to refresh.
 
 Custom matchups CSV (`pitcher,opponent[,pitcher_id,pitcher_team,game]`). Opponent lineup is resolved from the most recent posted starting nine for that team:
 

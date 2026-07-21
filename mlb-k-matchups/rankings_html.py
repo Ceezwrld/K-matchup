@@ -1,7 +1,13 @@
-"""Self-contained interactive HTML export for K-matchup rankings."""
+"""Self-contained interactive HTML export for K-matchup rankings.
+
+Heatmaps and matchup detail are server-rendered into the HTML so they work
+even when the file is opened from a host that blocks JavaScript (e.g. GitHub
+raw). Light JS only enhances search / sort / filter.
+"""
 
 from __future__ import annotations
 
+import html as html_lib
 import json
 from datetime import datetime, timezone
 from typing import Any
@@ -33,6 +39,43 @@ def _json_safe(value: Any) -> Any:
         except (ValueError, AttributeError):
             pass
     return value
+
+
+def _esc(value: Any) -> str:
+    if value is None:
+        return ""
+    return html_lib.escape(str(value), quote=True)
+
+
+def _fmt(value: Any, digits: int = 2) -> str:
+    v = _json_safe(value)
+    if v is None:
+        return "—"
+    try:
+        return f"{float(v):.{digits}f}"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _heat_style(k: Any) -> str:
+    v = _json_safe(k)
+    if v is None:
+        return "background:transparent;color:var(--muted)"
+    t = max(0.0, min(1.0, (float(v) - 8.0) / 32.0))
+    alpha = 0.12 + t * 0.55
+    color = "#063828" if t > 0.55 else "var(--ink)"
+    return f"background:rgba(15,106,77,{alpha:.3f});color:{color}"
+
+
+def _lineup_label(src: Any) -> tuple[str, str]:
+    if not src:
+        return "miss", "none"
+    s = str(src)
+    if s == "official":
+        return "official", "official"
+    if s.startswith("prior:"):
+        return "prior", f"prior {s[6:]}"
+    return "miss", s
 
 
 def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
@@ -130,6 +173,184 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
     return rows
 
 
+def _render_pitch_matrix(row: dict[str, Any]) -> str:
+    arsenal = row.get("pitch_lineup_avg") or row.get("arsenal") or []
+    if not arsenal:
+        return '<p class="hint">No arsenal pitch breakdown available.</p>'
+
+    chips = []
+    for p in arsenal:
+        avg_k = p.get("lineup_k_pct")
+        avg_txt = f"{_fmt(avg_k, 1)}% lineup K" if avg_k is not None else "no lineup sample"
+        chips.append(
+            "<div class='arsenal-chip'>"
+            f"<span class='name'>{_esc(p.get('pitch_name') or p.get('pitch_type'))}</span>"
+            f"<span class='meta'>{_fmt(p.get('usage_pct'), 1)}% usage · {_esc(avg_txt)}</span>"
+            "</div>"
+        )
+
+    head_cells = ["<th>Batter</th>"]
+    for p in arsenal:
+        head_cells.append(
+            "<th>"
+            f"{_esc(p.get('pitch_name') or p.get('pitch_type'))}"
+            f"<span class='usage'>{_fmt(p.get('usage_pct'), 1)}% usage</span>"
+            "</th>"
+        )
+    head_cells.append("<th>vs arsenal</th>")
+
+    body_rows = []
+    for b in row.get("batters") or []:
+        cells = [
+            "<td class='batter-cell'>"
+            f"<span class='slot'>{_esc(b.get('slot'))}.</span>{_esc(b.get('batter') or '—')}"
+            "</td>"
+        ]
+        pitches = {p.get("pitch_type"): p for p in (b.get("pitches") or [])}
+        for p in arsenal:
+            hit = pitches.get(p.get("pitch_type")) or {}
+            k = hit.get("k_percent")
+            title = (
+                "No Savant sample vs this pitch"
+                if k is None
+                else (
+                    f"K% {_fmt(k, 1)} · whiff {_fmt(hit.get('whiff_percent'), 1)}% "
+                    f"· PA {hit.get('pa') if hit.get('pa') is not None else '—'}"
+                )
+            )
+            cells.append(
+                f"<td class='heat' style='{_heat_style(k)}' title='{_esc(title)}'>"
+                f"{'—' if k is None else _fmt(k, 1)}"
+                "</td>"
+            )
+        vs = (
+            f"{_fmt(b.get('expected_k_pct'), 1)}%"
+            if b.get("status") == "ok"
+            else "n/a"
+        )
+        cells.append(f"<td class='heat'>{vs}</td>")
+        body_rows.append("<tr>" + "".join(cells) + "</tr>")
+
+    avg_cells = ["<td class='batter-cell'>Lineup avg</td>"]
+    for p in arsenal:
+        k = p.get("lineup_k_pct")
+        avg_cells.append(
+            f"<td class='heat' style='{_heat_style(k)}'>"
+            f"{'—' if k is None else _fmt(k, 1)}"
+            "</td>"
+        )
+    avg_cells.append(f"<td class='heat'>{_fmt(row.get('expected_k_pct'), 1)}%</td>")
+    body_rows.append("<tr class='avg-row'>" + "".join(avg_cells) + "</tr>")
+
+    return (
+        f"<div class='arsenal-strip'>{''.join(chips)}</div>"
+        "<div class='matrix-wrap'><table class='matrix'>"
+        f"<thead><tr>{''.join(head_cells)}</tr></thead>"
+        f"<tbody>{''.join(body_rows)}</tbody>"
+        "</table></div>"
+        "<p class='hint'>Heat map = each batter’s strikeout rate vs that pitch type. "
+        "Darker green = more K-prone. Columns are pitches this starter throws "
+        "(≥ min usage).</p>"
+    )
+
+
+def _render_lineup_panel(row: dict[str, Any]) -> str:
+    cards = []
+    for b in row.get("batters") or []:
+        miss = b.get("status") != "ok"
+        k = "n/a" if miss else f"{_fmt(b.get('expected_k_pct'), 1)}%"
+        cards.append(
+            f"<div class='batter {'missing' if miss else ''}'>"
+            f"<span><span class='slot'>{_esc(b.get('slot'))}.</span> {_esc(b.get('batter') or '—')}</span>"
+            f"<span class='k'>{k}</span>"
+            "</div>"
+        )
+    if not cards:
+        return "<div class='empty'>No batter detail</div>"
+    return (
+        f"<div class='batter-grid'>{''.join(cards)}</div>"
+        "<p class='hint'>Values are arsenal-weighted K% for each batter vs this "
+        "starter’s pitch mix.</p>"
+    )
+
+
+def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
+    kind, label = _lineup_label(row.get("lineup_source"))
+    tto = row.get("times_through_order")
+    tto_s = "—" if tto is None else f"{_fmt(tto)}×"
+    status = row.get("status") or ""
+    scored = status == "ok" and row.get("expected_ks") is not None
+    search = " ".join(
+        str(x)
+        for x in [
+            row.get("pitcher"),
+            row.get("pitcher_team"),
+            row.get("opponent"),
+            row.get("game"),
+            row.get("lineup_source"),
+            status,
+        ]
+        if x
+    ).lower()
+
+    uid = f"m{idx}"
+    summary = (
+        "<div class='summary-grid'>"
+        f"<div class='rank'>{_esc(row.get('rank') if row.get('rank') is not None else '—')}</div>"
+        "<div class='who'>"
+        f"<div class='pitcher'>{_esc(row.get('pitcher') or '—')}</div>"
+        f"<div class='sub'>{_esc(row.get('pitcher_team') or '?')} vs "
+        f"{_esc(row.get('opponent') or '?')}"
+        f"{'' if status in ('', 'ok') else ' · ' + _esc(status)}</div>"
+        "</div>"
+        f"<div class='game'>{_esc(row.get('game') or '—')}</div>"
+        f"<div class='num ks'>{_fmt(row.get('expected_ks'))}</div>"
+        f"<div class='num'>{_fmt(row.get('projected_ip'), 1)}</div>"
+        f"<div class='num'>{tto_s}</div>"
+        f"<div class='num'>{_fmt(row.get('expected_k_pct'))}</div>"
+        f"<div><span class='badge {kind}'>{_esc(label)}</span></div>"
+        "</div>"
+    )
+
+    head = (
+        "<p class='detail-head'>"
+        f"Projected outing {_fmt(row.get('projected_ip'), 1)} IP · "
+        f"{tto_s} through order · "
+        f"BF {row.get('projected_bf') if row.get('projected_bf') is not None else row.get('batters_faced_assumed') or '—'} "
+        f"({_esc(row.get('outing_source') or 'n/a')}) · "
+        f"lineup cover "
+        f"{'—' if row.get('lineup_coverage') is None else str(int(round(100 * float(row['lineup_coverage'])))) + '%'}"
+        "</p>"
+    )
+
+    # CSS-only tabs via radio buttons (works with JS disabled).
+    tabs = (
+        f"<div class='tabs'>"
+        f"<input type='radio' name='tab-{uid}' id='tab-{uid}-pitches' checked />"
+        f"<label class='tab' for='tab-{uid}-pitches'>Pitch weaknesses</label>"
+        f"<input type='radio' name='tab-{uid}' id='tab-{uid}-lineup' />"
+        f"<label class='tab' for='tab-{uid}-lineup'>Lineup K%</label>"
+        f"<div class='tab-panel panel-pitches'>{_render_pitch_matrix(row)}</div>"
+        f"<div class='tab-panel panel-lineup'>{_render_lineup_panel(row)}</div>"
+        f"</div>"
+    )
+
+    return (
+        f"<details class='matchup' data-search='{_esc(search)}' "
+        f"data-lineup='{_esc(row.get('lineup_source') or '')}' "
+        f"data-status='{'scored' if scored else 'missing'}' "
+        f"data-expected-ks='{_json_safe(row.get('expected_ks'))}' "
+        f"data-projected-ip='{_json_safe(row.get('projected_ip'))}' "
+        f"data-tto='{_json_safe(row.get('times_through_order'))}' "
+        f"data-kpct='{_json_safe(row.get('expected_k_pct'))}' "
+        f"data-rank='{_json_safe(row.get('rank'))}' "
+        f"data-pitcher='{_esc(row.get('pitcher') or '')}'>"
+        f"<summary>{summary}</summary>"
+        f"<div class='detail'>{head}{tabs}</div>"
+        "</details>"
+    )
+
+
 def write_interactive_html(
     path: str,
     df: pd.DataFrame,
@@ -137,24 +358,55 @@ def write_interactive_html(
     game_date: str,
     batters_faced: float | None = None,
 ) -> None:
-    scored = df[df["status"].eq("ok") & df["expected_ks"].notna()] if "status" in df else df
-    avg_ip = float(scored["projected_ip"].mean()) if "projected_ip" in scored and len(scored) else None
-    avg_tto = (
-        float(scored["times_through_order"].mean())
-        if "times_through_order" in scored and len(scored)
+    rows = rows_for_html(df)
+    scored = [r for r in rows if r.get("status") == "ok" and r.get("expected_ks") is not None]
+    official = sum(1 for r in scored if r.get("lineup_source") == "official")
+    avg_ip = (
+        sum(float(r["projected_ip"]) for r in scored if r.get("projected_ip") is not None)
+        / len([r for r in scored if r.get("projected_ip") is not None])
+        if any(r.get("projected_ip") is not None for r in scored)
         else None
     )
+    avg_tto = (
+        sum(
+            float(r["times_through_order"])
+            for r in scored
+            if r.get("times_through_order") is not None
+        )
+        / len([r for r in scored if r.get("times_through_order") is not None])
+        if any(r.get("times_through_order") is not None for r in scored)
+        else None
+    )
+
+    # Prefer scored first, then missing — same as CLI rank order already in df.
+    cards = "\n".join(_render_matchup_card(r, i) for i, r in enumerate(rows))
+
+    meta_bits = [
+        ("Date", game_date),
+        ("Generated", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")),
+        ("Avg proj IP", _fmt(avg_ip, 1) if avg_ip is not None else "—"),
+        ("Avg TTO", f"{_fmt(avg_tto)}×" if avg_tto is not None else "—"),
+        ("Scored", str(len(scored))),
+        ("Official lineups", f"{official}/{len(scored)}"),
+    ]
+    meta_html = "".join(
+        f"<span class='chip'>{_esc(k)}: <strong>{_esc(v)}</strong></span>"
+        for k, v in meta_bits
+    )
+
     payload = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         "game_date": game_date,
         "batters_faced_override": batters_faced,
         "avg_projected_ip": avg_ip,
         "avg_times_through": avg_tto,
-        "rows": rows_for_html(df),
+        "row_count": len(rows),
     }
-    data_json = json.dumps(payload, ensure_ascii=False)
 
-    html = HTML_TEMPLATE.replace("__DATA_JSON__", data_json)
+    html = HTML_TEMPLATE
+    html = html.replace("__META_CHIPS__", meta_html)
+    html = html.replace("__MATCHUP_CARDS__", cards)
+    html = html.replace("__DATA_JSON__", json.dumps(payload, ensure_ascii=False))
     with open(path, "w", encoding="utf-8") as f:
         f.write(html)
 
@@ -176,18 +428,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --muted: #5c6b62;
     --line: rgba(20, 32, 26, 0.12);
     --accent: #0f6a4d;
-    --accent-2: #1a8f68;
     --warn: #9a5b12;
     --ok: #0f6a4d;
-    --panel: rgba(255, 252, 246, 0.82);
+    --panel: rgba(255, 252, 246, 0.92);
     --shadow: 0 18px 50px rgba(20, 32, 26, 0.08);
     --radius: 18px;
     --mono: "Manrope", system-ui, sans-serif;
     --display: "Archivo Black", "Arial Black", sans-serif;
   }
-
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
   body {
     margin: 0;
     min-height: 100vh;
@@ -198,19 +447,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       radial-gradient(900px 500px at 100% 0%, rgba(154, 91, 18, 0.12), transparent 50%),
       linear-gradient(165deg, var(--bg0), var(--bg1) 55%, #eef4ea);
   }
-
-  .wrap {
-    width: min(1120px, calc(100% - 2rem));
-    margin: 0 auto;
-    padding: 2.25rem 0 4rem;
-  }
-
-  .hero {
-    display: grid;
-    gap: 0.85rem;
-    margin-bottom: 1.75rem;
-    animation: rise 0.7s ease both;
-  }
+  .wrap { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; padding: 2.25rem 0 4rem; }
+  .hero { display: grid; gap: 0.85rem; margin-bottom: 1.5rem; }
   .brand {
     font-family: var(--display);
     font-size: clamp(2.6rem, 7vw, 4.4rem);
@@ -219,326 +457,171 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     margin: 0;
   }
   .brand span { color: var(--accent); }
-  .lede {
-    max-width: 38rem;
-    margin: 0;
-    color: var(--muted);
-    font-size: 1.05rem;
-    line-height: 1.45;
-  }
-  .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.55rem 0.75rem;
-    margin-top: 0.35rem;
-  }
+  .lede { max-width: 40rem; margin: 0; color: var(--muted); font-size: 1.05rem; line-height: 1.45; }
+  .meta { display: flex; flex-wrap: wrap; gap: 0.55rem 0.75rem; }
   .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.7rem;
-    border: 1px solid var(--line);
-    background: rgba(255,255,255,0.55);
-    border-radius: 999px;
-    font-size: 0.82rem;
-    color: var(--muted);
+    display: inline-flex; gap: 0.35rem; align-items: center;
+    padding: 0.35rem 0.7rem; border: 1px solid var(--line);
+    background: rgba(255,255,255,0.55); border-radius: 999px;
+    font-size: 0.82rem; color: var(--muted);
   }
-  .chip strong { color: var(--ink); font-weight: 700; }
-
+  .chip strong { color: var(--ink); }
   .controls {
     display: grid;
     grid-template-columns: 1.4fr repeat(3, auto);
     gap: 0.75rem;
     align-items: end;
     margin-bottom: 1rem;
-    animation: rise 0.8s ease both;
-    animation-delay: 0.08s;
   }
-  @media (max-width: 820px) {
-    .controls { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 540px) {
-    .controls { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 820px) { .controls { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 540px) { .controls { grid-template-columns: 1fr; } }
   label {
-    display: grid;
-    gap: 0.35rem;
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--muted);
+    display: grid; gap: 0.35rem; font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted);
   }
   input[type="search"], select {
-    width: 100%;
-    appearance: none;
-    border: 1px solid var(--line);
-    background: var(--panel);
-    color: var(--ink);
-    border-radius: 12px;
-    padding: 0.7rem 0.85rem;
-    font: inherit;
-    font-size: 0.95rem;
-    outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    width: 100%; appearance: none; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); border-radius: 12px;
+    padding: 0.7rem 0.85rem; font: inherit; font-size: 0.95rem; outline: none;
   }
-  input[type="search"]:focus, select:focus {
-    border-color: rgba(15, 106, 77, 0.45);
-    box-shadow: 0 0 0 3px rgba(15, 106, 77, 0.12);
-  }
-
   .board {
+    display: grid; gap: 0.65rem;
+  }
+  .colhead, .summary-grid {
+    display: grid;
+    grid-template-columns: 3rem minmax(9rem, 1.4fr) minmax(5rem, 0.8fr) repeat(4, minmax(3.4rem, 0.7fr)) minmax(5.5rem, 0.9fr);
+    gap: 0.55rem;
+    align-items: center;
+  }
+  .colhead {
+    padding: 0 0.85rem;
+    font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted);
+  }
+  @media (max-width: 900px) {
+    .colhead { display: none; }
+    .summary-grid {
+      grid-template-columns: 2.2rem 1fr auto;
+      grid-template-areas:
+        "rank who badge"
+        "rank game game"
+        "ks ip tto";
+    }
+    .summary-grid .rank { grid-area: rank; }
+    .summary-grid .who { grid-area: who; }
+    .summary-grid .game { grid-area: game; }
+    .summary-grid .ks { grid-area: ks; }
+    .summary-grid .num:nth-of-type(2) { grid-area: ip; }
+    .summary-grid .num:nth-of-type(3) { grid-area: tto; }
+  }
+  details.matchup {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     overflow: hidden;
-    backdrop-filter: blur(10px);
-    animation: rise 0.85s ease both;
-    animation-delay: 0.14s;
   }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  thead th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: rgba(248, 244, 236, 0.96);
-    text-align: left;
-    font-size: 0.72rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 0.85rem 0.9rem;
-    border-bottom: 1px solid var(--line);
+  details.matchup[hidden] { display: none !important; }
+  summary {
+    list-style: none;
     cursor: pointer;
-    user-select: none;
-    white-space: nowrap;
+    padding: 0.9rem 0.95rem;
   }
-  thead th:hover { color: var(--ink); }
-  thead th .arrow { opacity: 0.35; margin-left: 0.25rem; }
-  thead th.active .arrow { opacity: 1; color: var(--accent); }
-
-  tbody tr.matchup {
-    cursor: pointer;
-    transition: background 0.18s ease;
-  }
-  tbody tr.matchup:hover { background: rgba(15, 106, 77, 0.06); }
-  tbody tr.matchup.open { background: rgba(15, 106, 77, 0.09); }
-  td {
-    padding: 0.85rem 0.9rem;
-    border-bottom: 1px solid var(--line);
-    vertical-align: middle;
-    font-size: 0.95rem;
-  }
-  .rank {
-    font-family: var(--display);
-    font-size: 1.05rem;
-    color: var(--accent);
-    width: 3rem;
-  }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { background: rgba(15, 106, 77, 0.05); }
+  .rank { font-family: var(--display); color: var(--accent); font-size: 1.05rem; }
   .pitcher { font-weight: 700; }
-  .sub {
-    display: block;
-    margin-top: 0.15rem;
-    color: var(--muted);
-    font-size: 0.8rem;
-    font-weight: 500;
-  }
+  .sub { color: var(--muted); font-size: 0.8rem; margin-top: 0.12rem; }
   .num { font-variant-numeric: tabular-nums; font-weight: 700; }
   .ks { color: var(--accent); font-size: 1.05rem; }
   .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.22rem 0.55rem;
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    display: inline-flex; padding: 0.22rem 0.55rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700;
   }
-  .badge.official {
-    background: rgba(15, 106, 77, 0.12);
-    color: var(--ok);
-  }
-  .badge.prior {
-    background: rgba(154, 91, 18, 0.14);
-    color: var(--warn);
-  }
-  .badge.miss {
-    background: rgba(20, 32, 26, 0.08);
-    color: var(--muted);
-  }
-
-  tr.detail-row td {
-    padding: 0;
+  .badge.official { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
+  .badge.prior { background: rgba(154, 91, 18, 0.14); color: var(--warn); }
+  .badge.miss { background: rgba(20, 32, 26, 0.08); color: var(--muted); }
+  .detail {
+    padding: 0 1rem 1.1rem;
+    border-top: 1px solid var(--line);
     background: rgba(20, 32, 26, 0.03);
   }
-  .detail {
-    display: none;
-    padding: 0.85rem 1rem 1.1rem 1.1rem;
-    animation: expand 0.28s ease both;
-  }
-  tr.open + tr.detail-row .detail { display: block; }
   .detail-head {
-    margin: 0 0 0.75rem;
-    font-size: 0.78rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--muted);
-    line-height: 1.45;
+    margin: 0.85rem 0 0.75rem;
+    font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--muted); line-height: 1.45;
   }
   .tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    margin-bottom: 0.85rem;
+    display: grid;
+    grid-template-columns: repeat(2, max-content);
+    gap: 0.4rem 0.45rem;
+    align-items: center;
   }
+  .tabs > input { position: absolute; opacity: 0; pointer-events: none; }
   .tab {
-    border: 1px solid var(--line);
-    background: rgba(255,255,255,0.65);
-    color: var(--muted);
-    border-radius: 999px;
-    padding: 0.4rem 0.85rem;
-    font: inherit;
-    font-size: 0.82rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    display: inline-flex; align-items: center;
+    border: 1px solid var(--line); background: rgba(255,255,255,0.65);
+    color: var(--muted); border-radius: 999px; padding: 0.4rem 0.85rem;
+    font-size: 0.82rem; font-weight: 700; cursor: pointer;
   }
-  .tab:hover { color: var(--ink); border-color: rgba(15, 106, 77, 0.35); }
-  .tab.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
+  .tabs > input:checked + .tab {
+    background: var(--accent); border-color: var(--accent); color: #fff;
   }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; animation: expand 0.25s ease both; }
+  .tab-panel {
+    display: none;
+    grid-column: 1 / -1;
+    margin-top: 0.35rem;
+  }
+  .tabs > input[id$="-pitches"]:checked ~ .panel-pitches { display: block; }
+  .tabs > input[id$="-lineup"]:checked ~ .panel-lineup { display: block; }
 
   .batter-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 0.45rem 0.75rem;
   }
   .batter {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.45rem 0.55rem;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.65);
-    border: 1px solid var(--line);
-    font-size: 0.86rem;
+    display: flex; justify-content: space-between; gap: 0.5rem;
+    padding: 0.45rem 0.55rem; border-radius: 10px;
+    background: rgba(255,255,255,0.65); border: 1px solid var(--line); font-size: 0.86rem;
   }
   .batter.missing { opacity: 0.55; }
-  .batter .slot {
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-    min-width: 1.2rem;
-  }
+  .batter .slot { color: var(--muted); min-width: 1.2rem; }
   .batter .k { font-weight: 700; color: var(--accent); }
-
-  .arsenal-strip {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    margin-bottom: 0.75rem;
-  }
+  .arsenal-strip { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 0.75rem; }
   .arsenal-chip {
-    display: inline-flex;
-    flex-direction: column;
-    gap: 0.1rem;
-    min-width: 5.5rem;
-    padding: 0.45rem 0.6rem;
-    border-radius: 12px;
-    border: 1px solid var(--line);
+    display: inline-flex; flex-direction: column; gap: 0.1rem; min-width: 5.5rem;
+    padding: 0.45rem 0.6rem; border-radius: 12px; border: 1px solid var(--line);
     background: rgba(255,255,255,0.7);
   }
   .arsenal-chip .name { font-weight: 700; font-size: 0.82rem; }
   .arsenal-chip .meta { color: var(--muted); font-size: 0.72rem; }
-
   .matrix-wrap {
-    overflow-x: auto;
-    border: 1px solid var(--line);
-    border-radius: 14px;
+    overflow-x: auto; border: 1px solid var(--line); border-radius: 14px;
     background: rgba(255,255,255,0.55);
   }
-  table.matrix {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 520px;
-  }
+  table.matrix { width: 100%; border-collapse: collapse; min-width: 520px; }
   table.matrix th, table.matrix td {
-    padding: 0.55rem 0.6rem;
-    border-bottom: 1px solid var(--line);
-    border-right: 1px solid var(--line);
-    font-size: 0.82rem;
-    text-align: center;
+    padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--line);
+    border-right: 1px solid var(--line); font-size: 0.82rem; text-align: center;
     white-space: nowrap;
   }
   table.matrix th:last-child, table.matrix td:last-child { border-right: none; }
   table.matrix thead th {
-    position: static;
-    background: rgba(248, 244, 236, 0.96);
-    cursor: default;
-    text-transform: none;
-    letter-spacing: 0;
+    background: rgba(248, 244, 236, 0.96); text-align: center; color: var(--ink);
     font-size: 0.78rem;
-    color: var(--ink);
   }
   table.matrix thead th .usage {
-    display: block;
-    color: var(--muted);
-    font-weight: 500;
-    font-size: 0.7rem;
-    margin-top: 0.15rem;
+    display: block; color: var(--muted); font-weight: 500; font-size: 0.7rem; margin-top: 0.15rem;
   }
-  table.matrix td.batter-cell {
-    text-align: left;
-    font-weight: 600;
-    min-width: 9rem;
-  }
-  table.matrix td.batter-cell .slot {
-    color: var(--muted);
-    font-weight: 500;
-    margin-right: 0.25rem;
-  }
-  table.matrix td.heat {
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-  table.matrix tr.avg-row td {
-    background: rgba(15, 106, 77, 0.06);
-    font-weight: 700;
-  }
-  .hint {
-    margin: 0.65rem 0 0;
-    color: var(--muted);
-    font-size: 0.78rem;
-  }
-
-  .empty {
-    padding: 2rem 1rem;
-    text-align: center;
-    color: var(--muted);
-  }
-
-  .footnote {
-    margin-top: 1rem;
-    color: var(--muted);
-    font-size: 0.82rem;
-    line-height: 1.45;
-  }
-
-  @keyframes rise {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes expand {
-    from { opacity: 0; transform: translateY(-6px); }
-    to { opacity: 1; transform: translateY(0); }
+  table.matrix td.batter-cell { text-align: left; font-weight: 600; min-width: 9rem; }
+  table.matrix td.batter-cell .slot { color: var(--muted); font-weight: 500; margin-right: 0.25rem; }
+  table.matrix td.heat { font-weight: 700; font-variant-numeric: tabular-nums; }
+  table.matrix tr.avg-row td { background: rgba(15, 106, 77, 0.06); font-weight: 700; }
+  .hint { margin: 0.65rem 0 0; color: var(--muted); font-size: 0.78rem; }
+  .empty { padding: 1.2rem; text-align: center; color: var(--muted); }
+  .footnote { margin-top: 1rem; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
+  .noscript {
+    margin: 0 0 1rem; padding: 0.75rem 0.9rem; border-radius: 12px;
+    background: rgba(154, 91, 18, 0.12); color: #6b3f0c; font-size: 0.9rem;
   }
 </style>
 </head>
@@ -547,13 +630,20 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <header class="hero">
       <h1 class="brand">K-<span>Matchup</span></h1>
       <p class="lede">
-        Full-outing strikeout projections: each starter’s pitch mix against the
-        opposing batting order for their projected innings / times through the order.
+        Full-outing strikeout projections from each starter’s pitch mix against the
+        opposing batting order. Open a pitcher to see pitch-by-pitch K weaknesses.
       </p>
-      <div class="meta" id="meta"></div>
+      <div class="meta">__META_CHIPS__</div>
     </header>
 
-    <section class="controls">
+    <noscript>
+      <p class="noscript">
+        JavaScript is off or blocked — rankings and heatmaps still work.
+        Expand any pitcher below, then use the <strong>Pitch weaknesses</strong> tab.
+      </p>
+    </noscript>
+
+    <section class="controls" id="controls">
       <label>Search
         <input id="q" type="search" placeholder="Pitcher, team, game…" />
       </label>
@@ -576,334 +666,98 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <option value="expected_ks:desc">Expected Ks ↓</option>
           <option value="expected_ks:asc">Expected Ks ↑</option>
           <option value="projected_ip:desc">Proj IP ↓</option>
-          <option value="times_through_order:desc">TTO ↓</option>
-          <option value="expected_k_pct:desc">Lineup K% ↓</option>
+          <option value="tto:desc">TTO ↓</option>
+          <option value="kpct:desc">Lineup K% ↓</option>
           <option value="rank:asc">Rank</option>
           <option value="pitcher:asc">Pitcher A–Z</option>
         </select>
       </label>
     </section>
 
-    <div class="board">
-      <table>
-        <thead>
-          <tr>
-            <th data-key="rank"># <span class="arrow">↕</span></th>
-            <th data-key="pitcher">Pitcher <span class="arrow">↕</span></th>
-            <th data-key="game">Game <span class="arrow">↕</span></th>
-            <th data-key="expected_ks">Exp. Ks <span class="arrow">↕</span></th>
-            <th data-key="projected_ip">Proj IP <span class="arrow">↕</span></th>
-            <th data-key="times_through_order">TTO <span class="arrow">↕</span></th>
-            <th data-key="expected_k_pct">Lineup K% <span class="arrow">↕</span></th>
-            <th data-key="lineup_source">Lineup <span class="arrow">↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-      <div class="empty" id="empty" hidden>No matchups match these filters.</div>
+    <div class="colhead">
+      <div>#</div><div>Pitcher</div><div>Game</div><div>Exp. Ks</div>
+      <div>Proj IP</div><div>TTO</div><div>Lineup K%</div><div>Lineup</div>
     </div>
 
+    <div class="board" id="board">
+__MATCHUP_CARDS__
+    </div>
+    <div class="empty" id="empty" hidden>No matchups match these filters.</div>
+
     <p class="footnote">
-      <strong>Exp. Ks</strong> walks the opposing nine for the starter’s projected
-      batters faced (from season IP &amp; BF per start unless overridden).
-      Expand a pitcher for <strong>Pitch weaknesses</strong> (batter K% vs each arsenal pitch)
-      or overall lineup K%. Re-run
-      <code>python3 mlb-k-matchups/k_matchups.py --date YYYY-MM-DD --html rankings.html</code>
-      after lineups post to refresh.
+      Expand a pitcher, then open <strong>Pitch weaknesses</strong> to see each batter’s
+      K% vs every pitch in that starter’s arsenal (darker green = more K-prone).
+      If this page opened as plain text from GitHub raw, download the file and open it
+      locally, or use the HTML preview link in the README/PR.
     </p>
   </div>
 
   <script id="data" type="application/json">__DATA_JSON__</script>
   <script>
-    const DATA = JSON.parse(document.getElementById("data").textContent);
-    const state = {
-      q: "",
-      lineup: "all",
-      status: "scored",
-      sortKey: "expected_ks",
-      sortDir: "desc",
-      openId: null,
-      tabById: {},
-    };
+    (function () {
+      const board = document.getElementById("board");
+      const empty = document.getElementById("empty");
+      const q = document.getElementById("q");
+      const lineupFilter = document.getElementById("lineupFilter");
+      const statusFilter = document.getElementById("statusFilter");
+      const sort = document.getElementById("sort");
+      if (!board) return;
 
-    const el = {
-      meta: document.getElementById("meta"),
-      tbody: document.getElementById("tbody"),
-      empty: document.getElementById("empty"),
-      q: document.getElementById("q"),
-      lineupFilter: document.getElementById("lineupFilter"),
-      statusFilter: document.getElementById("statusFilter"),
-      sort: document.getElementById("sort"),
-    };
+      function apply() {
+        const query = (q.value || "").trim().toLowerCase();
+        const lineup = lineupFilter.value;
+        const status = statusFilter.value;
+        const [key, dir] = sort.value.split(":");
+        const cards = Array.from(board.querySelectorAll("details.matchup"));
+        let visible = 0;
+        cards.forEach((el) => {
+          const hay = el.dataset.search || "";
+          const src = el.dataset.lineup || "";
+          const st = el.dataset.status || "";
+          let show = true;
+          if (query && !hay.includes(query)) show = false;
+          if (lineup === "official" && src !== "official") show = false;
+          if (lineup === "prior" && !src.startsWith("prior")) show = false;
+          if (status === "scored" && st !== "scored") show = false;
+          if (status === "missing" && st !== "missing") show = false;
+          el.hidden = !show;
+          if (show) visible += 1;
+        });
+        empty.hidden = visible > 0;
 
-    function fmt(n, d = 2) {
-      if (n === null || n === undefined || Number.isNaN(n)) return "—";
-      return Number(n).toFixed(d);
-    }
-    function pct(n) {
-      if (n === null || n === undefined || Number.isNaN(n)) return "—";
-      return `${Math.round(n * 100)}%`;
-    }
-    function lineupKind(src) {
-      if (!src) return "miss";
-      if (src === "official") return "official";
-      if (String(src).startsWith("prior")) return "prior";
-      return "miss";
-    }
-    function lineupLabel(src) {
-      if (!src) return "none";
-      if (src === "official") return "official";
-      if (String(src).startsWith("prior:")) return `prior ${src.slice(6)}`;
-      return String(src);
-    }
-    function rowId(r, i) {
-      return `${r.pitcher_id || r.pitcher}-${r.opponent}-${i}`;
-    }
+        const attrKey = {
+          expected_ks: "expectedKs",
+          projected_ip: "projectedIp",
+          tto: "tto",
+          kpct: "kpct",
+          rank: "rank",
+          pitcher: "pitcher",
+        }[key] || "expectedKs";
 
-    function renderMeta() {
-      const rows = DATA.rows || [];
-      const scored = rows.filter(r => r.status === "ok" && r.expected_ks != null);
-      const official = scored.filter(r => r.lineup_source === "official").length;
-      const avgIp = DATA.avg_projected_ip != null ? Number(DATA.avg_projected_ip).toFixed(1) : "—";
-      const avgTto = DATA.avg_times_through != null ? Number(DATA.avg_times_through).toFixed(2) + "×" : "—";
-      el.meta.innerHTML = [
-        chip("Date", DATA.game_date),
-        chip("Generated", DATA.generated_at),
-        chip("Avg proj IP", avgIp),
-        chip("Avg TTO", avgTto),
-        chip("Scored", scored.length),
-        chip("Official lineups", `${official}/${scored.length}`),
-      ].join("");
-    }
-    function chip(label, value) {
-      return `<span class="chip">${label}: <strong>${value}</strong></span>`;
-    }
-
-    function filtered() {
-      let rows = [...(DATA.rows || [])];
-      const q = state.q.trim().toLowerCase();
-      if (q) {
-        rows = rows.filter(r =>
-          [r.pitcher, r.pitcher_team, r.opponent, r.game, r.lineup_source, r.status]
-            .join(" ")
-            .toLowerCase()
-            .includes(q)
-        );
-      }
-      if (state.lineup === "official") {
-        rows = rows.filter(r => r.lineup_source === "official");
-      } else if (state.lineup === "prior") {
-        rows = rows.filter(r => String(r.lineup_source || "").startsWith("prior"));
-      }
-      if (state.status === "scored") {
-        rows = rows.filter(r => r.status === "ok" && r.expected_ks != null);
-      } else if (state.status === "missing") {
-        rows = rows.filter(r => !(r.status === "ok" && r.expected_ks != null));
+        const sorted = cards.slice().sort((a, b) => {
+          let av = a.dataset[attrKey];
+          let bv = b.dataset[attrKey];
+          if (key === "pitcher") {
+            av = (av || "").toLowerCase();
+            bv = (bv || "").toLowerCase();
+            return dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+          }
+          const an = av === undefined || av === "" || av === "None" ? null : Number(av);
+          const bn = bv === undefined || bv === "" || bv === "None" ? null : Number(bv);
+          if (an == null && bn == null) return 0;
+          if (an == null) return 1;
+          if (bn == null) return -1;
+          return dir === "asc" ? an - bn : bn - an;
+        });
+        sorted.forEach((el) => board.appendChild(el));
       }
 
-      const dir = state.sortDir === "asc" ? 1 : -1;
-      const key = state.sortKey;
-      rows.sort((a, b) => {
-        const av = a[key];
-        const bv = b[key];
-        if (av == null && bv == null) return 0;
-        if (av == null) return 1;
-        if (bv == null) return -1;
-        if (typeof av === "string" || typeof bv === "string") {
-          return String(av).localeCompare(String(bv)) * dir;
-        }
-        return (av - bv) * dir;
-      });
-      return rows;
-    }
-
-    function heatStyle(k) {
-      if (k == null || Number.isNaN(k)) {
-        return { bg: "transparent", color: "var(--muted)" };
-      }
-      // Map ~8%–40% K into a green heat scale.
-      const t = Math.max(0, Math.min(1, (Number(k) - 8) / 32));
-      const alpha = 0.12 + t * 0.55;
-      return {
-        bg: `rgba(15, 106, 77, ${alpha.toFixed(3)})`,
-        color: t > 0.55 ? "#063828" : "var(--ink)",
-      };
-    }
-
-    function renderLineupPanel(r) {
-      const batters = (r.batters || []).map(b => {
-        const miss = b.status !== "ok";
-        return `<div class="batter ${miss ? "missing" : ""}">
-          <span><span class="slot">${b.slot ?? ""}.</span> ${b.batter || "—"}</span>
-          <span class="k">${miss ? "n/a" : fmt(b.expected_k_pct, 1) + "%"}</span>
-        </div>`;
-      }).join("");
-      return `<div class="batter-grid">${batters || "<div class='empty'>No batter detail</div>"}</div>
-        <p class="hint">Values are arsenal-weighted K% for each batter vs this starter’s pitch mix.</p>`;
-    }
-
-    function renderPitchPanel(r) {
-      const arsenal = r.arsenal || r.pitch_lineup_avg || [];
-      if (!arsenal.length) {
-        return `<div class="empty">No arsenal pitch breakdown available.</div>`;
-      }
-      const chips = arsenal.map(p => {
-        const avg = (r.pitch_lineup_avg || []).find(x => x.pitch_type === p.pitch_type);
-        const avgK = avg && avg.lineup_k_pct != null ? `${fmt(avg.lineup_k_pct, 1)}% lineup K` : "no lineup sample";
-        return `<div class="arsenal-chip">
-          <span class="name">${p.pitch_name || p.pitch_type}</span>
-          <span class="meta">${fmt(p.usage_pct, 1)}% usage · ${avgK}</span>
-        </div>`;
-      }).join("");
-
-      const head = `
-        <tr>
-          <th>Batter</th>
-          ${arsenal.map(p => `<th>${p.pitch_name || p.pitch_type}<span class="usage">${fmt(p.usage_pct, 1)}% usage</span></th>`).join("")}
-          <th>vs arsenal</th>
-        </tr>`;
-
-      const body = (r.batters || []).map(b => {
-        const cells = arsenal.map(p => {
-          const hit = (b.pitches || []).find(x => x.pitch_type === p.pitch_type);
-          const k = hit ? hit.k_percent : null;
-          const style = heatStyle(k);
-          const title = k == null
-            ? "No Savant sample vs this pitch"
-            : `K% ${fmt(k, 1)} · whiff ${fmt(hit.whiff_percent, 1)}% · PA ${hit.pa ?? "—"}`;
-          return `<td class="heat" style="background:${style.bg};color:${style.color}" title="${title}">${k == null ? "—" : fmt(k, 1)}</td>`;
-        }).join("");
-        const vs = b.status === "ok" ? fmt(b.expected_k_pct, 1) + "%" : "n/a";
-        return `<tr>
-          <td class="batter-cell"><span class="slot">${b.slot ?? ""}.</span>${b.batter || "—"}</td>
-          ${cells}
-          <td class="heat">${vs}</td>
-        </tr>`;
-      }).join("");
-
-      const avgRow = `<tr class="avg-row">
-        <td class="batter-cell">Lineup avg</td>
-        ${arsenal.map(p => {
-          const avg = (r.pitch_lineup_avg || []).find(x => x.pitch_type === p.pitch_type);
-          const k = avg ? avg.lineup_k_pct : null;
-          const style = heatStyle(k);
-          return `<td class="heat" style="background:${style.bg};color:${style.color}">${k == null ? "—" : fmt(k, 1)}</td>`;
-        }).join("")}
-        <td class="heat">${fmt(r.expected_k_pct, 1)}%</td>
-      </tr>`;
-
-      return `
-        <div class="arsenal-strip">${chips}</div>
-        <div class="matrix-wrap">
-          <table class="matrix">
-            <thead>${head}</thead>
-            <tbody>${body}${avgRow}</tbody>
-          </table>
-        </div>
-        <p class="hint">
-          Heat map = each batter’s strikeout rate vs that pitch type. Darker green = more K-prone.
-          Columns are only pitches this starter throws (≥ min usage).
-        </p>`;
-    }
-
-    function render() {
-      const rows = filtered();
-      el.empty.hidden = rows.length > 0;
-      el.tbody.innerHTML = rows.map((r, i) => {
-        const id = rowId(r, i);
-        const open = state.openId === id ? "open" : "";
-        const kind = lineupKind(r.lineup_source);
-        const tab = state.tabById[id] || "pitches";
-        return `
-          <tr class="matchup ${open}" data-id="${id}">
-            <td class="rank">${r.rank ?? "—"}</td>
-            <td>
-              <span class="pitcher">${r.pitcher || "—"}</span>
-              <span class="sub">${r.pitcher_team || "?"} vs ${r.opponent || "?"}${r.status && r.status !== "ok" ? " · " + r.status : ""}</span>
-            </td>
-            <td>${r.game || "—"}</td>
-            <td class="num ks">${fmt(r.expected_ks)}</td>
-            <td class="num">${fmt(r.projected_ip, 1)}</td>
-            <td class="num">${r.times_through_order == null ? "—" : fmt(r.times_through_order) + "×"}</td>
-            <td class="num">${fmt(r.expected_k_pct)}</td>
-            <td><span class="badge ${kind}">${lineupLabel(r.lineup_source)}</span></td>
-          </tr>
-          <tr class="detail-row">
-            <td colspan="8">
-              <div class="detail">
-                <p class="detail-head">
-                  Projected outing ${fmt(r.projected_ip, 1)} IP ·
-                  ${r.times_through_order == null ? "—" : fmt(r.times_through_order) + "×"} through order ·
-                  BF ${r.projected_bf ?? r.batters_faced_assumed ?? "—"}
-                  (${r.outing_source || "n/a"}) ·
-                  lineup cover ${pct(r.lineup_coverage)}
-                </p>
-                <div class="tabs" data-id="${id}">
-                  <button type="button" class="tab ${tab === "pitches" ? "active" : ""}" data-tab="pitches">Pitch weaknesses</button>
-                  <button type="button" class="tab ${tab === "lineup" ? "active" : ""}" data-tab="lineup">Lineup K%</button>
-                </div>
-                <div class="tab-panel ${tab === "pitches" ? "active" : ""}" data-panel="pitches">
-                  ${renderPitchPanel(r)}
-                </div>
-                <div class="tab-panel ${tab === "lineup" ? "active" : ""}" data-panel="lineup">
-                  ${renderLineupPanel(r)}
-                </div>
-              </div>
-            </td>
-          </tr>`;
-      }).join("");
-
-      document.querySelectorAll("thead th").forEach(th => {
-        th.classList.toggle("active", th.dataset.key === state.sortKey);
-      });
-    }
-
-    el.tbody.addEventListener("click", (e) => {
-      const tabBtn = e.target.closest(".tab");
-      if (tabBtn) {
-        e.stopPropagation();
-        const tabs = tabBtn.closest(".tabs");
-        const id = tabs.dataset.id;
-        state.tabById[id] = tabBtn.dataset.tab;
-        state.openId = id;
-        render();
-        return;
-      }
-      const tr = e.target.closest("tr.matchup");
-      if (!tr) return;
-      const id = tr.dataset.id;
-      state.openId = state.openId === id ? null : id;
-      if (state.openId && !state.tabById[state.openId]) {
-        state.tabById[state.openId] = "pitches";
-      }
-      render();
-    });
-
-    el.q.addEventListener("input", () => { state.q = el.q.value; render(); });
-    el.lineupFilter.addEventListener("change", () => { state.lineup = el.lineupFilter.value; render(); });
-    el.statusFilter.addEventListener("change", () => { state.status = el.statusFilter.value; render(); });
-    el.sort.addEventListener("change", () => {
-      const [k, d] = el.sort.value.split(":");
-      state.sortKey = k;
-      state.sortDir = d;
-      render();
-    });
-    document.querySelectorAll("thead th").forEach(th => {
-      th.addEventListener("click", () => {
-        const key = th.dataset.key;
-        if (state.sortKey === key) {
-          state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
-        } else {
-          state.sortKey = key;
-          state.sortDir = key === "pitcher" || key === "game" || key === "rank" ? "asc" : "desc";
-        }
-        el.sort.value = `${state.sortKey}:${state.sortDir}`;
-        render();
-      });
-    });
-
-    renderMeta();
-    render();
+      q.addEventListener("input", apply);
+      lineupFilter.addEventListener("change", apply);
+      statusFilter.addEventListener("change", apply);
+      sort.addEventListener("change", apply);
+      apply();
+    })();
   </script>
 </body>
 </html>

@@ -268,16 +268,28 @@ def _render_pitch_matrix(row: dict[str, Any]) -> str:
     body_rows.append("<tr class='avg-row'>" + "".join(avg_cells) + "</tr>")
 
     return (
+        "<div class='scroll-shell'>"
+        "<div class='scroll-toolbar'>"
+        "<span class='cue'>Swipe / drag sideways for more pitches →</span>"
+        "<div class='btns'>"
+        "<button type='button' class='scroll-btn' data-dir='-1' aria-label='Scroll left'>←</button>"
+        "<button type='button' class='scroll-btn' data-dir='1' aria-label='Scroll right'>→</button>"
+        "</div>"
+        "</div>"
         f"<div class='arsenal-strip'>{''.join(chips)}</div>"
-        "<div class='matrix-wrap'><table class='matrix'>"
+        "<div class='matrix-wrap'>"
+        "<table class='matrix'>"
         f"<thead><tr>{''.join(head_cells)}</tr></thead>"
         f"<tbody>{''.join(body_rows)}</tbody>"
-        "</table></div>"
+        "</table>"
+        "</div>"
         "<p class='hint'>Heat map = each batter’s strikeout rate vs that pitch type. "
         "Darker green = more K-prone. <code>†</code> = no direct sample vs that pitch, "
         "so same-handed league-average K% vs that pitch is used (more accurate than "
         "copying another pitch from the same batter). "
-        "Handedness shown as LHB/RHB next to each batter.</p>"
+        "Handedness shown as LHB/RHB next to each batter. "
+        "Use ← → or swipe inside the table to see every pitch column.</p>"
+        "</div>"
     )
 
 
@@ -495,6 +507,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     width: min(1120px, calc(100% - 2rem));
     margin: 0 auto;
     padding: 2.25rem 0 6rem;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .board,
+  details.matchup,
+  .detail,
+  .tabs,
+  .tab-panel {
+    max-width: 100%;
+    min-width: 0;
   }
   .hero { display: grid; gap: 0.85rem; margin-bottom: 1.5rem; }
   .brand {
@@ -628,6 +650,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     grid-template-columns: repeat(2, max-content);
     gap: 0.4rem 0.45rem;
     align-items: center;
+    width: 100%;
   }
   .tabs > input { position: absolute; opacity: 0; pointer-events: none; }
   .tab {
@@ -667,20 +690,67 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .arsenal-chip .name { font-weight: 700; font-size: 0.82rem; }
   .arsenal-chip .meta { color: var(--muted); font-size: 0.72rem; }
+  .scroll-shell {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .scroll-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.45rem;
+  }
+  .scroll-toolbar .cue {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .scroll-toolbar .btns {
+    display: flex;
+    gap: 0.35rem;
+  }
+  .scroll-btn {
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.85);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .scroll-btn:hover { border-color: rgba(15, 106, 77, 0.35); }
   .matrix-wrap {
-    overflow-x: auto;
-    overflow-y: visible;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: scroll;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     touch-action: pan-x pan-y;
     border: 1px solid var(--line);
     border-radius: 14px;
     background: rgba(255,255,255,0.55);
-    max-width: 100%;
+    scrollbar-gutter: stable;
+  }
+  .matrix-wrap::-webkit-scrollbar { height: 10px; }
+  .matrix-wrap::-webkit-scrollbar-thumb {
+    background: rgba(15, 106, 77, 0.35);
+    border-radius: 999px;
+  }
+  .matrix-wrap.is-dragging {
+    cursor: grabbing;
+    user-select: none;
   }
   table.matrix {
     width: max-content;
-    min-width: 100%;
+    min-width: 640px;
     border-collapse: collapse;
   }
   table.matrix th, table.matrix td {
@@ -841,6 +911,45 @@ __MATCHUP_CARDS__
       statusFilter.addEventListener("change", apply);
       sort.addEventListener("change", apply);
       apply();
+
+      // Horizontal heat-map scrolling (buttons + click-drag).
+      board.addEventListener("click", (e) => {
+        const btn = e.target.closest(".scroll-btn");
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const shell = btn.closest(".scroll-shell");
+        const scroller = shell && shell.querySelector(".matrix-wrap");
+        if (!scroller) return;
+        const dir = Number(btn.dataset.dir || 1);
+        scroller.scrollBy({ left: dir * Math.max(180, scroller.clientWidth * 0.7), behavior: "smooth" });
+      });
+
+      board.querySelectorAll(".matrix-wrap").forEach((scroller) => {
+        let dragging = false;
+        let startX = 0;
+        let startLeft = 0;
+        scroller.addEventListener("pointerdown", (e) => {
+          if (e.pointerType === "touch") return; // native swipe
+          dragging = true;
+          startX = e.clientX;
+          startLeft = scroller.scrollLeft;
+          scroller.classList.add("is-dragging");
+          scroller.setPointerCapture(e.pointerId);
+        });
+        scroller.addEventListener("pointermove", (e) => {
+          if (!dragging) return;
+          scroller.scrollLeft = startLeft - (e.clientX - startX);
+        });
+        const endDrag = (e) => {
+          if (!dragging) return;
+          dragging = false;
+          scroller.classList.remove("is-dragging");
+          try { scroller.releasePointerCapture(e.pointerId); } catch (_) {}
+        };
+        scroller.addEventListener("pointerup", endDrag);
+        scroller.addEventListener("pointercancel", endDrag);
+      });
     })();
   </script>
 </body>

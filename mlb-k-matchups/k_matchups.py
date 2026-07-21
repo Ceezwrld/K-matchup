@@ -6,10 +6,14 @@ from __future__ import annotations
 import argparse
 import sys
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from rankings_html import write_interactive_html  # noqa: E402
 
 SAVANT_URL = (
     "https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats"
@@ -614,6 +618,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Write full rankings CSV to this path",
     )
     p.add_argument(
+        "--html",
+        metavar="PATH",
+        help="Write self-contained interactive HTML rankings to this path",
+    )
+    p.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -768,6 +777,15 @@ def main(argv: list[str] | None = None) -> int:
         csv_out = out.drop(columns=["batter_detail"], errors="ignore")
         csv_out.to_csv(args.output, index=False)
         log(True, f"Wrote {args.output}")
+
+    if args.html:
+        write_interactive_html(
+            args.html,
+            out,
+            game_date=game_date,
+            batters_faced=args.batters_faced,
+        )
+        log(True, f"Wrote {args.html}")
 
     return 0
 

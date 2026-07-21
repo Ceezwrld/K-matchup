@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>K-Matchup — lineup strikeout projections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg0: #e8f0e4;
+    --bg1: #f7f3ea;
+    --ink: #14201a;
+    --muted: #5c6b62;
+    --line: rgba(20, 32, 26, 0.12);
+    --accent: #0f6a4d;
+    --accent-2: #1a8f68;
+    --warn: #9a5b12;
+    --ok: #0f6a4d;
+    --panel: rgba(255, 252, 246, 0.82);
+    --shadow: 0 18px 50px rgba(20, 32, 26, 0.08);
+    --radius: 18px;
+    --mono: "Manrope", system-ui, sans-serif;
+    --display: "Archivo Black", "Arial Black", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: var(--mono);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(15, 106, 77, 0.18), transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, rgba(154, 91, 18, 0.12), transparent 50%),
+      linear-gradient(165deg, var(--bg0), var(--bg1) 55%, #eef4ea);
+  }
+
+  .wrap {
+    width: min(1120px, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 2.25rem 0 4rem;
+  }
+
+  .hero {
+    display: grid;
+    gap: 0.85rem;
+    margin-bottom: 1.75rem;
+    animation: rise 0.7s ease both;
+  }
+  .brand {
+    font-family: var(--display);
+    font-size: clamp(2.6rem, 7vw, 4.4rem);
+    letter-spacing: -0.03em;
+    line-height: 0.92;
+    margin: 0;
+  }
+  .brand span { color: var(--accent); }
+  .lede {
+    max-width: 38rem;
+    margin: 0;
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.45;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 0.75rem;
+    margin-top: 0.35rem;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.55);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .chip strong { color: var(--ink); font-weight: 700; }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1.4fr repeat(3, auto);
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 1rem;
+    animation: rise 0.8s ease both;
+    animation-delay: 0.08s;
+  }
+  @media (max-width: 820px) {
+    .controls { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 540px) {
+    .controls { grid-template-columns: 1fr; }
+  }
+  label {
+    display: grid;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  input[type="search"], select {
+    width: 100%;
+    appearance: none;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 0.7rem 0.85rem;
+    font: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  input[type="search"]:focus, select:focus {
+    border-color: rgba(15, 106, 77, 0.45);
+    box-shadow: 0 0 0 3px rgba(15, 106, 77, 0.12);
+  }
+
+  .board {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    animation: rise 0.85s ease both;
+    animation-delay: 0.14s;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(248, 244, 236, 0.96);
+    text-align: left;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.85rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  thead th:hover { color: var(--ink); }
+  thead th .arrow { opacity: 0.35; margin-left: 0.25rem; }
+  thead th.active .arrow { opacity: 1; color: var(--accent); }
+
+  tbody tr.matchup {
+    cursor: pointer;
+    transition: background 0.18s ease;
+  }
+  tbody tr.matchup:hover { background: rgba(15, 106, 77, 0.06); }
+  tbody tr.matchup.open { background: rgba(15, 106, 77, 0.09); }
+  td {
+    padding: 0.85rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+    font-size: 0.95rem;
+  }
+  .rank {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    color: var(--accent);
+    width: 3rem;
+  }
+  .pitcher { font-weight: 700; }
+  .sub {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  .num { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .ks { color: var(--accent); font-size: 1.05rem; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .badge.official {
+    background: rgba(15, 106, 77, 0.12);
+    color: var(--ok);
+  }
+  .badge.prior {
+    background: rgba(154, 91, 18, 0.14);
+    color: var(--warn);
+  }
+  .badge.miss {
+    background: rgba(20, 32, 26, 0.08);
+    color: var(--muted);
+  }
+
+  tr.detail-row td {
+    padding: 0;
+    background: rgba(20, 32, 26, 0.03);
+  }
+  .detail {
+    display: none;
+    padding: 0.85rem 1rem 1.1rem 3.4rem;
+    animation: expand 0.28s ease both;
+  }
+  tr.open + tr.detail-row .detail { display: block; }
+  .detail h3 {
+    margin: 0 0 0.55rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .batter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.45rem 0.75rem;
+  }
+  .batter {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.65);
+    border: 1px solid var(--line);
+    font-size: 0.86rem;
+  }
+  .batter.missing { opacity: 0.55; }
+  .batter .slot {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 1.2rem;
+  }
+  .batter .k { font-weight: 700; color: var(--accent); }
+
+  .empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .footnote {
+    margin-top: 1rem;
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes expand {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1 class="brand">K-<span>Matchup</span></h1>
+      <p class="lede">
+        Expected strikeouts for today’s starters against the opposing batting order —
+        arsenal-weighted batter K rates, no league fill-in.
+      </p>
+      <div class="meta" id="meta"></div>
+    </header>
+
+    <section class="controls">
+      <label>Search
+        <input id="q" type="search" placeholder="Pitcher, team, game…" />
+      </label>
+      <label>Lineup
+        <select id="lineupFilter">
+          <option value="all">All sources</option>
+          <option value="official">Official only</option>
+          <option value="prior">Prior only</option>
+        </select>
+      </label>
+      <label>Status
+        <select id="statusFilter">
+          <option value="scored">Scored</option>
+          <option value="all">All rows</option>
+          <option value="missing">Missing / unresolved</option>
+        </select>
+      </label>
+      <label>Sort
+        <select id="sort">
+          <option value="expected_ks:desc">Expected Ks ↓</option>
+          <option value="expected_ks:asc">Expected Ks ↑</option>
+          <option value="expected_k_pct:desc">Lineup K% ↓</option>
+          <option value="rank:asc">Rank</option>
+          <option value="pitcher:asc">Pitcher A–Z</option>
+        </select>
+      </label>
+    </section>
+
+    <div class="board">
+      <table>
+        <thead>
+          <tr>
+            <th data-key="rank"># <span class="arrow">↕</span></th>
+            <th data-key="pitcher">Pitcher <span class="arrow">↕</span></th>
+            <th data-key="game">Game <span class="arrow">↕</span></th>
+            <th data-key="expected_ks">Exp. Ks <span class="arrow">↕</span></th>
+            <th data-key="expected_k_pct">K% <span class="arrow">↕</span></th>
+            <th data-key="lineup_source">Lineup <span class="arrow">↕</span></th>
+            <th data-key="lineup_coverage">Cover <span class="arrow">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden>No matchups match these filters.</div>
+    </div>
+
+    <p class="footnote">
+      Click a row to expand the opposing nine. <code>expected_ks</code> walks the batting order
+      for the assumed batters faced. Re-run
+      <code>python3 mlb-k-matchups/k_matchups.py --date YYYY-MM-DD --html rankings.html</code>
+      after lineups post to refresh.
+    </p>
+  </div>
+
+  <script id="data" type="application/json">{"generated_at": "2026-07-21 20:07 UTC", "game_date": "2026-07-21", "batters_faced": 22, "rows": [{"rank": 1, "pitcher": "Matthew Liberatore", "pitcher_id": 669461, "pitcher_team": "STL", "opponent": "LAA", "game": "STL@LAA", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 5.25070927082844, "expected_k_pct": 26.1668669526777, "expected_ks_1x": 2.0933493562142163, "expected_whiff_pct": 26.08748049331684, "lineup_batters": 9, "lineup_scored": 8, "lineup_coverage": 0.8888888888888888, "bf_scored": 20, "batters_faced_assumed": 22, "missing_batters": "Denzer Guzman", "batters": [{"slot": 1, "batter_id": 687263, "batter": "Zach Neto", "expected_k_pct": 31.68939828080229, "expected_whiff_pct": 32.07507163323782, "status": "ok"}, {"slot": 2, "batter_id": 545361, "batter": "Mike Trout", "expected_k_pct": 20.3, "expected_whiff_pct": 19.9, "status": "ok"}, {"slot": 3, "batter_id": 694384, "batter": "Nolan Schanuel", "expected_k_pct": 16.7, "expected_whiff_pct": 12.6, "status": "ok"}, {"slot": 4, "batter_id": 624585, "batter": "Jorge Soler", "expected_k_pct": 37.71165755919854, "expected_whiff_pct": 42.00309653916211, "status": "ok"}, {"slot": 5, "batter_id": 687093, "batter": "Vaughn Grissom", "expected_k_pct": 20.7, "expected_whiff_pct": 18.8, "status": "ok"}, {"slot": 6, "batter_id": 666139, "batter": "Josh Lowe", "expected_k_pct": 33.9, "expected_whiff_pct": 31.2, "status": "ok"}, {"slot": 7, "batter_id": 666176, "batter": "Jo Adell", "expected_k_pct": 25.070309653916212, "expected_whiff_pct": 27.558834244080153, "status": "ok"}, {"slot": 8, "batter_id": 694203, "batter": "Denzer Guzman", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 681351, "batter": "Logan O'Hoppe", "expected_k_pct": 23.263570127504554, "expected_whiff_pct": 24.562841530054648, "status": "ok"}]}, {"rank": 2, "pitcher": "Bubba Chandler", "pitcher_id": 696149, "pitcher_team": "PIT", "opponent": "NYY", "game": "PIT@NYY", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 4.734088588588589, "expected_k_pct": 22.246796796796797, "expected_ks_1x": 2.0022117117117118, "expected_whiff_pct": 21.59576242909576, "lineup_batters": 9, "lineup_scored": 9, "lineup_coverage": 1.0, "bf_scored": 22, "batters_faced_assumed": 22, "missing_batters": "", "batters": [{"slot": 1, "batter_id": 663757, "batter": "Trent Grisham", "expected_k_pct": 8.5, "expected_whiff_pct": 9.8, "status": "ok"}, {"slot": 2, "batter_id": 700250, "batter": "Ben Rice", "expected_k_pct": 23.366516516516516, "expected_whiff_pct": 25.1536036036036, "status": "ok"}, {"slot": 3, "batter_id": 502671, "batter": "Paul Goldschmidt", "expected_k_pct": 22.7, "expected_whiff_pct": 22.7, "status": "ok"}, {"slot": 4, "batter_id": 641355, "batter": "Cody Bellinger", "expected_k_pct": 18.4, "expected_whiff_pct": 19.2, "status": "ok"}, {"slot": 5, "batter_id": 665862, "batter": "Jazz Chisholm Jr.", "expected_k_pct": 27.75465465465465, "expected_whiff_pct": 26.808258258258256, "status": "ok"}, {"slot": 6, "batter_id": 691176, "batter": "Jasson Domínguez", "expected_k_pct": 19.2, "expected_whiff_pct": 19.4, "status": "ok"}, {"slot": 7, "batter_id": 641857, "batter": "Ryan McMahon", "expected_k_pct": 26.0, "expected_whiff_pct": 20.4, "status": "ok"}, {"slot": 8, "batter_id": 669224, "batter": "Austin Wells", "expected_k_pct": 18.2, "expected_whiff_pct": 19.0, "status": "ok"}, {"slot": 9, "batter_id": 676609, "batter": "José Caballero", "expected_k_pct": 36.1, "expected_whiff_pct": 31.899999999999995, "status": "ok"}]}, {"rank": 3, "pitcher": "Tyler Mahle", "pitcher_id": 641816, "pitcher_team": "SF", "opponent": "KC", "game": "SF@KC", "status": "ok", "lineup_source": "official", "expected_ks": 4.585999999999999, "expected_k_pct": 24.057142857142857, "expected_ks_1x": 1.6840000000000002, "expected_whiff_pct": 19.12857142857143, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 18, "batters_faced_assumed": 22, "missing_batters": "Starling Marte; Tyler Tolbert", "batters": [{"slot": 1, "batter_id": 695600, "batter": "Carter Jensen", "expected_k_pct": 34.9, "expected_whiff_pct": 30.6, "status": "ok"}, {"slot": 2, "batter_id": 657041, "batter": "Lane Thomas", "expected_k_pct": 22.1, "expected_whiff_pct": 18.0, "status": "ok"}, {"slot": 3, "batter_id": 695506, "batter": "Jac Caglianone", "expected_k_pct": 39.3, "expected_whiff_pct": 30.2, "status": "ok"}, {"slot": 4, "batter_id": 521692, "batter": "Salvador Perez", "expected_k_pct": 25.5, "expected_whiff_pct": 22.1, "status": "ok"}, {"slot": 5, "batter_id": 686469, "batter": "Vinnie Pasquantino", "expected_k_pct": 18.2, "expected_whiff_pct": 9.2, "status": "ok"}, {"slot": 6, "batter_id": 516782, "batter": "Starling Marte", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 7, "batter_id": 686681, "batter": "Michael Massey", "expected_k_pct": 17.1, "expected_whiff_pct": 17.1, "status": "ok"}, {"slot": 8, "batter_id": 679845, "batter": "Nick Loftin", "expected_k_pct": 11.3, "expected_whiff_pct": 6.7, "status": "ok"}, {"slot": 9, "batter_id": 686475, "batter": "Tyler Tolbert", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}]}, {"rank": 4, "pitcher": "Justin Wrobleski", "pitcher_id": 680736, "pitcher_team": "LAD", "opponent": "PHI", "game": "LAD@PHI", "status": "ok", "lineup_source": "official", "expected_ks": 4.442518147684606, "expected_k_pct": 24.263400679420702, "expected_ks_1x": 1.6984380475594492, "expected_whiff_pct": 25.799052386912212, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 18, "batters_faced_assumed": 22, "missing_batters": "Edmundo Sosa; Derek Hill", "batters": [{"slot": 1, "batter_id": 607208, "batter": "Trea Turner", "expected_k_pct": 23.009136420525657, "expected_whiff_pct": 29.2991239048811, "status": "ok"}, {"slot": 2, "batter_id": 656941, "batter": "Kyle Schwarber", "expected_k_pct": 39.71639549436796, "expected_whiff_pct": 33.142803504380474, "status": "ok"}, {"slot": 3, "batter_id": 547180, "batter": "Bryce Harper", "expected_k_pct": 25.326408010012514, "expected_whiff_pct": 36.12052565707134, "status": "ok"}, {"slot": 4, "batter_id": 664761, "batter": "Alec Bohm", "expected_k_pct": 16.51226533166458, "expected_whiff_pct": 19.24217772215269, "status": "ok"}, {"slot": 5, "batter_id": 624641, "batter": "Edmundo Sosa", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 6, "batter_id": 592663, "batter": "J.T. Realmuto", "expected_k_pct": 18.0, "expected_whiff_pct": 17.8, "status": "ok"}, {"slot": 7, "batter_id": 669016, "batter": "Brandon Marsh", "expected_k_pct": 25.779599499374218, "expected_whiff_pct": 24.28873591989987, "status": "ok"}, {"slot": 8, "batter_id": 656537, "batter": "Derek Hill", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 681082, "batter": "Bryson Stott", "expected_k_pct": 21.5, "expected_whiff_pct": 20.7, "status": "ok"}]}, {"rank": 5, "pitcher": "David Peterson", "pitcher_id": 656849, "pitcher_team": "CHC", "opponent": "DET", "game": "DET@CHC", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 4.402865642994242, "expected_k_pct": 20.516506717850287, "expected_ks_1x": 1.8464856046065259, "expected_whiff_pct": 18.404862444017915, "lineup_batters": 9, "lineup_scored": 9, "lineup_coverage": 1.0, "bf_scored": 22, "batters_faced_assumed": 22, "missing_batters": "", "batters": [{"slot": 1, "batter_id": 805808, "batter": "Kevin McGonigle", "expected_k_pct": 9.775431861804224, "expected_whiff_pct": 8.973512476007677, "status": "ok"}, {"slot": 2, "batter_id": 650402, "batter": "Gleyber Torres", "expected_k_pct": 22.7, "expected_whiff_pct": 25.0, "status": "ok"}, {"slot": 3, "batter_id": 690993, "batter": "Colt Keith", "expected_k_pct": 17.6, "expected_whiff_pct": 11.0, "status": "ok"}, {"slot": 4, "batter_id": 682985, "batter": "Riley Greene", "expected_k_pct": 20.91401151631478, "expected_whiff_pct": 16.42898272552783, "status": "ok"}, {"slot": 5, "batter_id": 693307, "batter": "Dillon Dingler", "expected_k_pct": 13.880038387715933, "expected_whiff_pct": 14.16122840690979, "status": "ok"}, {"slot": 6, "batter_id": 681481, "batter": "Kerry Carpenter", "expected_k_pct": 26.0, "expected_whiff_pct": 26.700000000000003, "status": "ok"}, {"slot": 7, "batter_id": 679529, "batter": "Spencer Torkelson", "expected_k_pct": 20.97907869481766, "expected_whiff_pct": 18.980038387715933, "status": "ok"}, {"slot": 8, "batter_id": 656716, "batter": "Zach McKinstry", "expected_k_pct": 18.8, "expected_whiff_pct": 13.299999999999999, "status": "ok"}, {"slot": 9, "batter_id": 681546, "batter": "James Outman", "expected_k_pct": 34.0, "expected_whiff_pct": 31.1, "status": "ok"}]}, {"rank": 6, "pitcher": "Reynaldo López", "pitcher_id": 625643, "pitcher_team": "ATL", "opponent": "SD", "game": "SD@ATL", "status": "ok", "lineup_source": "official", "expected_ks": 4.358321554770317, "expected_k_pct": 21.247173144876324, "expected_ks_1x": 1.699773851590106, "expected_whiff_pct": 22.39474381625442, "lineup_batters": 9, "lineup_scored": 8, "lineup_coverage": 0.8888888888888888, "bf_scored": 20, "batters_faced_assumed": 22, "missing_batters": "Luis Campusano", "batters": [{"slot": 1, "batter_id": 665487, "batter": "Fernando Tatis Jr.", "expected_k_pct": 24.14263839811543, "expected_whiff_pct": 30.075736160188455, "status": "ok"}, {"slot": 2, "batter_id": 630105, "batter": "Jake Cronenworth", "expected_k_pct": 13.8, "expected_whiff_pct": 12.1, "status": "ok"}, {"slot": 3, "batter_id": 592518, "batter": "Manny Machado", "expected_k_pct": 22.534746760895167, "expected_whiff_pct": 27.58221436984688, "status": "ok"}, {"slot": 4, "batter_id": 664034, "batter": "Ty France", "expected_k_pct": 35.4, "expected_whiff_pct": 34.0, "status": "ok"}, {"slot": 5, "batter_id": 701538, "batter": "Jackson Merrill", "expected_k_pct": 31.799999999999997, "expected_whiff_pct": 30.700000000000003, "status": "ok"}, {"slot": 6, "batter_id": 669134, "batter": "Luis Campusano", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 7, "batter_id": 657757, "batter": "Gavin Sheets", "expected_k_pct": 13.0, "expected_whiff_pct": 15.1, "status": "ok"}, {"slot": 8, "batter_id": 593428, "batter": "Xander Bogaerts", "expected_k_pct": 13.8, "expected_whiff_pct": 14.7, "status": "ok"}, {"slot": 9, "batter_id": 650859, "batter": "Luis Rengifo", "expected_k_pct": 15.5, "expected_whiff_pct": 14.9, "status": "ok"}]}, {"rank": 7, "pitcher": "Chase Burns", "pitcher_id": 695505, "pitcher_team": "CIN", "opponent": "SEA", "game": "CIN@SEA", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 4.2977762460233295, "expected_k_pct": 23.717982123920617, "expected_ks_1x": 1.6602587486744431, "expected_whiff_pct": 25.27509468262384, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 18, "batters_faced_assumed": 22, "missing_batters": "Victor Robles; Buddy Kennedy", "batters": [{"slot": 1, "batter_id": 668227, "batter": "Randy Arozarena", "expected_k_pct": 26.523011664899258, "expected_whiff_pct": 32.88441145281018, "status": "ok"}, {"slot": 2, "batter_id": 677594, "batter": "Julio Rodríguez", "expected_k_pct": 22.402863202545063, "expected_whiff_pct": 29.441251325556735, "status": "ok"}, {"slot": 3, "batter_id": 686527, "batter": "Dominic Canzone", "expected_k_pct": 15.2, "expected_whiff_pct": 18.7, "status": "ok"}, {"slot": 4, "batter_id": 663728, "batter": "Cal Raleigh", "expected_k_pct": 33.6, "expected_whiff_pct": 30.999999999999996, "status": "ok"}, {"slot": 5, "batter_id": 647304, "batter": "Josh Naylor", "expected_k_pct": 5.2, "expected_whiff_pct": 7.2, "status": "ok"}, {"slot": 6, "batter_id": 702284, "batter": "Cole Young", "expected_k_pct": 15.000000000000002, "expected_whiff_pct": 17.4, "status": "ok"}, {"slot": 7, "batter_id": 645302, "batter": "Victor Robles", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 671083, "batter": "Buddy Kennedy", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 806068, "batter": "Colt Emerson", "expected_k_pct": 48.1, "expected_whiff_pct": 40.3, "status": "ok"}]}, {"rank": 8, "pitcher": "Kumar Rocker", "pitcher_id": 677958, "pitcher_team": "TEX", "opponent": "CWS", "game": "CWS@TEX", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 4.238359124087592, "expected_k_pct": 22.909718456725756, "expected_ks_1x": 1.6036802919708029, "expected_whiff_pct": 26.69837330552659, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 18, "batters_faced_assumed": 22, "missing_batters": "Kyle Teel; Braden Montgomery", "batters": [{"slot": 1, "batter_id": 803011, "batter": "Sam Antonacci", "expected_k_pct": 11.9, "expected_whiff_pct": 10.6, "status": "ok"}, {"slot": 2, "batter_id": 808959, "batter": "Munetaka Murakami", "expected_k_pct": 41.5, "expected_whiff_pct": 54.1, "status": "ok"}, {"slot": 3, "batter_id": 678246, "batter": "Miguel Vargas", "expected_k_pct": 15.344525547445256, "expected_whiff_pct": 18.02160583941606, "status": "ok"}, {"slot": 4, "batter_id": 695657, "batter": "Colson Montgomery", "expected_k_pct": 34.355328467153285, "expected_whiff_pct": 39.1814598540146, "status": "ok"}, {"slot": 5, "batter_id": 643217, "batter": "Andrew Benintendi", "expected_k_pct": 27.974306569343064, "expected_whiff_pct": 31.915036496350368, "status": "ok"}, {"slot": 6, "batter_id": 691019, "batter": "Kyle Teel", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 7, "batter_id": 695731, "batter": "Braden Montgomery", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 671976, "batter": "Tristan Peters", "expected_k_pct": 5.9, "expected_whiff_pct": 14.8, "status": "ok"}, {"slot": 9, "batter_id": 805367, "batter": "Chase Meidroth", "expected_k_pct": 23.393868613138686, "expected_whiff_pct": 18.270510948905113, "status": "ok"}]}, {"rank": 9, "pitcher": "Kyle Bradish", "pitcher_id": 680694, "pitcher_team": "BAL", "opponent": "BOS", "game": "BAL@BOS", "status": "ok", "lineup_source": "official", "expected_ks": 4.005705216850573, "expected_k_pct": 22.174716075476525, "expected_ks_1x": 1.773977286038122, "expected_whiff_pct": 20.74936008793981, "lineup_batters": 9, "lineup_scored": 8, "lineup_coverage": 0.8888888888888888, "bf_scored": 19, "batters_faced_assumed": 22, "missing_batters": "Anthony Seigler", "batters": [{"slot": 1, "batter_id": 678011, "batter": "Anthony Seigler", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 2, "batter_id": 678882, "batter": "Ceddanne Rafaela", "expected_k_pct": 16.52534113060429, "expected_whiff_pct": 18.211306042884992, "status": "ok"}, {"slot": 3, "batter_id": 677800, "batter": "Wilyer Abreu", "expected_k_pct": 16.66551282051282, "expected_whiff_pct": 22.759743589743586, "status": "ok"}, {"slot": 4, "batter_id": 575929, "batter": "Willson Contreras", "expected_k_pct": 12.584210526315792, "expected_whiff_pct": 16.330994152046785, "status": "ok"}, {"slot": 5, "batter_id": 807799, "batter": "Masataka Yoshida", "expected_k_pct": 8.8, "expected_whiff_pct": 7.0, "status": "ok"}, {"slot": 6, "batter_id": 702332, "batter": "Caleb Durbin", "expected_k_pct": 10.070175438596491, "expected_whiff_pct": 7.502339181286551, "status": "ok"}, {"slot": 7, "batter_id": 680776, "batter": "Jarren Duran", "expected_k_pct": 42.952488687782804, "expected_whiff_pct": 42.39049773755656, "status": "ok"}, {"slot": 8, "batter_id": 655316, "batter": "Andruw Monasterio", "expected_k_pct": 25.4, "expected_whiff_pct": 18.0, "status": "ok"}, {"slot": 9, "batter_id": 665966, "batter": "Carlos Narváez", "expected_k_pct": 44.4, "expected_whiff_pct": 33.8, "status": "ok"}]}, {"rank": 10, "pitcher": "Luis Castillo", "pitcher_id": 622491, "pitcher_team": "SEA", "opponent": "CIN", "game": "CIN@SEA", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 3.9760657831545725, "expected_k_pct": 21.8701757223117, "expected_ks_1x": 1.530912300561819, "expected_whiff_pct": 22.23425093137399, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 18, "batters_faced_assumed": 22, "missing_batters": "Dane Myers; Edwin Arroyo", "batters": [{"slot": 1, "batter_id": 682829, "batter": "Elly De La Cruz", "expected_k_pct": 25.918864774624375, "expected_whiff_pct": 17.21135225375626, "status": "ok"}, {"slot": 2, "batter_id": 701398, "batter": "Sal Stewart", "expected_k_pct": 22.658675799086758, "expected_whiff_pct": 29.21872146118721, "status": "ok"}, {"slot": 3, "batter_id": 668709, "batter": "JJ Bleday", "expected_k_pct": 16.3, "expected_whiff_pct": 16.2, "status": "ok"}, {"slot": 4, "batter_id": 668715, "batter": "Spencer Steer", "expected_k_pct": 26.546577629382305, "expected_whiff_pct": 26.49565943238731, "status": "ok"}, {"slot": 5, "batter_id": 553993, "batter": "Eugenio Suárez", "expected_k_pct": 28.782971619365604, "expected_whiff_pct": 29.47462437395659, "status": "ok"}, {"slot": 6, "batter_id": 663886, "batter": "Tyler Stephenson", "expected_k_pct": 21.78414023372287, "expected_whiff_pct": 22.53939899833055, "status": "ok"}, {"slot": 7, "batter_id": 667472, "batter": "Dane Myers", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 695490, "batter": "Edwin Arroyo", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 663647, "batter": "Ke'Bryan Hayes", "expected_k_pct": 11.1, "expected_whiff_pct": 14.5, "status": "ok"}]}, {"rank": 11, "pitcher": "Kevin Gausman", "pitcher_id": 592332, "pitcher_team": "TOR", "opponent": "TB", "game": "TB@TOR", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 3.888, "expected_k_pct": 18.575, "expected_ks_1x": 1.486, "expected_whiff_pct": 18.8, "lineup_batters": 9, "lineup_scored": 8, "lineup_coverage": 0.8888888888888888, "bf_scored": 20, "batters_faced_assumed": 22, "missing_batters": "Victor Mesa Jr.", "batters": [{"slot": 1, "batter_id": 650490, "batter": "Yandy Díaz", "expected_k_pct": 24.8, "expected_whiff_pct": 19.2, "status": "ok"}, {"slot": 2, "batter_id": 666018, "batter": "Jonathan Aranda", "expected_k_pct": 24.5, "expected_whiff_pct": 25.2, "status": "ok"}, {"slot": 3, "batter_id": 691406, "batter": "Junior Caminero", "expected_k_pct": 20.5, "expected_whiff_pct": 23.4, "status": "ok"}, {"slot": 4, "batter_id": 656775, "batter": "Cedric Mullins", "expected_k_pct": 21.8, "expected_whiff_pct": 24.8, "status": "ok"}, {"slot": 5, "batter_id": 802415, "batter": "Chandler Simpson", "expected_k_pct": 5.8, "expected_whiff_pct": 5.4, "status": "ok"}, {"slot": 6, "batter_id": 683748, "batter": "Victor Mesa Jr.", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 7, "batter_id": 680700, "batter": "Richie Palacios", "expected_k_pct": 14.900000000000002, "expected_whiff_pct": 16.4, "status": "ok"}, {"slot": 8, "batter_id": 663743, "batter": "Nick Fortes", "expected_k_pct": 15.9, "expected_whiff_pct": 15.000000000000002, "status": "ok"}, {"slot": 9, "batter_id": 670764, "batter": "Taylor Walls", "expected_k_pct": 20.4, "expected_whiff_pct": 21.0, "status": "ok"}]}, {"rank": 12, "pitcher": "Luinder Avila", "pitcher_id": 679883, "pitcher_team": "KC", "opponent": "SF", "game": "SF@KC", "status": "ok", "lineup_source": "official", "expected_ks": 3.6688750722443575, "expected_k_pct": 19.77388206652107, "expected_ks_1x": 1.384171744656475, "expected_whiff_pct": 21.36823648509921, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 18, "batters_faced_assumed": 22, "missing_batters": "Jesus Rodriguez; Christian Koss", "batters": [{"slot": 1, "batter_id": 671218, "batter": "Heliot Ramos", "expected_k_pct": 27.13415559772296, "expected_whiff_pct": 24.581024667931686, "status": "ok"}, {"slot": 2, "batter_id": 805811, "batter": "Bryce Eldridge", "expected_k_pct": 16.4, "expected_whiff_pct": 14.8, "status": "ok"}, {"slot": 3, "batter_id": 669477, "batter": "Casey Schmitt", "expected_k_pct": 17.975741239892184, "expected_whiff_pct": 18.494609164420485, "status": "ok"}, {"slot": 4, "batter_id": 646240, "batter": "Rafael Devers", "expected_k_pct": 28.543261455525606, "expected_whiff_pct": 29.398247978436657, "status": "ok"}, {"slot": 5, "batter_id": 642715, "batter": "Willy Adames", "expected_k_pct": 26.195283018867926, "expected_whiff_pct": 28.11388140161725, "status": "ok"}, {"slot": 6, "batter_id": 808982, "batter": "Jung Hoo Lee", "expected_k_pct": 8.868733153638814, "expected_whiff_pct": 13.38989218328841, "status": "ok"}, {"slot": 7, "batter_id": 683679, "batter": "Jesus Rodriguez", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 687551, "batter": "Drew Gilbert", "expected_k_pct": 13.3, "expected_whiff_pct": 20.8, "status": "ok"}, {"slot": 9, "batter_id": 683766, "batter": "Christian Koss", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}]}, {"rank": 13, "pitcher": "Will Warren", "pitcher_id": 701542, "pitcher_team": "NYY", "opponent": "PIT", "game": "PIT@NYY", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 3.333150684931507, "expected_k_pct": 19.77825614263971, "expected_ks_1x": 1.3844779299847796, "expected_whiff_pct": 19.287779952163515, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 17, "batters_faced_assumed": 22, "missing_batters": "Esmerlyn Valdez; Billy Cook", "batters": [{"slot": 1, "batter_id": 693304, "batter": "Nick Gonzales", "expected_k_pct": 16.543987823439878, "expected_whiff_pct": 19.851598173515985, "status": "ok"}, {"slot": 2, "batter_id": 664040, "batter": "Brandon Lowe", "expected_k_pct": 22.571537290715376, "expected_whiff_pct": 27.4765601217656, "status": "ok"}, {"slot": 3, "batter_id": 668804, "batter": "Bryan Reynolds", "expected_k_pct": 17.303957382039574, "expected_whiff_pct": 20.412785388127855, "status": "ok"}, {"slot": 4, "batter_id": 699013, "batter": "Esmerlyn Valdez", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 5, "batter_id": 656811, "batter": "Ryan O'Hearn", "expected_k_pct": 15.226179604261798, "expected_whiff_pct": 12.298782343987824, "status": "ok"}, {"slot": 6, "batter_id": 542303, "batter": "Marcell Ozuna", "expected_k_pct": 18.74261796042618, "expected_whiff_pct": 16.051598173515984, "status": "ok"}, {"slot": 7, "batter_id": 669707, "batter": "Jared Triolo", "expected_k_pct": 23.5, "expected_whiff_pct": 15.3, "status": "ok"}, {"slot": 8, "batter_id": 680779, "batter": "Henry Davis", "expected_k_pct": 24.55951293759513, "expected_whiff_pct": 23.623135464231353, "status": "ok"}, {"slot": 9, "batter_id": 695257, "batter": "Billy Cook", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}]}, {"rank": 14, "pitcher": "Walker Buehler", "pitcher_id": 621111, "pitcher_team": "SD", "opponent": "ATL", "game": "SD@ATL", "status": "ok", "lineup_source": "official", "expected_ks": 3.1977259247448977, "expected_k_pct": 17.695718689261415, "expected_ks_1x": 1.238700308248299, "expected_whiff_pct": 18.58544399902818, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 18, "batters_faced_assumed": 22, "missing_batters": "Brewer Hicklen; Jim Jarvis", "batters": [{"slot": 1, "batter_id": 686948, "batter": "Drake Baldwin", "expected_k_pct": 13.472916666666665, "expected_whiff_pct": 14.445312499999998, "status": "ok"}, {"slot": 2, "batter_id": 645277, "batter": "Ozzie Albies", "expected_k_pct": 13.801020408163263, "expected_whiff_pct": 17.69081632653061, "status": "ok"}, {"slot": 3, "batter_id": 621566, "batter": "Matt Olson", "expected_k_pct": 21.50208333333333, "expected_whiff_pct": 19.579427083333332, "status": "ok"}, {"slot": 4, "batter_id": 663586, "batter": "Austin Riley", "expected_k_pct": 23.256510416666664, "expected_whiff_pct": 23.422135416666663, "status": "ok"}, {"slot": 5, "batter_id": 671739, "batter": "Michael Harris II", "expected_k_pct": 14.186979166666664, "expected_whiff_pct": 17.807291666666664, "status": "ok"}, {"slot": 6, "batter_id": 643289, "batter": "Mauricio Dubón", "expected_k_pct": 16.35052083333333, "expected_whiff_pct": 14.453124999999998, "status": "ok"}, {"slot": 7, "batter_id": 573262, "batter": "Mike Yastrzemski", "expected_k_pct": 21.3, "expected_whiff_pct": 22.7, "status": "ok"}, {"slot": 8, "batter_id": 676551, "batter": "Brewer Hicklen", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 805347, "batter": "Jim Jarvis", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}]}, {"rank": 15, "pitcher": "Parker Messick", "pitcher_id": 800048, "pitcher_team": "CLE", "opponent": "MIN", "game": "MIN@CLE", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 3.101372313498701, "expected_k_pct": 17.359063655865437, "expected_ks_1x": 1.2151344559105806, "expected_whiff_pct": 20.44819509311288, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 18, "batters_faced_assumed": 22, "missing_batters": "Alan Roden; Ryan Kreidler", "batters": [{"slot": 1, "batter_id": 663616, "batter": "Trevor Larnach", "expected_k_pct": 8.1, "expected_whiff_pct": 11.9, "status": "ok"}, {"slot": 2, "batter_id": 621439, "batter": "Byron Buxton", "expected_k_pct": 21.497297297297298, "expected_whiff_pct": 24.705405405405404, "status": "ok"}, {"slot": 3, "batter_id": 665019, "batter": "Kody Clemens", "expected_k_pct": 17.594594594594593, "expected_whiff_pct": 22.65945945945946, "status": "ok"}, {"slot": 4, "batter_id": 605137, "batter": "Josh Bell", "expected_k_pct": 19.91844827586207, "expected_whiff_pct": 22.504310344827587, "status": "ok"}, {"slot": 5, "batter_id": 668904, "batter": "Royce Lewis", "expected_k_pct": 23.822972972972977, "expected_whiff_pct": 28.11891891891892, "status": "ok"}, {"slot": 6, "batter_id": 605170, "batter": "Victor Caratini", "expected_k_pct": 13.9, "expected_whiff_pct": 13.2, "status": "ok"}, {"slot": 7, "batter_id": 686797, "batter": "Brooks Lee", "expected_k_pct": 16.680132450331126, "expected_whiff_pct": 20.049271523178803, "status": "ok"}, {"slot": 8, "batter_id": 702176, "batter": "Alan Roden", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 668952, "batter": "Ryan Kreidler", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}]}, {"rank": 16, "pitcher": "Drew Rasmussen", "pitcher_id": 656876, "pitcher_team": "TB", "opponent": "TOR", "game": "TB@TOR", "status": "ok", "lineup_source": "official", "expected_ks": 3.0644918032786883, "expected_k_pct": 16.31188524590164, "expected_ks_1x": 1.3049508196721311, "expected_whiff_pct": 18.43268442622951, "lineup_batters": 9, "lineup_scored": 8, "lineup_coverage": 0.8888888888888888, "bf_scored": 20, "batters_faced_assumed": 22, "missing_batters": "Jonatan Clase", "batters": [{"slot": 1, "batter_id": 664770, "batter": "Nathan Lukes", "expected_k_pct": 16.2, "expected_whiff_pct": 19.8, "status": "ok"}, {"slot": 2, "batter_id": 665489, "batter": "Vladimir Guerrero Jr.", "expected_k_pct": 10.507377049180327, "expected_whiff_pct": 14.066393442622951, "status": "ok"}, {"slot": 3, "batter_id": 676391, "batter": "Ernie Clement", "expected_k_pct": 4.651639344262295, "expected_whiff_pct": 8.852459016393443, "status": "ok"}, {"slot": 4, "batter_id": 543807, "batter": "George Springer", "expected_k_pct": 14.1, "expected_whiff_pct": 17.803278688524593, "status": "ok"}, {"slot": 5, "batter_id": 662139, "batter": "Daulton Varsho", "expected_k_pct": 21.35573770491803, "expected_whiff_pct": 19.072131147540983, "status": "ok"}, {"slot": 6, "batter_id": 672960, "batter": "Kazuma Okamoto", "expected_k_pct": 22.027049180327868, "expected_whiff_pct": 26.575409836065575, "status": "ok"}, {"slot": 7, "batter_id": 678218, "batter": "Brandon Valenzuela", "expected_k_pct": 26.8, "expected_whiff_pct": 20.3, "status": "ok"}, {"slot": 8, "batter_id": 665926, "batter": "Andrés Giménez", "expected_k_pct": 14.85327868852459, "expected_whiff_pct": 20.991803278688526, "status": "ok"}, {"slot": 9, "batter_id": 682729, "batter": "Jonatan Clase", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}]}, {"rank": 17, "pitcher": "Framber Valdez", "pitcher_id": 664285, "pitcher_team": "DET", "opponent": "CHC", "game": "DET@CHC", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 3.0485938931297705, "expected_k_pct": 17.150447110141766, "expected_ks_1x": 1.2005312977099236, "expected_whiff_pct": 18.71083969465649, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 18, "batters_faced_assumed": 22, "missing_batters": "Pedro Ramírez; Miguel Amaya", "batters": [{"slot": 1, "batter_id": 691718, "batter": "Pete Crow-Armstrong", "expected_k_pct": 17.26885496183206, "expected_whiff_pct": 21.219236641221375, "status": "ok"}, {"slot": 2, "batter_id": 673548, "batter": "Seiya Suzuki", "expected_k_pct": 21.1, "expected_whiff_pct": 14.2, "status": "ok"}, {"slot": 3, "batter_id": 683737, "batter": "Michael Busch", "expected_k_pct": 21.88427480916031, "expected_whiff_pct": 25.956641221374046, "status": "ok"}, {"slot": 4, "batter_id": 608324, "batter": "Alex Bregman", "expected_k_pct": 4.5, "expected_whiff_pct": 5.1, "status": "ok"}, {"slot": 5, "batter_id": 664023, "batter": "Ian Happ", "expected_k_pct": 32.0, "expected_whiff_pct": 40.3, "status": "ok"}, {"slot": 6, "batter_id": 663538, "batter": "Nico Hoerner", "expected_k_pct": 6.1, "expected_whiff_pct": 3.5, "status": "ok"}, {"slot": 7, "batter_id": 699393, "batter": "Pedro Ramírez", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 621020, "batter": "Dansby Swanson", "expected_k_pct": 17.2, "expected_whiff_pct": 20.7, "status": "ok"}, {"slot": 9, "batter_id": 665804, "batter": "Miguel Amaya", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}]}, {"rank": 18, "pitcher": "Michael Lorenzen", "pitcher_id": 547179, "pitcher_team": "COL", "opponent": "WSH", "game": "WSH@COL", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 2.9631888078443356, "expected_k_pct": 17.39621703123513, "expected_ks_1x": 1.217735192186459, "expected_whiff_pct": 17.850274300537198, "lineup_batters": 9, "lineup_scored": 7, "lineup_coverage": 0.7777777777777778, "bf_scored": 17, "batters_faced_assumed": 22, "missing_batters": "Andrés Chaparro; Harry Ford", "batters": [{"slot": 1, "batter_id": 695578, "batter": "James Wood", "expected_k_pct": 21.718544194107455, "expected_whiff_pct": 20.973483535528597, "status": "ok"}, {"slot": 2, "batter_id": 678554, "batter": "Curtis Mead", "expected_k_pct": 17.26622691292876, "expected_whiff_pct": 12.459366754617415, "status": "ok"}, {"slot": 3, "batter_id": 665953, "batter": "Andrés Chaparro", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 4, "batter_id": 682928, "batter": "CJ Abrams", "expected_k_pct": 13.787071240105542, "expected_whiff_pct": 18.481530343007915, "status": "ok"}, {"slot": 5, "batter_id": 686611, "batter": "Dylan Crews", "expected_k_pct": 18.32664907651715, "expected_whiff_pct": 20.5532981530343, "status": "ok"}, {"slot": 6, "batter_id": 696285, "batter": "Jacob Young", "expected_k_pct": 14.682058047493404, "expected_whiff_pct": 11.482058047493403, "status": "ok"}, {"slot": 7, "batter_id": 695670, "batter": "Harry Ford", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 671277, "batter": "Luis García Jr.", "expected_k_pct": 14.334488734835356, "expected_whiff_pct": 17.296360485268632, "status": "ok"}, {"slot": 9, "batter_id": 683083, "batter": "Nasim Nuñez", "expected_k_pct": 21.658481012658225, "expected_whiff_pct": 23.705822784810124, "status": "ok"}]}, {"rank": 19, "pitcher": "Noah Schultz", "pitcher_id": 702273, "pitcher_team": "CWS", "opponent": "TEX", "game": "CWS@TEX", "status": "ok", "lineup_source": "official", "expected_ks": 2.926091476091476, "expected_k_pct": 19.420790020790022, "expected_ks_1x": 1.1652474012474014, "expected_whiff_pct": 18.974151074151074, "lineup_batters": 9, "lineup_scored": 6, "lineup_coverage": 0.6666666666666666, "bf_scored": 15, "batters_faced_assumed": 22, "missing_batters": "Justin Foscue; Cam Cauley; Elias Díaz", "batters": [{"slot": 1, "batter_id": 694671, "batter": "Wyatt Langford", "expected_k_pct": 24.6, "expected_whiff_pct": 19.8, "status": "ok"}, {"slot": 2, "batter_id": 679822, "batter": "Justin Foscue", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 3, "batter_id": 673962, "batter": "Josh Jung", "expected_k_pct": 17.293347193347195, "expected_whiff_pct": 12.421413721413721, "status": "ok"}, {"slot": 4, "batter_id": 607043, "batter": "Brandon Nimmo", "expected_k_pct": 17.66632016632017, "expected_whiff_pct": 18.485446985446984, "status": "ok"}, {"slot": 5, "batter_id": 669394, "batter": "Jake Burger", "expected_k_pct": 20.667151767151765, "expected_whiff_pct": 24.706444906444908, "status": "ok"}, {"slot": 6, "batter_id": 677649, "batter": "Ezequiel Duran", "expected_k_pct": 19.597920997920998, "expected_whiff_pct": 22.931600831600832, "status": "ok"}, {"slot": 7, "batter_id": 695508, "batter": "Cam Cauley", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 553869, "batter": "Elias Díaz", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 696030, "batter": "Alejandro Osuna", "expected_k_pct": 16.7, "expected_whiff_pct": 15.5, "status": "ok"}]}, {"rank": 20, "pitcher": "Zack Wheeler", "pitcher_id": 554430, "pitcher_team": "PHI", "opponent": "LAD", "game": "LAD@PHI", "status": "ok", "lineup_source": "official", "expected_ks": 2.8601398058252427, "expected_k_pct": 17.445728155339804, "expected_ks_1x": 1.0467436893203883, "expected_whiff_pct": 18.332135922330096, "lineup_batters": 9, "lineup_scored": 6, "lineup_coverage": 0.6666666666666666, "bf_scored": 16, "batters_faced_assumed": 22, "missing_batters": "Tommy Edman; Alex Call; Eliezer Alfonzo", "batters": [{"slot": 1, "batter_id": 660271, "batter": "Shohei Ohtani", "expected_k_pct": 21.77495145631068, "expected_whiff_pct": 22.65514563106796, "status": "ok"}, {"slot": 2, "batter_id": 681624, "batter": "Andy Pages", "expected_k_pct": 20.82563106796116, "expected_whiff_pct": 20.661747572815536, "status": "ok"}, {"slot": 3, "batter_id": 518692, "batter": "Freddie Freeman", "expected_k_pct": 17.064660194174753, "expected_whiff_pct": 19.60912621359223, "status": "ok"}, {"slot": 4, "batter_id": 571970, "batter": "Max Muncy", "expected_k_pct": 17.0, "expected_whiff_pct": 18.2, "status": "ok"}, {"slot": 5, "batter_id": 605141, "batter": "Mookie Betts", "expected_k_pct": 8.809126213592233, "expected_whiff_pct": 6.466796116504854, "status": "ok"}, {"slot": 6, "batter_id": 663656, "batter": "Kyle Tucker", "expected_k_pct": 19.2, "expected_whiff_pct": 22.4, "status": "ok"}, {"slot": 7, "batter_id": 669242, "batter": "Tommy Edman", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 669743, "batter": "Alex Call", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 672613, "batter": "Eliezer Alfonzo", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}]}, {"rank": 21, "pitcher": "Brandon Sproat", "pitcher_id": 687075, "pitcher_team": "MIL", "opponent": "NYM", "game": "NYM@MIL", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 2.7247573221757326, "expected_k_pct": 17.895990237099024, "expected_ks_1x": 1.0737594142259415, "expected_whiff_pct": 18.41698047419805, "lineup_batters": 9, "lineup_scored": 6, "lineup_coverage": 0.6666666666666666, "bf_scored": 16, "batters_faced_assumed": 22, "missing_batters": "Jorge Polanco; Jared Young; Luis Robert Jr.", "batters": [{"slot": 1, "batter_id": 805999, "batter": "A.J. Ewing", "expected_k_pct": 20.0, "expected_whiff_pct": 17.3, "status": "ok"}, {"slot": 2, "batter_id": 665742, "batter": "Juan Soto", "expected_k_pct": 10.750836820083682, "expected_whiff_pct": 18.284518828451883, "status": "ok"}, {"slot": 3, "batter_id": 666182, "batter": "Bo Bichette", "expected_k_pct": 17.073012552301257, "expected_whiff_pct": 10.724686192468619, "status": "ok"}, {"slot": 4, "batter_id": 596019, "batter": "Francisco Lindor", "expected_k_pct": 9.9, "expected_whiff_pct": 18.8, "status": "ok"}, {"slot": 5, "batter_id": 593871, "batter": "Jorge Polanco", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 6, "batter_id": 676724, "batter": "Jared Young", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 7, "batter_id": 673357, "batter": "Luis Robert Jr.", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 683146, "batter": "Brett Baty", "expected_k_pct": 22.8744769874477, "expected_whiff_pct": 19.487029288702928, "status": "ok"}, {"slot": 9, "batter_id": 682626, "batter": "Francisco Alvarez", "expected_k_pct": 26.777615062761505, "expected_whiff_pct": 25.905648535564854, "status": "ok"}]}, {"rank": 22, "pitcher": "Walbert Ureña", "pitcher_id": 700712, "pitcher_team": "LAA", "opponent": "STL", "game": "STL@LAA", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 2.471895567964514, "expected_k_pct": 15.775659804697808, "expected_ks_1x": 0.9465395882818685, "expected_whiff_pct": 18.325412262180922, "lineup_batters": 9, "lineup_scored": 6, "lineup_coverage": 0.6666666666666666, "bf_scored": 16, "batters_faced_assumed": 22, "missing_batters": "Lars Nootbaar; Blaze Jordan; Jimmy Crooks", "batters": [{"slot": 1, "batter_id": 802139, "batter": "JJ Wetherholt", "expected_k_pct": 12.321247563352827, "expected_whiff_pct": 18.83684210526316, "status": "ok"}, {"slot": 2, "batter_id": 671056, "batter": "Iván Herrera", "expected_k_pct": 13.584990253411306, "expected_whiff_pct": 14.218713450292396, "status": "ok"}, {"slot": 3, "batter_id": 676475, "batter": "Alec Burleson", "expected_k_pct": 12.587292161520189, "expected_whiff_pct": 19.7646080760095, "status": "ok"}, {"slot": 4, "batter_id": 691023, "batter": "Jordan Walker", "expected_k_pct": 19.38810916179337, "expected_whiff_pct": 20.372709551656918, "status": "ok"}, {"slot": 5, "batter_id": 663457, "batter": "Lars Nootbaar", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 6, "batter_id": 691026, "batter": "Masyn Winn", "expected_k_pct": 13.588109161793371, "expected_whiff_pct": 13.60038986354776, "status": "ok"}, {"slot": 7, "batter_id": 701675, "batter": "Nathan Church", "expected_k_pct": 23.184210526315788, "expected_whiff_pct": 23.15921052631579, "status": "ok"}, {"slot": 8, "batter_id": 691458, "batter": "Blaze Jordan", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 699625, "batter": "Jimmy Crooks", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}]}, {"rank": 23, "pitcher": "Tatsuya Imai", "pitcher_id": 837227, "pitcher_team": "HOU", "opponent": "MIA", "game": "MIA@HOU", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 2.350867196367764, "expected_k_pct": 14.2159288687098, "expected_ks_1x": 0.852955732122588, "expected_whiff_pct": 16.11082103670072, "lineup_batters": 9, "lineup_scored": 6, "lineup_coverage": 0.6666666666666666, "bf_scored": 16, "batters_faced_assumed": 22, "missing_batters": "Griffin Conine; Joe Mack; Graham Pauley", "batters": [{"slot": 1, "batter_id": 669065, "batter": "Kyle Stowers", "expected_k_pct": 27.9, "expected_whiff_pct": 30.500000000000004, "status": "ok"}, {"slot": 2, "batter_id": 681715, "batter": "Heriberto Hernández", "expected_k_pct": 15.3, "expected_whiff_pct": 22.8, "status": "ok"}, {"slot": 3, "batter_id": 669364, "batter": "Xavier Edwards", "expected_k_pct": 17.0955732122588, "expected_whiff_pct": 18.064926220204313, "status": "ok"}, {"slot": 4, "batter_id": 689414, "batter": "Liam Hicks", "expected_k_pct": 4.2, "expected_whiff_pct": 4.2, "status": "ok"}, {"slot": 5, "batter_id": 665052, "batter": "Griffin Conine", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 6, "batter_id": 805300, "batter": "Jakob Marsee", "expected_k_pct": 14.5, "expected_whiff_pct": 9.8, "status": "ok"}, {"slot": 7, "batter_id": 691788, "batter": "Joe Mack", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 688363, "batter": "Graham Pauley", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 691594, "batter": "Javier Sanoja", "expected_k_pct": 6.3, "expected_whiff_pct": 11.3, "status": "ok"}]}, {"rank": 24, "pitcher": "Jack Perkins", "pitcher_id": 678022, "pitcher_team": "ATH", "opponent": "AZ", "game": "ATH@AZ", "status": "ok", "lineup_source": "prior:2026-07-20", "expected_ks": 2.0913886861313866, "expected_k_pct": 14.290997566909974, "expected_ks_1x": 0.8574598540145985, "expected_whiff_pct": 16.48050486618005, "lineup_batters": 9, "lineup_scored": 6, "lineup_coverage": 0.6666666666666666, "bf_scored": 15, "batters_faced_assumed": 22, "missing_batters": "Tim Tawa; Tyler Locklear; Ryan Waldschmidt", "batters": [{"slot": 1, "batter_id": 606466, "batter": "Ketel Marte", "expected_k_pct": 12.704744525547445, "expected_whiff_pct": 17.443430656934307, "status": "ok"}, {"slot": 2, "batter_id": 672695, "batter": "Geraldo Perdomo", "expected_k_pct": 8.042153284671533, "expected_whiff_pct": 11.001824817518248, "status": "ok"}, {"slot": 3, "batter_id": 694374, "batter": "Tim Tawa", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 4, "batter_id": 672515, "batter": "Gabriel Moreno", "expected_k_pct": 16.9, "expected_whiff_pct": 16.0, "status": "ok"}, {"slot": 5, "batter_id": 545121, "batter": "Ildemaro Vargas", "expected_k_pct": 7.599087591240875, "expected_whiff_pct": 11.537773722627735, "status": "ok"}, {"slot": 6, "batter_id": 571448, "batter": "Nolan Arenado", "expected_k_pct": 17.7, "expected_whiff_pct": 17.2, "status": "ok"}, {"slot": 7, "batter_id": 682988, "batter": "Tyler Locklear", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 814439, "batter": "Ryan Waldschmidt", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 678489, "batter": "Jorge Barrosa", "expected_k_pct": 22.8, "expected_whiff_pct": 25.700000000000003, "status": "ok"}]}, {"rank": 25, "pitcher": "Tyler Phillips", "pitcher_id": 663969, "pitcher_team": "MIA", "opponent": "HOU", "game": "MIA@HOU", "status": "ok", "lineup_source": "official", "expected_ks": 1.2020000000000002, "expected_k_pct": 10.525, "expected_ks_1x": 0.42100000000000004, "expected_whiff_pct": 11.4, "lineup_batters": 9, "lineup_scored": 4, "lineup_coverage": 0.4444444444444444, "bf_scored": 11, "batters_faced_assumed": 22, "missing_batters": "Jeremy Peña; LaMonte Wade Jr.; Taylor Trammell; Lucas Spence; Christian Vázquez", "batters": [{"slot": 1, "batter_id": 665161, "batter": "Jeremy Peña", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 2, "batter_id": 670541, "batter": "Yordan Alvarez", "expected_k_pct": 15.400000000000002, "expected_whiff_pct": 11.0, "status": "ok"}, {"slot": 3, "batter_id": 670623, "batter": "Isaac Paredes", "expected_k_pct": 5.9, "expected_whiff_pct": 6.8, "status": "ok"}, {"slot": 4, "batter_id": 514888, "batter": "Jose Altuve", "expected_k_pct": 14.7, "expected_whiff_pct": 17.6, "status": "ok"}, {"slot": 5, "batter_id": 664774, "batter": "LaMonte Wade Jr.", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 6, "batter_id": 572233, "batter": "Christian Walker", "expected_k_pct": 6.1, "expected_whiff_pct": 10.2, "status": "ok"}, {"slot": 7, "batter_id": 666211, "batter": "Taylor Trammell", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 8, "batter_id": 828599, "batter": "Lucas Spence", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}, {"slot": 9, "batter_id": 543877, "batter": "Christian Vázquez", "expected_k_pct": null, "expected_whiff_pct": null, "status": "missing_rates"}]}, {"rank": null, "pitcher": "Kendry Rojas", "pitcher_id": 696070, "pitcher_team": "MIN", "opponent": "CLE", "game": "MIN@CLE", "status": "missing_arsenal", "lineup_source": "official", "expected_ks": null, "expected_k_pct": null, "expected_ks_1x": null, "expected_whiff_pct": null, "lineup_batters": 9, "lineup_scored": 0, "lineup_coverage": null, "bf_scored": 0, "batters_faced_assumed": 22, "missing_batters": "", "batters": []}, {"rank": null, "pitcher": "Eduardo Rivera", "pitcher_id": 700842, "pitcher_team": "BOS", "opponent": "BAL", "game": "BAL@BOS", "status": "missing_arsenal", "lineup_source": "official", "expected_ks": null, "expected_k_pct": null, "expected_ks_1x": null, "expected_whiff_pct": null, "lineup_batters": 9, "lineup_scored": 0, "lineup_coverage": null, "bf_scored": 0, "batters_faced_assumed": 22, "missing_batters": "", "batters": []}, {"rank": null, "pitcher": "Zac Thornton", "pitcher_id": 804267, "pitcher_team": "NYM", "opponent": "MIL", "game": "NYM@MIL", "status": "missing_arsenal", "lineup_source": "prior:2026-07-20", "expected_ks": null, "expected_k_pct": null, "expected_ks_1x": null, "expected_whiff_pct": null, "lineup_batters": 9, "lineup_scored": 0, "lineup_coverage": null, "bf_scored": 0, "batters_faced_assumed": 22, "missing_batters": "", "batters": []}, {"rank": null, "pitcher": "Carson Palmquist", "pitcher_id": 687223, "pitcher_team": "WSH", "opponent": "COL", "game": "WSH@COL", "status": "missing_arsenal", "lineup_source": "prior:2026-07-20", "expected_ks": null, "expected_k_pct": null, "expected_ks_1x": null, "expected_whiff_pct": null, "lineup_batters": 9, "lineup_scored": 0, "lineup_coverage": null, "bf_scored": 0, "batters_faced_assumed": 22, "missing_batters": "", "batters": []}, {"rank": null, "pitcher": "Kohl Drake", "pitcher_id": 684442, "pitcher_team": "AZ", "opponent": "ATH", "game": "ATH@AZ", "status": "missing_arsenal", "lineup_source": "prior:2026-07-20", "expected_ks": null, "expected_k_pct": null, "expected_ks_1x": null, "expected_whiff_pct": null, "lineup_batters": 9, "lineup_scored": 0, "lineup_coverage": null, "bf_scored": 0, "batters_faced_assumed": 22, "missing_batters": "", "batters": []}]}</script>
+  <script>
+    const DATA = JSON.parse(document.getElementById("data").textContent);
+    const state = {
+      q: "",
+      lineup: "all",
+      status: "scored",
+      sortKey: "expected_ks",
+      sortDir: "desc",
+      openId: null,
+    };
+
+    const el = {
+      meta: document.getElementById("meta"),
+      tbody: document.getElementById("tbody"),
+      empty: document.getElementById("empty"),
+      q: document.getElementById("q"),
+      lineupFilter: document.getElementById("lineupFilter"),
+      statusFilter: document.getElementById("statusFilter"),
+      sort: document.getElementById("sort"),
+    };
+
+    function fmt(n, d = 2) {
+      if (n === null || n === undefined || Number.isNaN(n)) return "—";
+      return Number(n).toFixed(d);
+    }
+    function pct(n) {
+      if (n === null || n === undefined || Number.isNaN(n)) return "—";
+      return `${Math.round(n * 100)}%`;
+    }
+    function lineupKind(src) {
+      if (!src) return "miss";
+      if (src === "official") return "official";
+      if (String(src).startsWith("prior")) return "prior";
+      return "miss";
+    }
+    function lineupLabel(src) {
+      if (!src) return "none";
+      if (src === "official") return "official";
+      if (String(src).startsWith("prior:")) return `prior ${src.slice(6)}`;
+      return String(src);
+    }
+    function rowId(r, i) {
+      return `${r.pitcher_id || r.pitcher}-${r.opponent}-${i}`;
+    }
+
+    function renderMeta() {
+      const rows = DATA.rows || [];
+      const scored = rows.filter(r => r.status === "ok" && r.expected_ks != null);
+      const official = scored.filter(r => r.lineup_source === "official").length;
+      el.meta.innerHTML = [
+        chip("Date", DATA.game_date),
+        chip("Generated", DATA.generated_at),
+        chip("BF assumed", DATA.batters_faced),
+        chip("Scored", scored.length),
+        chip("Official lineups", `${official}/${scored.length}`),
+      ].join("");
+    }
+    function chip(label, value) {
+      return `<span class="chip">${label}: <strong>${value}</strong></span>`;
+    }
+
+    function filtered() {
+      let rows = [...(DATA.rows || [])];
+      const q = state.q.trim().toLowerCase();
+      if (q) {
+        rows = rows.filter(r =>
+          [r.pitcher, r.pitcher_team, r.opponent, r.game, r.lineup_source, r.status]
+            .join(" ")
+            .toLowerCase()
+            .includes(q)
+        );
+      }
+      if (state.lineup === "official") {
+        rows = rows.filter(r => r.lineup_source === "official");
+      } else if (state.lineup === "prior") {
+        rows = rows.filter(r => String(r.lineup_source || "").startsWith("prior"));
+      }
+      if (state.status === "scored") {
+        rows = rows.filter(r => r.status === "ok" && r.expected_ks != null);
+      } else if (state.status === "missing") {
+        rows = rows.filter(r => !(r.status === "ok" && r.expected_ks != null));
+      }
+
+      const dir = state.sortDir === "asc" ? 1 : -1;
+      const key = state.sortKey;
+      rows.sort((a, b) => {
+        const av = a[key];
+        const bv = b[key];
+        if (av == null && bv == null) return 0;
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        if (typeof av === "string" || typeof bv === "string") {
+          return String(av).localeCompare(String(bv)) * dir;
+        }
+        return (av - bv) * dir;
+      });
+      return rows;
+    }
+
+    function render() {
+      const rows = filtered();
+      el.empty.hidden = rows.length > 0;
+      el.tbody.innerHTML = rows.map((r, i) => {
+        const id = rowId(r, i);
+        const open = state.openId === id ? "open" : "";
+        const kind = lineupKind(r.lineup_source);
+        const batters = (r.batters || []).map(b => {
+          const miss = b.status !== "ok";
+          return `<div class="batter ${miss ? "missing" : ""}">
+            <span><span class="slot">${b.slot ?? ""}.</span> ${b.batter || "—"}</span>
+            <span class="k">${miss ? "n/a" : fmt(b.expected_k_pct, 1) + "%"}</span>
+          </div>`;
+        }).join("");
+        return `
+          <tr class="matchup ${open}" data-id="${id}">
+            <td class="rank">${r.rank ?? "—"}</td>
+            <td>
+              <span class="pitcher">${r.pitcher || "—"}</span>
+              <span class="sub">${r.pitcher_team || "?"} vs ${r.opponent || "?"}${r.status && r.status !== "ok" ? " · " + r.status : ""}</span>
+            </td>
+            <td>${r.game || "—"}</td>
+            <td class="num ks">${fmt(r.expected_ks)}</td>
+            <td class="num">${fmt(r.expected_k_pct)}</td>
+            <td><span class="badge ${kind}">${lineupLabel(r.lineup_source)}</span></td>
+            <td class="num">${pct(r.lineup_coverage)}</td>
+          </tr>
+          <tr class="detail-row">
+            <td colspan="7">
+              <div class="detail">
+                <h3>Opposing lineup · 1× trip ${fmt(r.expected_ks_1x)} Ks · BF scored ${r.bf_scored ?? "—"}/${r.batters_faced_assumed ?? "—"}</h3>
+                <div class="batter-grid">${batters || "<div class='empty'>No batter detail</div>"}</div>
+              </div>
+            </td>
+          </tr>`;
+      }).join("");
+
+      document.querySelectorAll("thead th").forEach(th => {
+        th.classList.toggle("active", th.dataset.key === state.sortKey);
+      });
+    }
+
+    el.tbody.addEventListener("click", (e) => {
+      const tr = e.target.closest("tr.matchup");
+      if (!tr) return;
+      const id = tr.dataset.id;
+      state.openId = state.openId === id ? null : id;
+      render();
+    });
+
+    el.q.addEventListener("input", () => { state.q = el.q.value; render(); });
+    el.lineupFilter.addEventListener("change", () => { state.lineup = el.lineupFilter.value; render(); });
+    el.statusFilter.addEventListener("change", () => { state.status = el.statusFilter.value; render(); });
+    el.sort.addEventListener("change", () => {
+      const [k, d] = el.sort.value.split(":");
+      state.sortKey = k;
+      state.sortDir = d;
+      render();
+    });
+    document.querySelectorAll("thead th").forEach(th => {
+      th.addEventListener("click", () => {
+        const key = th.dataset.key;
+        if (state.sortKey === key) {
+          state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+        } else {
+          state.sortKey = key;
+          state.sortDir = key === "pitcher" || key === "game" || key === "rank" ? "asc" : "desc";
+        }
+        el.sort.value = `${state.sortKey}:${state.sortDir}`;
+        render();
+      });
+    });
+
+    renderMeta();
+    render();
+  </script>
+</body>
+</html>

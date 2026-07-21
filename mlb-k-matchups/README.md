@@ -33,11 +33,14 @@ Today’s probable starters (default):
 python3 mlb-k-matchups/k_matchups.py
 ```
 
-Specific date + CSV export:
+Specific date + CSV + interactive HTML:
 
 ```bash
-python3 mlb-k-matchups/k_matchups.py --date $(date +%F) -o /tmp/rankings.csv
+python3 mlb-k-matchups/k_matchups.py --date $(date +%F) \
+  -o rankings.csv --html rankings.html
 ```
+
+Open `rankings.html` in a browser. Re-run the same command after lineups post — official nines replace prior-day fallbacks automatically.
 
 Custom matchups CSV (`pitcher,opponent[,pitcher_id,pitcher_team,game]`). Opponent lineup is resolved from the most recent posted starting nine for that team:
 
@@ -57,6 +60,7 @@ Useful flags:
 | `--require-official-lineup` | Skip games without an official lineup for the date |
 | `--detail` | Print each lineup batter’s arsenal-weighted K% |
 | `-o/--output` | Write full rankings CSV |
+| `--html` | Write self-contained interactive HTML rankings |
 | `-v/--verbose` | Log HTTP fetches |
 
 ## Lineups

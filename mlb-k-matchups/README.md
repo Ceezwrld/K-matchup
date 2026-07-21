@@ -1,14 +1,23 @@
 # MLB K-Matchups
 
-Rank starting pitchers by how vulnerable the opposing team is to strikeouts against that starter’s pitch mix.
+Rank starting pitchers by **expected strikeouts against the opposing starting lineup**, using each batter’s vulnerability to that starter’s pitch mix.
 
-**Score**
+**Score (per batter)**
 
 ```
-expected_k_pct = Σ (pitcher_usage_pct × opposing_team_K%_vs_that_pitch_type)
+batter_k_pct = Σ (pitcher_usage_pct × that_batter_K%_vs_that_pitch_type)
 ```
 
-`vs_league_k` / `vs_league_whiff` compare that arsenal-weighted expectation to the same mix against league-average batter rates. Positive means the opponent is more K-/whiff-prone than average against that arsenal.
+**Lineup rollup**
+
+```
+expected_k_pct = mean(batter_k_pct over lineup batters with Savant rates)
+expected_ks_1x = Σ batter_k_pct / 100                   # one time through the order
+expected_ks    = Σ batter_k_pct / 100 over batting-order walk for N batters faced
+                                                    # default N=22; missing-rate slots skipped
+```
+
+No league-average blending: rates come only from the opposing lineup’s batters.
 
 ## Setup
 
@@ -27,10 +36,10 @@ python3 mlb-k-matchups/k_matchups.py
 Specific date + CSV export:
 
 ```bash
-python3 mlb-k-matchups/k_matchups.py --date 2026-07-21 -o /tmp/rankings.csv
+python3 mlb-k-matchups/k_matchups.py --date $(date +%F) -o /tmp/rankings.csv
 ```
 
-Custom matchups CSV (`pitcher,opponent[,pitcher_id,pitcher_team,game]`):
+Custom matchups CSV (`pitcher,opponent[,pitcher_id,pitcher_team,game]`). Opponent lineup is resolved from the most recent posted starting nine for that team:
 
 ```bash
 python3 mlb-k-matchups/k_matchups.py --matchups mlb-k-matchups/matchups.example.csv -v
@@ -43,12 +52,22 @@ Useful flags:
 | `--year` | Savant season (default: year of `--date`, else current year) |
 | `--min-pa` | Savant leaderboard PA floor (default: 50) |
 | `--min-usage` | Drop pitcher pitches below this usage % (default: 5) |
+| `--batters-faced` | Assumed BF for order-walk `expected_ks` (default: 22) |
+| `--lineup-lookback` | Days to search for a prior lineup if today’s isn’t posted (default: 14) |
+| `--require-official-lineup` | Skip games without an official lineup for the date |
+| `--detail` | Print each lineup batter’s arsenal-weighted K% |
 | `-o/--output` | Write full rankings CSV |
 | `-v/--verbose` | Log HTTP fetches |
+
+## Lineups
+
+- Prefer the **official starting lineup** from the MLB Stats API (`hydrate=lineups`) when posted.
+- If not posted yet (common earlier in the day), fall back to that team’s **most recent prior starting nine** (`lineup_source=prior:YYYY-MM-DD`).
+- Batters without Savant arsenal rows (below `--min-pa`) are excluded from the mean and listed in `missing_batters`; `lineup_coverage` shows how many of the nine were scored. There is **no** league-average fill-in.
 
 ## Data sources
 
 - [Baseball Savant Pitch Arsenal Stats](https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats) (pitcher + batter CSVs)
-- [MLB Stats API schedule](https://statsapi.mlb.com/api/v1/schedule) with `hydrate=probablePitcher,team`
+- [MLB Stats API schedule](https://statsapi.mlb.com/api/v1/schedule) with `hydrate=probablePitcher,team,lineups`
 
-Pitchers resolve by MLBAM `player_id` first, then name (`First Last` / `Last, First`). Missing arsenals (e.g. rookies under `--min-pa`) get a clear `missing_arsenal` / `unresolved` status instead of crashing.
+Pitchers resolve by MLBAM `player_id` first, then name (`First Last` / `Last, First`). Missing arsenals get `missing_arsenal` / `unresolved` instead of crashing.

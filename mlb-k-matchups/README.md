@@ -17,6 +17,7 @@ times_through_order = projected_bf / 9
 ```
 
 Fallbacks: `--ip` / `--batters-faced` overrides, else `5.5 IP × 4.25 BF/IP`.
+Thin samples (`GS < 5`) shrink toward that default; uncapped season averages are limited to **7.0 IP / 30 BF** so projections stay in a realistic starter range.
 
 **Lineup rollup**
 

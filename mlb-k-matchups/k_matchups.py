@@ -537,49 +537,83 @@ def pitcher_usage_weights(
     return subset[cols]
 
 
+def build_pitch_reference_rates(
+    batter_df: pd.DataFrame,
+    people: dict[int, dict[str, Any]] | None = None,
+) -> tuple[dict[str, dict[str, float]], dict[tuple[str, str], dict[str, float]]]:
+    """PA-weighted league K%/whiff by pitch, and by (bat_side, pitch)."""
+    people = people or {}
+    df = batter_df.copy()
+    df["pa"] = pd.to_numeric(df["pa"], errors="coerce")
+    df["k_percent"] = pd.to_numeric(df["k_percent"], errors="coerce")
+    df["whiff_percent"] = pd.to_numeric(df["whiff_percent"], errors="coerce")
+    df = df.dropna(subset=["pitch_type", "pa", "k_percent"])
+    df = df[df["pa"] > 0]
+    df["bat_side"] = df["player_id"].map(
+        lambda pid: (people.get(int(pid)) or {}).get("bat_side")
+        if pd.notna(pid)
+        else None
+    )
+
+    def _agg(frame: pd.DataFrame) -> dict[str, float]:
+        pa = float(frame["pa"].sum())
+        k = float((frame["k_percent"] * frame["pa"]).sum() / pa)
+        wh = frame.dropna(subset=["whiff_percent"])
+        if wh.empty:
+            whiff = k
+        else:
+            whiff = float(
+                (wh["whiff_percent"] * wh["pa"]).sum() / float(wh["pa"].sum())
+            )
+        return {"k_percent": k, "whiff_percent": whiff, "pa": pa}
+
+    league_pitch: dict[str, dict[str, float]] = {}
+    for pt, g in df.groupby("pitch_type"):
+        league_pitch[str(pt)] = _agg(g)
+
+    league_side_pitch: dict[tuple[str, str], dict[str, float]] = {}
+    sided = df.dropna(subset=["bat_side"])
+    if not sided.empty:
+        for (side, pt), g in sided.groupby(["bat_side", "pitch_type"]):
+            league_side_pitch[(str(side), str(pt))] = _agg(g)
+
+    return league_pitch, league_side_pitch
+
+
 def score_batter_vs_arsenal(
-    usage: pd.DataFrame, batter_rates: pd.DataFrame
+    usage: pd.DataFrame,
+    batter_rates: pd.DataFrame,
+    *,
+    bat_side: str | None = None,
+    league_pitch: dict[str, dict[str, float]] | None = None,
+    league_side_pitch: dict[tuple[str, str], dict[str, float]] | None = None,
 ) -> dict[str, Any] | None:
     """Arsenal-weighted K%/whiff for one batter, plus per-pitch K breakdown.
 
-    When a batter lacks Savant sample vs a specific arsenal pitch, fall back to
-    that batter's PA-weighted K%/whiff across their available pitch types so the
-    heatmap stays populated (marked k_source='batter_avg').
+    Prefer the batter's own Savant K% vs each arsenal pitch. If they have no
+    sample vs that pitch, use same-handed league-average K% vs that pitch
+    (else overall league vs that pitch). Never copy another pitch's K% from
+    the same batter — that skews rare/unseen pitches.
     """
-    if batter_rates.empty:
-        return None
-    by_pitch = batter_rates.set_index("pitch_type")
-
-    fallback_k = None
-    fallback_whiff = None
-    valid = batter_rates.copy()
-    valid["_pa"] = pd.to_numeric(valid["pa"], errors="coerce")
-    valid["_k"] = pd.to_numeric(valid["k_percent"], errors="coerce")
-    valid["_wh"] = pd.to_numeric(valid["whiff_percent"], errors="coerce")
-    valid = valid.dropna(subset=["_pa", "_k"])
-    valid = valid[valid["_pa"] > 0]
-    if not valid.empty:
-        wpa = float(valid["_pa"].sum())
-        fallback_k = float((valid["_k"] * valid["_pa"]).sum() / wpa)
-        wh_ok = valid.dropna(subset=["_wh"])
-        if not wh_ok.empty:
-            fallback_whiff = float(
-                (wh_ok["_wh"] * wh_ok["_pa"]).sum() / float(wh_ok["_pa"].sum())
-            )
-        else:
-            fallback_whiff = fallback_k
+    league_pitch = league_pitch or {}
+    league_side_pitch = league_side_pitch or {}
+    by_pitch = (
+        batter_rates.set_index("pitch_type")
+        if not batter_rates.empty
+        else pd.DataFrame()
+    )
 
     exp_k = 0.0
     exp_whiff = 0.0
     covered = 0.0
     pitch_breakdown: list[dict[str, Any]] = []
     for _, row in usage.iterrows():
-        pt = row["pitch_type"]
+        pt = str(row["pitch_type"])
         w = float(row["usage_frac"])
         pitch_name = (
             str(row["pitch_name"])
             if "pitch_name" in row.index and pd.notna(row.get("pitch_name"))
-            else str(pt)
+            else pt
         )
         entry: dict[str, Any] = {
             "pitch_type": pt,
@@ -591,7 +625,8 @@ def score_batter_vs_arsenal(
             "pa": None,
             "k_source": None,
         }
-        if pt in by_pitch.index:
+
+        if not by_pitch.empty and pt in by_pitch.index:
             k = float(by_pitch.loc[pt, "k_percent"])
             wh = by_pitch.loc[pt, "whiff_percent"]
             pa = by_pitch.loc[pt, "pa"] if "pa" in by_pitch.columns else None
@@ -599,23 +634,29 @@ def score_batter_vs_arsenal(
             entry["whiff_percent"] = float(wh) if pd.notna(wh) else None
             entry["pa"] = float(pa) if pa is not None and pd.notna(pa) else None
             entry["k_source"] = "pitch"
+        else:
+            ref = None
+            source = None
+            if bat_side and (str(bat_side), pt) in league_side_pitch:
+                ref = league_side_pitch[(str(bat_side), pt)]
+                source = "league_platoon"
+            elif pt in league_pitch:
+                ref = league_pitch[pt]
+                source = "league_pitch"
+            if ref is not None:
+                entry["k_percent"] = float(ref["k_percent"])
+                entry["whiff_percent"] = float(ref["whiff_percent"])
+                entry["pa"] = float(ref.get("pa") or 0.0)
+                entry["k_source"] = source
+
+        if entry["k_percent"] is not None:
+            k = float(entry["k_percent"])
+            wh = entry["whiff_percent"]
             exp_k += w * k
-            if pd.notna(wh):
-                exp_whiff += w * float(wh)
-            else:
-                exp_whiff += w * k
-            covered += w
-        elif fallback_k is not None:
-            entry["k_percent"] = fallback_k
-            entry["whiff_percent"] = fallback_whiff
-            entry["pa"] = None
-            entry["k_source"] = "batter_avg"
-            exp_k += w * fallback_k
-            exp_whiff += w * float(
-                fallback_whiff if fallback_whiff is not None else fallback_k
-            )
+            exp_whiff += w * float(wh if wh is not None else k)
             covered += w
         pitch_breakdown.append(entry)
+
     if covered <= 0:
         return None
     if covered < 0.999:
@@ -626,7 +667,10 @@ def score_batter_vs_arsenal(
         "expected_whiff_pct": exp_whiff,
         "usage_covered": covered,
         "pitch_breakdown": pitch_breakdown,
-        "fallback_k_pct": fallback_k,
+        "used_league_fill": any(
+            p.get("k_source") in {"league_pitch", "league_platoon"}
+            for p in pitch_breakdown
+        ),
     }
 
 
@@ -639,8 +683,9 @@ def score_vs_lineup(
 ) -> dict[str, Any]:
     """Score starter arsenal vs opposing starting nine over a full outing.
 
-    Per batter: arsenal-weighted K%/whiff from Savant (no league fill-in).
-    Missing pitch-type samples fall back to that batter's own pitch-mix average.
+    Prefer each batter's own Savant K% vs arsenal pitches. Missing pitch-type
+    samples use same-handed league-average K% vs that pitch (else overall
+    league vs that pitch), so every heatmap cell can show a pitch-specific rate.
 
     expected_k_pct       = mean arsenal-weighted K% across lineup batters with data
     expected_ks_1x       = known K expectation for one trip through the order
@@ -648,29 +693,9 @@ def score_vs_lineup(
     times_through_order  = batters_faced / 9
     """
     people = people or {}
+    league_pitch, league_side_pitch = build_pitch_reference_rates(batter_df, people)
     batter_scores: list[dict[str, Any]] = []
     missing: list[str] = []
-
-    def _empty_pitches() -> list[dict[str, Any]]:
-        empty_pitches = []
-        for _, row in usage.iterrows():
-            empty_pitches.append(
-                {
-                    "pitch_type": row["pitch_type"],
-                    "pitch_name": (
-                        str(row["pitch_name"])
-                        if "pitch_name" in row.index and pd.notna(row.get("pitch_name"))
-                        else str(row["pitch_type"])
-                    ),
-                    "usage_pct": float(row["pitch_usage"]),
-                    "usage_frac": float(row["usage_frac"]),
-                    "k_percent": None,
-                    "whiff_percent": None,
-                    "pa": None,
-                    "k_source": None,
-                }
-            )
-        return empty_pitches
 
     for slot_row in lineup:
         bid = int(slot_row["batter_id"])
@@ -678,20 +703,74 @@ def score_vs_lineup(
         name = slot_row.get("batter") or profile.get("full_name") or str(bid)
         bat_side = profile.get("bat_side")
         rates = batter_df[batter_df["player_id"] == bid]
-        scored = score_batter_vs_arsenal(usage, rates)
+        scored = score_batter_vs_arsenal(
+            usage,
+            rates,
+            bat_side=bat_side,
+            league_pitch=league_pitch,
+            league_side_pitch=league_side_pitch,
+        )
         if scored is None:
-            missing.append(name)
-            batter_scores.append(
-                {
-                    "slot": slot_row.get("slot"),
-                    "batter_id": bid,
-                    "batter": name,
-                    "bat_side": bat_side,
-                    "expected_k_pct": float("nan"),
-                    "status": "missing_rates",
-                    "pitches": _empty_pitches(),
-                }
-            )
+            # Last resort: still emit league pitch cells when possible.
+            empty_pitches = []
+            for _, row in usage.iterrows():
+                pt = str(row["pitch_type"])
+                ref = None
+                source = None
+                if bat_side and (str(bat_side), pt) in league_side_pitch:
+                    ref = league_side_pitch[(str(bat_side), pt)]
+                    source = "league_platoon"
+                elif pt in league_pitch:
+                    ref = league_pitch[pt]
+                    source = "league_pitch"
+                empty_pitches.append(
+                    {
+                        "pitch_type": pt,
+                        "pitch_name": (
+                            str(row["pitch_name"])
+                            if "pitch_name" in row.index and pd.notna(row.get("pitch_name"))
+                            else pt
+                        ),
+                        "usage_pct": float(row["pitch_usage"]),
+                        "usage_frac": float(row["usage_frac"]),
+                        "k_percent": None if ref is None else float(ref["k_percent"]),
+                        "whiff_percent": (
+                            None if ref is None else float(ref["whiff_percent"])
+                        ),
+                        "pa": None if ref is None else float(ref.get("pa") or 0.0),
+                        "k_source": source,
+                    }
+                )
+            known = [p for p in empty_pitches if p["k_percent"] is not None]
+            if known:
+                mean_k = sum(
+                    float(p["usage_frac"]) * float(p["k_percent"]) for p in known
+                ) / sum(float(p["usage_frac"]) for p in known)
+                batter_scores.append(
+                    {
+                        "slot": slot_row.get("slot"),
+                        "batter_id": bid,
+                        "batter": name,
+                        "bat_side": bat_side,
+                        "expected_k_pct": mean_k,
+                        "expected_whiff_pct": mean_k,
+                        "status": "ok",
+                        "pitches": empty_pitches,
+                    }
+                )
+            else:
+                missing.append(name)
+                batter_scores.append(
+                    {
+                        "slot": slot_row.get("slot"),
+                        "batter_id": bid,
+                        "batter": name,
+                        "bat_side": bat_side,
+                        "expected_k_pct": float("nan"),
+                        "status": "missing_rates",
+                        "pitches": empty_pitches,
+                    }
+                )
             continue
         batter_scores.append(
             {

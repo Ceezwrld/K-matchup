@@ -231,7 +231,9 @@ def _render_pitch_matrix(row: dict[str, Any]) -> str:
             hit = pitches.get(p.get("pitch_type")) or {}
             k = hit.get("k_percent")
             src = hit.get("k_source") or ""
-            marker = "*" if src == "batter_avg" else ""
+            marker = ""
+            if src in {"league_pitch", "league_platoon"}:
+                marker = "†"
             title = (
                 "No Savant sample vs this pitch"
                 if k is None
@@ -272,8 +274,9 @@ def _render_pitch_matrix(row: dict[str, Any]) -> str:
         f"<tbody>{''.join(body_rows)}</tbody>"
         "</table></div>"
         "<p class='hint'>Heat map = each batter’s strikeout rate vs that pitch type. "
-        "Darker green = more K-prone. <code>*</code> = no direct sample vs that pitch, "
-        "so the batter’s own pitch-mix average K% is used. "
+        "Darker green = more K-prone. <code>†</code> = no direct sample vs that pitch, "
+        "so same-handed league-average K% vs that pitch is used (more accurate than "
+        "copying another pitch from the same batter). "
         "Handedness shown as LHB/RHB next to each batter.</p>"
     )
 

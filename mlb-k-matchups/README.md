@@ -85,7 +85,7 @@ Useful flags:
 
 - Prefer the **official starting lineup** from the MLB Stats API (`hydrate=lineups`) when posted.
 - If not posted yet (common earlier in the day), fall back to that team’s **most recent prior starting nine** (`lineup_source=prior:YYYY-MM-DD`).
-- Batters without Savant arsenal rows (below `--min-pa`) are excluded from the mean and listed in `missing_batters`; `lineup_coverage` shows how many of the nine were scored. There is **no** league-average fill-in.
+- Batters without Savant arsenal rows (below `--min-pa-batter`) still appear in the heat map using **same-handed league-average K% vs that pitch** (marked `†`). There is no “copy this batter’s other pitch” fill-in.
 
 ## Data sources
 

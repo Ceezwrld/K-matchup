@@ -492,7 +492,17 @@ def main(argv: list[str] | None = None) -> int:
 
     print(format_table(out))
     if args.output:
-        out.to_csv(args.output, index=False)
+        export = out.copy()
+        for col in (
+            "expected_k_pct",
+            "expected_whiff_pct",
+            "vs_league_k",
+            "vs_league_whiff",
+            "usage_covered",
+        ):
+            if col in export.columns:
+                export[col] = export[col].round(2)
+        export.to_csv(args.output, index=False)
         log(True, f"Wrote {args.output}")
 
     return 0

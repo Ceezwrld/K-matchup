@@ -352,9 +352,15 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     tabs = (
         f"<div class='tabs'>"
         f"<input type='radio' name='tab-{uid}' id='tab-{uid}-pitches' checked />"
-        f"<label class='tab' for='tab-{uid}-pitches'>Pitch weaknesses</label>"
+        f"<label class='tab' for='tab-{uid}-pitches'>"
+        f"<span class='tab-full'>Pitch weaknesses</span>"
+        f"<span class='tab-short'>Pitches</span>"
+        f"</label>"
         f"<input type='radio' name='tab-{uid}' id='tab-{uid}-lineup' />"
-        f"<label class='tab' for='tab-{uid}-lineup'>Lineup K%</label>"
+        f"<label class='tab' for='tab-{uid}-lineup'>"
+        f"<span class='tab-full'>Lineup K%</span>"
+        f"<span class='tab-short'>Lineup</span>"
+        f"</label>"
         f"<div class='tab-panel panel-pitches'>{_render_pitch_matrix(row, uid)}</div>"
         f"<div class='tab-panel panel-lineup'>{_render_lineup_panel(row)}</div>"
         f"</div>"
@@ -644,6 +650,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--muted); border-radius: 999px; padding: 0.4rem 0.85rem;
     font-size: 0.82rem; font-weight: 700; cursor: pointer;
   }
+  .tab-short { display: none; }
   .tabs > input:checked + .tab {
     background: var(--accent); border-color: var(--accent); color: #fff;
   }
@@ -759,12 +766,46 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 0.88rem;
   }
   @media (max-width: 560px) {
+    /* Phone-only: compact tab pills so they don't crowd / overlap content. */
+    .tabs {
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .tab {
+      flex: 0 1 auto;
+      justify-content: center;
+      max-width: calc(50% - 0.2rem);
+      box-sizing: border-box;
+      padding: 0.28rem 0.55rem;
+      font-size: 0.72rem;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .tab-full { display: none; }
+    .tab-short { display: inline; }
+    .tab-panel {
+      flex: 1 1 100%;
+      width: 100%;
+      min-width: 0;
+      margin-top: 0.45rem;
+      clear: both;
+    }
     .pitch-row {
       grid-template-columns: minmax(0, 1fr) 3rem;
       grid-template-rows: auto auto;
     }
     .meter { grid-column: 1 / -1; grid-row: 2; }
     .kval { grid-column: 2; grid-row: 1; }
+    .pitch-block > summary {
+      padding: 0.55rem 0.65rem;
+      gap: 0.15rem 0.45rem;
+    }
+    .pitch-block > summary .pname { font-size: 0.84rem; }
+    .pitch-block > summary .pmeta { font-size: 0.7rem; }
+    .pitch-list { padding: 0.1rem 0.65rem 0.45rem; }
   }
   .hint { margin: 0.65rem 0 0; color: var(--muted); font-size: 0.78rem; }
   .empty { padding: 1.2rem; text-align: center; color: var(--muted); }

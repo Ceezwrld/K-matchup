@@ -12,8 +12,9 @@ batter_k_pct = Σ (pitcher_usage_pct × that_batter_K%_vs_that_pitch_type)
 
 ```
 expected_k_pct = mean(batter_k_pct over lineup batters with Savant rates)
-expected_ks    = expected_k_pct / 100 × batters_faced   # default batters_faced=22
 expected_ks_1x = Σ batter_k_pct / 100                   # one time through the order
+expected_ks    = Σ batter_k_pct / 100 over batting-order walk for N batters faced
+                                                    # default N=22; missing-rate slots skipped
 ```
 
 No league-average blending: rates come only from the opposing lineup’s batters.
@@ -51,9 +52,10 @@ Useful flags:
 | `--year` | Savant season (default: year of `--date`, else current year) |
 | `--min-pa` | Savant leaderboard PA floor (default: 50) |
 | `--min-usage` | Drop pitcher pitches below this usage % (default: 5) |
-| `--batters-faced` | Assumed BF for `expected_ks` (default: 22) |
+| `--batters-faced` | Assumed BF for order-walk `expected_ks` (default: 22) |
 | `--lineup-lookback` | Days to search for a prior lineup if today’s isn’t posted (default: 14) |
 | `--require-official-lineup` | Skip games without an official lineup for the date |
+| `--detail` | Print each lineup batter’s arsenal-weighted K% |
 | `-o/--output` | Write full rankings CSV |
 | `-v/--verbose` | Log HTTP fetches |
 

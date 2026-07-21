@@ -402,10 +402,14 @@ def score_vs_lineup(
 ) -> dict[str, Any]:
     """Score starter arsenal strictly against the opposing starting nine.
 
+    Per batter: arsenal-weighted K%/whiff from Savant (no league fill-in).
+
     expected_k_pct  = mean arsenal-weighted K% across lineup batters with data
-    expected_ks_1x  = sum of those K rates for one time through the order (9 PAs,
-                      missing batters contribute 0 and are noted in coverage)
-    expected_ks     = expected_k_pct/100 * batters_faced
+    expected_ks_1x  = sum of known batter K rates for one trip through the order
+    expected_ks     = walk batting order for `batters_faced` PAs, summing each
+                      known batter's K rate; missing-rate slots contribute 0 and
+                      are excluded from the effective BF used for expected_k_pct
+                      scaling note via lineup_coverage / missing_batters
     """
     batter_scores: list[dict[str, Any]] = []
     missing: list[str] = []
@@ -441,7 +445,7 @@ def score_vs_lineup(
     ok = [b for b in batter_scores if b["status"] == "ok"]
     n_lineup = len(lineup)
     n_scored = len(ok)
-    if n_scored == 0:
+    if n_scored == 0 or n_lineup == 0:
         return {
             "expected_k_pct": float("nan"),
             "expected_whiff_pct": float("nan"),
@@ -450,6 +454,7 @@ def score_vs_lineup(
             "lineup_batters": n_lineup,
             "lineup_scored": 0,
             "lineup_coverage": 0.0,
+            "bf_scored": 0,
             "missing_batters": "; ".join(missing),
             "batter_detail": batter_scores,
         }
@@ -457,9 +462,18 @@ def score_vs_lineup(
     mean_k = sum(float(b["expected_k_pct"]) for b in ok) / n_scored
     mean_whiff = sum(float(b["expected_whiff_pct"]) for b in ok) / n_scored
     # One trip through order: only scored batters contribute known K expectation.
-    # Unscored slots are omitted from the 1x sum (not replaced with league rates).
     ks_1x = sum(float(b["expected_k_pct"]) for b in ok) / 100.0
-    expected_ks = mean_k / 100.0 * float(batters_faced)
+
+    # Walk the actual batting order for N batters faced.
+    bf_n = max(0, int(round(float(batters_faced))))
+    expected_ks = 0.0
+    bf_scored = 0
+    for i in range(bf_n):
+        b = batter_scores[i % n_lineup]
+        if b["status"] != "ok":
+            continue
+        expected_ks += float(b["expected_k_pct"]) / 100.0
+        bf_scored += 1
 
     return {
         "expected_k_pct": mean_k,
@@ -469,6 +483,7 @@ def score_vs_lineup(
         "lineup_batters": n_lineup,
         "lineup_scored": n_scored,
         "lineup_coverage": n_scored / n_lineup if n_lineup else 0.0,
+        "bf_scored": bf_scored,
         "missing_batters": "; ".join(missing),
         "batter_detail": batter_scores,
     }
@@ -505,6 +520,26 @@ def format_table(df: pd.DataFrame) -> str:
         if c in show.columns
     ]
     return show[cols].to_string(index=False)
+
+
+def format_batter_detail(row: dict[str, Any]) -> str:
+    """Pretty-print per-batter K expectations for one matchup."""
+    detail = row.get("batter_detail") or []
+    if not detail:
+        return ""
+    lines = [
+        f"  {row.get('pitcher')} vs {row.get('opponent')} "
+        f"({row.get('lineup_source')}) expected_ks={row.get('expected_ks'):.2f}"
+        if pd.notna(row.get("expected_ks"))
+        else f"  {row.get('pitcher')} vs {row.get('opponent')} ({row.get('lineup_source')})"
+    ]
+    for b in detail:
+        k = b.get("expected_k_pct")
+        k_s = f"{float(k):.1f}%" if k is not None and pd.notna(k) else "  n/a"
+        lines.append(
+            f"    {b.get('slot'):>2}. {b.get('batter'):<22} {k_s}  {b.get('status')}"
+        )
+    return "\n".join(lines)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -566,6 +601,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--require-official-lineup",
         action="store_true",
         help="Skip matchups without an official posted lineup for the date",
+    )
+    p.add_argument(
+        "--detail",
+        action="store_true",
+        help="Print per-batter K%% vs arsenal under the rankings table",
     )
     p.add_argument(
         "-o",
@@ -653,8 +693,10 @@ def main(argv: list[str] | None = None) -> int:
             "lineup_batters": len(lineup),
             "lineup_scored": 0,
             "lineup_coverage": float("nan"),
+            "bf_scored": 0,
             "missing_batters": "",
             "batters_faced_assumed": args.batters_faced,
+            "batter_detail": [],
         }
 
         if args.require_official_lineup and lineup_source != "official":
@@ -675,10 +717,10 @@ def main(argv: list[str] | None = None) -> int:
                 scores = score_vs_lineup(
                     usage, lineup, batter_df, args.batters_faced
                 )
-                detail = scores.pop("batter_detail", None)
+                detail = scores.pop("batter_detail", [])
                 row.update(scores)
-                if detail is not None:
-                    # Keep CSV readable; batter-level detail stays out of the table.
+                row["batter_detail"] = detail
+                if detail:
                     row["lineup_batter_ids"] = ",".join(
                         str(b["batter_id"]) for b in detail
                     )
@@ -713,8 +755,18 @@ def main(argv: list[str] | None = None) -> int:
     out.insert(0, "rank", ranks)
 
     print(format_table(out))
+    if args.detail:
+        print()
+        for _, r in out.iterrows():
+            if r.get("status") != "ok":
+                continue
+            block = format_batter_detail(r.to_dict())
+            if block:
+                print(block)
     if args.output:
-        out.to_csv(args.output, index=False)
+        # Drop nested batter_detail from CSV (ids/names columns already stored).
+        csv_out = out.drop(columns=["batter_detail"], errors="ignore")
+        csv_out.to_csv(args.output, index=False)
         log(True, f"Wrote {args.output}")
 
     return 0

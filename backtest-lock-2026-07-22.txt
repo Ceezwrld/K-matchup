@@ -1,4 +1,4 @@
-Pre-game lock 2026-07-22
+Pre-game lock 2026-07-22 (lineup refresh)
 scored=30 official=7 prior=23
 
 1,Tyler Alexander,641302,TEX,CWS,7:05 PM CT,6.796996944563622,5.70999563509089,7.0,prior:2026-07-21,clear

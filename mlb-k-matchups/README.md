@@ -37,6 +37,21 @@ No league-average blending: rates come only from the opposing lineup’s batters
 4. **Recent form** — last 3 starts’ K/9 blended into `expected_ks` (~30% weight when available); `expected_ks_model` keeps the pre-form number.
 5. **Outing risk** — BB/9, HR/9, xFIP (FanGraphs, Stats API fallback) → `outing_risk` flags; elevated BB/9 mildly shortens projected BF/IP for overs.
 
+## Daily automation (GitHub Actions)
+
+After this workflow is on `main`, rankings refresh automatically **twice a day** (no Cursor tokens used):
+
+| When (approx. ET) | Cron (UTC) | Purpose |
+|-------------------|------------|---------|
+| ~7:00 AM | `0 11 * * *` | Morning probable starters |
+| ~4:00 PM | `0 20 * * *` | Refresh after lineups post |
+
+It writes `rankings.html` and `rankings-YYYY-MM-DD.csv`, then commits to the default branch.
+
+**Manual run:** GitHub → **Actions** → **Daily K-matchup rankings** → **Run workflow** (optional date).
+
+**Note:** Scheduled workflows only run from the repo default branch (`main`). Merge the PR that adds `.github/workflows/daily-rankings.yml` first. If push is blocked, allow GitHub Actions write access under repo **Settings → Actions → General**.
+
 ## Setup
 
 ```bash

@@ -14,6 +14,20 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rankings_html import write_interactive_html  # noqa: E402
+from sharpen import (  # noqa: E402
+    apply_recent_form_overlay,
+    arsenal_from_mixes,
+    classify_outing_risk,
+    effective_bat_side,
+    fetch_batter_hand_k_rates,
+    fetch_fangraphs_pitching,
+    fetch_pitcher_hand_mixes,
+    fetch_pitcher_rate_stats,
+    fetch_pitcher_recent_form,
+    merge_risk_metrics,
+    platoon_adjust_k_pct,
+    usage_for_batter_side,
+)
 
 SAVANT_URL = (
     "https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats"
@@ -680,6 +694,10 @@ def score_vs_lineup(
     batter_df: pd.DataFrame,
     batters_faced: float,
     people: dict[int, dict[str, Any]] | None = None,
+    *,
+    pitcher_hand: str | None = None,
+    hand_mixes: dict[str, Any] | None = None,
+    batter_hand_rates: dict[int, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Score starter arsenal vs opposing starting nine over a full outing.
 
@@ -687,12 +705,17 @@ def score_vs_lineup(
     samples use same-handed league-average K% vs that pitch (else overall
     league vs that pitch), so every heatmap cell can show a pitch-specific rate.
 
+    When Statcast hand mixes are available, each batter is scored against the
+    pitcher's usage vs that batter's stand (switch-hitters use the platoon
+    stand). Batter K% vs pitcher hand then softly adjusts the arsenal K%.
+
     expected_k_pct       = mean arsenal-weighted K% across lineup batters with data
     expected_ks_1x       = known K expectation for one trip through the order
     expected_ks          = walk batting order for projected BF (innings/TTO based)
     times_through_order  = batters_faced / 9
     """
     people = people or {}
+    batter_hand_rates = batter_hand_rates or {}
     league_pitch, league_side_pitch = build_pitch_reference_rates(batter_df, people)
     batter_scores: list[dict[str, Any]] = []
     missing: list[str] = []
@@ -702,23 +725,43 @@ def score_vs_lineup(
         profile = people.get(bid) or {}
         name = slot_row.get("batter") or profile.get("full_name") or str(bid)
         bat_side = profile.get("bat_side")
+        stand = effective_bat_side(bat_side, pitcher_hand)
+        batter_usage, usage_source = usage_for_batter_side(hand_mixes, usage, stand)
+        if batter_usage is None:
+            missing.append(name)
+            batter_scores.append(
+                {
+                    "slot": slot_row.get("slot"),
+                    "batter_id": bid,
+                    "batter": name,
+                    "bat_side": bat_side,
+                    "stand_used": stand,
+                    "usage_source": usage_source,
+                    "expected_k_pct": float("nan"),
+                    "status": "missing_arsenal",
+                    "pitches": [],
+                }
+            )
+            continue
+
         rates = batter_df[batter_df["player_id"] == bid]
         scored = score_batter_vs_arsenal(
-            usage,
+            batter_usage,
             rates,
-            bat_side=bat_side,
+            bat_side=stand or bat_side,
             league_pitch=league_pitch,
             league_side_pitch=league_side_pitch,
         )
         if scored is None:
             # Last resort: still emit league pitch cells when possible.
             empty_pitches = []
-            for _, row in usage.iterrows():
+            for _, row in batter_usage.iterrows():
                 pt = str(row["pitch_type"])
                 ref = None
                 source = None
-                if bat_side and (str(bat_side), pt) in league_side_pitch:
-                    ref = league_side_pitch[(str(bat_side), pt)]
+                side_key = stand or bat_side
+                if side_key and (str(side_key), pt) in league_side_pitch:
+                    ref = league_side_pitch[(str(side_key), pt)]
                     source = "league_platoon"
                 elif pt in league_pitch:
                     ref = league_pitch[pt]
@@ -746,13 +789,21 @@ def score_vs_lineup(
                 mean_k = sum(
                     float(p["usage_frac"]) * float(p["k_percent"]) for p in known
                 ) / sum(float(p["usage_frac"]) for p in known)
+                adj_k, platoon_factor, platoon_src = platoon_adjust_k_pct(
+                    mean_k, batter_hand_rates.get(bid), pitcher_hand
+                )
                 batter_scores.append(
                     {
                         "slot": slot_row.get("slot"),
                         "batter_id": bid,
                         "batter": name,
                         "bat_side": bat_side,
-                        "expected_k_pct": mean_k,
+                        "stand_used": stand,
+                        "usage_source": usage_source,
+                        "expected_k_pct": adj_k,
+                        "expected_k_pct_raw": mean_k,
+                        "platoon_factor": platoon_factor,
+                        "platoon_source": platoon_src,
                         "expected_whiff_pct": mean_k,
                         "status": "ok",
                         "pitches": empty_pitches,
@@ -766,19 +817,31 @@ def score_vs_lineup(
                         "batter_id": bid,
                         "batter": name,
                         "bat_side": bat_side,
+                        "stand_used": stand,
+                        "usage_source": usage_source,
                         "expected_k_pct": float("nan"),
                         "status": "missing_rates",
                         "pitches": empty_pitches,
                     }
                 )
             continue
+        adj_k, platoon_factor, platoon_src = platoon_adjust_k_pct(
+            float(scored["expected_k_pct"]),
+            batter_hand_rates.get(bid),
+            pitcher_hand,
+        )
         batter_scores.append(
             {
                 "slot": slot_row.get("slot"),
                 "batter_id": bid,
                 "batter": name,
                 "bat_side": bat_side,
-                "expected_k_pct": scored["expected_k_pct"],
+                "stand_used": stand,
+                "usage_source": usage_source,
+                "expected_k_pct": adj_k,
+                "expected_k_pct_raw": float(scored["expected_k_pct"]),
+                "platoon_factor": platoon_factor,
+                "platoon_source": platoon_src,
                 "expected_whiff_pct": scored["expected_whiff_pct"],
                 "status": "ok",
                 "pitches": scored.get("pitch_breakdown") or [],
@@ -791,20 +854,7 @@ def score_vs_lineup(
     bf_n = max(0, int(round(float(batters_faced))))
     tto = bf_n / 9.0 if bf_n else float("nan")
 
-    arsenal_pitches: list[dict[str, Any]] = []
-    for _, row in usage.sort_values("usage_frac", ascending=False).iterrows():
-        arsenal_pitches.append(
-            {
-                "pitch_type": row["pitch_type"],
-                "pitch_name": (
-                    str(row["pitch_name"])
-                    if "pitch_name" in row.index and pd.notna(row.get("pitch_name"))
-                    else str(row["pitch_type"])
-                ),
-                "usage_pct": float(row["pitch_usage"]),
-                "usage_frac": float(row["usage_frac"]),
-            }
-        )
+    arsenal_pitches = arsenal_from_mixes(hand_mixes, usage)
 
     if n_scored == 0 or n_lineup == 0:
         return {
@@ -890,6 +940,11 @@ def format_table(df: pd.DataFrame) -> str:
         )
     if "rank" in show.columns:
         show["rank"] = show["rank"].map(lambda x: "" if pd.isna(x) else int(x))
+    for col in ("last3_ks", "bb9", "hr9", "xfip"):
+        if col in show.columns:
+            show[col] = show[col].map(
+                lambda x: "" if pd.isna(x) or x is None else f"{float(x):.2f}"
+            )
     cols = [
         c
         for c in [
@@ -904,6 +959,11 @@ def format_table(df: pd.DataFrame) -> str:
             "times_through_order",
             "projected_bf",
             "expected_k_pct",
+            "last3_ks",
+            "bb9",
+            "hr9",
+            "xfip",
+            "outing_risk",
             "lineup_source",
             "lineup_coverage",
             "status",
@@ -1132,6 +1192,19 @@ def main(argv: list[str] | None = None) -> int:
     season_outings = fetch_pitcher_season_outings(pitcher_ids, year, args.verbose)
     people = fetch_people_profiles(pitcher_ids + batter_ids, args.verbose)
 
+    # Sharpening layers: hand mixes, batter platoon K%, recent form, risk rates.
+    hand_mixes = fetch_pitcher_hand_mixes(
+        pitcher_ids, year, args.min_usage, args.verbose, log
+    )
+    batter_k_vs_hand = fetch_batter_hand_k_rates(
+        batter_ids, year, args.verbose, log
+    )
+    recent_form = fetch_pitcher_recent_form(
+        pitcher_ids, year, args.verbose, log
+    )
+    fangraphs = fetch_fangraphs_pitching(year, args.verbose, log)
+    api_rates = fetch_pitcher_rate_stats(pitcher_ids, year, args.verbose, log)
+
     results: list[dict[str, Any]] = []
     for item in resolved:
         pid_raw = item.get("pitcher_id")
@@ -1148,6 +1221,21 @@ def main(argv: list[str] | None = None) -> int:
             bf_override=args.batters_faced,
         )
         pitcher_hand = (people.get(pid) or {}).get("pitch_hand") if pid is not None else None
+        risk_metrics = merge_risk_metrics(pid, fangraphs, api_rates)
+        risk = classify_outing_risk(
+            risk_metrics.get("bb9"),
+            risk_metrics.get("hr9"),
+            risk_metrics.get("xfip"),
+        )
+        # Mild BF haircut for high-walk pitchers (early-exit risk on overs).
+        projected_bf = float(outing["projected_bf"]) * float(risk["bf_risk_factor"])
+        if args.batters_faced is None and args.ip is None:
+            projected_bf = min(projected_bf, float(MAX_PROJECTED_BF))
+        projected_ip = float(outing["projected_ip"])
+        if risk["bf_risk_factor"] < 1.0 and args.ip is None and args.batters_faced is None:
+            projected_ip = projected_ip * float(risk["bf_risk_factor"])
+        tto = projected_bf / 9.0 if projected_bf else float("nan")
+        form = recent_form.get(pid) if pid is not None else None
 
         row: dict[str, Any] = {
             "pitcher": item.get("pitcher"),
@@ -1158,20 +1246,38 @@ def main(argv: list[str] | None = None) -> int:
             "game": item.get("game"),
             "status": item.get("status"),
             "lineup_source": item.get("lineup_source"),
-            "projected_ip": outing["projected_ip"],
-            "projected_bf": outing["projected_bf"],
-            "times_through_order": outing["times_through_order"],
+            "projected_ip": projected_ip,
+            "projected_bf": int(round(projected_bf)),
+            "times_through_order": tto,
             "outing_source": outing["outing_source"],
             "expected_k_pct": float("nan"),
             "expected_whiff_pct": float("nan"),
             "expected_ks": float("nan"),
+            "expected_ks_model": float("nan"),
             "expected_ks_1x": float("nan"),
             "lineup_batters": len(item.get("lineup") or []),
             "lineup_scored": 0,
             "lineup_coverage": float("nan"),
             "bf_scored": 0,
             "missing_batters": "",
-            "batters_faced_assumed": outing["projected_bf"],
+            "batters_faced_assumed": int(round(projected_bf)),
+            "bb9": risk_metrics.get("bb9"),
+            "hr9": risk_metrics.get("hr9"),
+            "k9": risk_metrics.get("k9"),
+            "xfip": risk_metrics.get("xfip"),
+            "outing_risk": risk.get("outing_risk"),
+            "risk_flags": risk.get("risk_flags") or "",
+            "last3_ks": None if not form else form.get("last3_ks"),
+            "last3_k9": None if not form else form.get("last3_k9"),
+            "last3_ip": None if not form else form.get("last3_ip"),
+            "form_ks": None,
+            "form_weight": None,
+            "hand_mix_pitches_l": None
+            if pid is None or pid not in hand_mixes
+            else hand_mixes[pid].get("pitches_l"),
+            "hand_mix_pitches_r": None
+            if pid is None or pid not in hand_mixes
+            else hand_mixes[pid].get("pitches_r"),
             "arsenal": [],
             "pitch_lineup_avg": [],
             "batter_detail": [],
@@ -1193,15 +1299,22 @@ def main(argv: list[str] | None = None) -> int:
 
         if status == "ok" and pid is not None:
             usage = pitcher_usage_weights(arsenal, pid, args.min_usage)
-            if usage is None:
+            mixes = hand_mixes.get(pid)
+            if usage is None and not (mixes and mixes.get("usage_all") is not None):
                 row["status"] = "missing_arsenal"
             else:
+                # Prefer Savant overall mix from pitch-level when arsenal board misses.
+                if usage is None and mixes is not None:
+                    usage = mixes.get("usage_all")
                 scores = score_vs_lineup(
                     usage,
                     lineup,
                     batter_df,
-                    outing["projected_bf"],
+                    projected_bf,
                     people=people,
+                    pitcher_hand=pitcher_hand,
+                    hand_mixes=mixes,
+                    batter_hand_rates=batter_k_vs_hand,
                 )
                 detail = scores.pop("batter_detail", [])
                 row.update(scores)
@@ -1217,6 +1330,14 @@ def main(argv: list[str] | None = None) -> int:
                     row["status"] = "insufficient_batter_rates"
                 else:
                     row["status"] = "ok"
+                    model_ks = float(row["expected_ks"])
+                    row["expected_ks_model"] = model_ks
+                    blended, form_ks, form_w = apply_recent_form_overlay(
+                        model_ks, projected_ip, form
+                    )
+                    row["expected_ks"] = blended
+                    row["form_ks"] = form_ks
+                    row["form_weight"] = form_w
         elif status == "ok":
             row["status"] = "missing_arsenal"
 

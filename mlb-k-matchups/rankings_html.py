@@ -127,7 +127,11 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "batter_id": _json_safe(b.get("batter_id")),
                     "batter": b.get("batter"),
                     "bat_side": b.get("bat_side"),
+                    "stand_used": b.get("stand_used"),
+                    "usage_source": b.get("usage_source"),
                     "expected_k_pct": _json_safe(b.get("expected_k_pct")),
+                    "expected_k_pct_raw": _json_safe(b.get("expected_k_pct_raw")),
+                    "platoon_factor": _json_safe(b.get("platoon_factor")),
                     "expected_whiff_pct": _json_safe(b.get("expected_whiff_pct")),
                     "status": b.get("status"),
                     "pitches": pitches,
@@ -142,6 +146,8 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "pitch_name": p.get("pitch_name"),
                     "usage_pct": _json_safe(p.get("usage_pct")),
                     "usage_frac": _json_safe(p.get("usage_frac")),
+                    "usage_vs_lhb": _json_safe(p.get("usage_vs_lhb")),
+                    "usage_vs_rhb": _json_safe(p.get("usage_vs_rhb")),
                 }
             )
         clean_pitch_avg = []
@@ -152,6 +158,8 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "pitch_name": p.get("pitch_name"),
                     "usage_pct": _json_safe(p.get("usage_pct")),
                     "usage_frac": _json_safe(p.get("usage_frac")),
+                    "usage_vs_lhb": _json_safe(p.get("usage_vs_lhb")),
+                    "usage_vs_rhb": _json_safe(p.get("usage_vs_rhb")),
                     "lineup_k_pct": _json_safe(p.get("lineup_k_pct")),
                     "batters_with_rate": _json_safe(p.get("batters_with_rate")),
                 }
@@ -169,6 +177,7 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "status": r.get("status"),
                 "lineup_source": r.get("lineup_source"),
                 "expected_ks": _json_safe(r.get("expected_ks")),
+                "expected_ks_model": _json_safe(r.get("expected_ks_model")),
                 "expected_k_pct": _json_safe(r.get("expected_k_pct")),
                 "expected_ks_1x": _json_safe(r.get("expected_ks_1x")),
                 "expected_whiff_pct": _json_safe(r.get("expected_whiff_pct")),
@@ -182,6 +191,16 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "bf_scored": _json_safe(r.get("bf_scored")),
                 "batters_faced_assumed": _json_safe(r.get("batters_faced_assumed")),
                 "missing_batters": r.get("missing_batters") or "",
+                "bb9": _json_safe(r.get("bb9")),
+                "hr9": _json_safe(r.get("hr9")),
+                "k9": _json_safe(r.get("k9")),
+                "xfip": _json_safe(r.get("xfip")),
+                "outing_risk": r.get("outing_risk"),
+                "risk_flags": r.get("risk_flags") or "",
+                "last3_ks": _json_safe(r.get("last3_ks")),
+                "last3_k9": _json_safe(r.get("last3_k9")),
+                "form_ks": _json_safe(r.get("form_ks")),
+                "form_weight": _json_safe(r.get("form_weight")),
                 "arsenal": clean_arsenal,
                 "pitch_lineup_avg": clean_pitch_avg,
                 "batters": clean_detail,
@@ -207,6 +226,14 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         avg_txt = (
             f"{_fmt(avg_k, 1)}% lineup avg" if avg_k is not None else "no lineup avg"
         )
+        vs_l = p.get("usage_vs_lhb")
+        vs_r = p.get("usage_vs_rhb")
+        hand_txt = ""
+        if vs_l is not None or vs_r is not None:
+            hand_txt = (
+                f" · vs L {_fmt(vs_l, 0) if vs_l is not None else '—'}%"
+                f" / vs R {_fmt(vs_r, 0) if vs_r is not None else '—'}%"
+            )
         open_attr = " open" if i == 0 else ""
 
         rows_html: list[str] = []
@@ -252,7 +279,8 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             f"<details class='pitch-block'{open_attr}>"
             "<summary>"
             f"<span class='pname'>{_esc(pname)}</span>"
-            f"<span class='pmeta'>{_fmt(p.get('usage_pct'), 1)}% usage · {_esc(avg_txt)}</span>"
+            f"<span class='pmeta'>{_fmt(p.get('usage_pct'), 1)}% overall"
+            f"{_esc(hand_txt)} · {_esc(avg_txt)}</span>"
             "</summary>"
             f"<div class='pitch-list'>{''.join(rows_html)}</div>"
             "</details>"
@@ -337,6 +365,34 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
     )
 
+    risk = row.get("outing_risk") or "clear"
+    risk_flags = row.get("risk_flags") or ""
+    risk_html = (
+        f"<span class='risk risk-{_esc(risk)}'>"
+        f"risk {_esc(risk)}"
+        f"{'' if not risk_flags else ' · ' + _esc(risk_flags)}"
+        "</span>"
+    )
+    form_bits = []
+    if row.get("last3_ks") is not None:
+        form_bits.append(f"L3 {_fmt(row.get('last3_ks'), 1)} K/start")
+    if row.get("last3_k9") is not None:
+        form_bits.append(f"{_fmt(row.get('last3_k9'), 1)} K/9")
+    if row.get("form_weight") is not None:
+        form_bits.append(f"form blend {_fmt(100 * float(row['form_weight']), 0)}%")
+    form_txt = " · ".join(form_bits) if form_bits else "no recent form"
+    rates_txt = (
+        f"BB/9 {_fmt(row.get('bb9'), 2)} · "
+        f"HR/9 {_fmt(row.get('hr9'), 2)} · "
+        f"xFIP {_fmt(row.get('xfip'), 2)}"
+    )
+    model_txt = ""
+    if (
+        row.get("expected_ks_model") is not None
+        and row.get("expected_ks") is not None
+        and abs(float(row["expected_ks_model"]) - float(row["expected_ks"])) >= 0.05
+    ):
+        model_txt = f" · model {_fmt(row.get('expected_ks_model'))} K before form"
     head = (
         "<p class='detail-head'>"
         f"Projected outing {_fmt(row.get('projected_ip'), 1)} IP · "
@@ -345,7 +401,9 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"({_esc(row.get('outing_source') or 'n/a')}) · "
         f"lineup cover "
         f"{'—' if row.get('lineup_coverage') is None else str(int(round(100 * float(row['lineup_coverage'])))) + '%'}"
+        f"{_esc(model_txt)}"
         "</p>"
+        f"<p class='detail-head sharpen'>{_esc(rates_txt)} · {_esc(form_txt)} · {risk_html}</p>"
     )
 
     # CSS-only tabs via radio buttons (works with JS disabled).
@@ -618,6 +676,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .badge.official { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
   .badge.prior { background: rgba(154, 91, 18, 0.14); color: var(--warn); }
   .badge.miss { background: rgba(20, 32, 26, 0.08); color: var(--muted); }
+  .risk {
+    display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+  }
+  .risk-clear { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
+  .risk-low { background: rgba(154, 91, 18, 0.12); color: var(--warn); }
+  .risk-medium { background: rgba(154, 91, 18, 0.18); color: #8a4b0f; }
+  .risk-high { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
+  .detail-head.sharpen { text-transform: none; letter-spacing: 0.01em; }
   .detail {
     padding: 0 1rem 1.1rem;
     border-top: 1px solid var(--line);

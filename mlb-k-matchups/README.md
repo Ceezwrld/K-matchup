@@ -29,6 +29,13 @@ expected_ks_1x = Σ batter_k_pct/100 for one trip through the nine (reference on
 
 No league-average blending: rates come only from the opposing lineup’s batters.
 
+**Sharpening layers**
+
+1. **Pitch mix vs LHB/RHB** — Statcast pitch-level usage by batter stand; each lineup batter is scored with the mix that pitcher actually throws to that side (switch-hitters take the platoon stand).
+2. **Batter K% vs pitcher hand** — Stats API `vl`/`vr` hitting splits softly adjust arsenal-weighted K% (shrunk by sample size).
+3. **Recent form** — last 3 starts’ K/9 blended into `expected_ks` (~30% weight when available); `expected_ks_model` keeps the pre-form number.
+4. **Outing risk** — BB/9, HR/9, xFIP (FanGraphs, Stats API fallback) → `outing_risk` flags; elevated BB/9 mildly shortens projected BF/IP for overs.
+
 ## Setup
 
 ```bash
@@ -56,7 +63,7 @@ Interactive preview (renders in-browser):
 
 https://htmlpreview.github.io/?https://github.com/Ceezwrld/K-matchup/blob/cursor/interactive-rankings-html-106c/rankings.html
 
-Expand any pitcher → **Pitch weaknesses** tab shows the K% heat map vs that starter’s arsenal. Re-run the same command after lineups post to refresh.
+Expand any pitcher → **Pitch weaknesses** shows each pitch (overall + vs L/R usage) and batter K%s. Re-run after lineups post to refresh.
 
 Custom matchups CSV (`pitcher,opponent[,pitcher_id,pitcher_team,game]`). Opponent lineup is resolved from the most recent posted starting nine for that team:
 
@@ -90,7 +97,9 @@ Useful flags:
 ## Data sources
 
 - [Baseball Savant Pitch Arsenal Stats](https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats) (pitcher + batter CSVs)
+- [Baseball Savant Statcast Search](https://baseballsavant.mlb.com/statcast_search) (pitch-level mixes vs LHB/RHB)
 - [MLB Stats API schedule](https://statsapi.mlb.com/api/v1/schedule) with `hydrate=probablePitcher,team,lineups`
-- [MLB Stats API people](https://statsapi.mlb.com/api/v1/people) season pitching splits for IP / BF per start
+- [MLB Stats API people](https://statsapi.mlb.com/api/v1/people) season pitching, game logs, and hitting `vl`/`vr` splits
+- [FanGraphs pitching leaders](https://www.fangraphs.com/) for xFIP / BB/9 / HR/9
 
 Pitchers resolve by MLBAM `player_id` first, then name (`First Last` / `Last, First`). Missing arsenals get `missing_arsenal` / `unresolved` instead of crashing.

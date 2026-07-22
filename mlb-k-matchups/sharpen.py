@@ -1,9 +1,10 @@
 """Sharpening layers for expected-K rankings.
 
 1. Pitcher pitch-mix vs LHB / RHB (Statcast pitch-level)
-2. Batter K% vs pitcher hand (Stats API vl/vr splits)
-3. Recent-form overlay from last 3 starts
-4. Outing-risk flags from BB/9, HR/9, xFIP
+2. Batter pitch-type K% vs LHP / RHP (Statcast PA endings)
+3. Batter overall K% vs pitcher hand (Stats API vl/vr splits)
+4. Recent-form overlay from last 3 starts
+5. Outing-risk flags from BB/9, HR/9, xFIP
 """
 
 from __future__ import annotations
@@ -52,10 +53,17 @@ PEOPLE_SEASON_PITCHING_URL = (
     "&hydrate=stats(group=[pitching],type=[season],season={year})"
 )
 
+STATCAST_BATTER_URL = (
+    "https://baseballsavant.mlb.com/statcast_search/csv"
+    "?all=true&hfSea={year}%7C&hfGT=R%7C&player_type=batter"
+    "&batters_lookup%5B%5D={batter_id}&min_pitches=1&type=details"
+)
+
 # Ignore non-pitch / rare codes when building mixes.
 SKIP_PITCH_TYPES = {"PO", "IN", "AB", "UN", "FA", ""}
 
 MIN_HAND_SPLIT_PITCHES = 80
+MIN_PA_PITCH_VS_HAND = 15
 FORM_BLEND = 0.30
 FORM_MIN_STARTS = 2
 PLATOON_FULL_PA = 80
@@ -65,6 +73,8 @@ HR9_WARN = 1.20
 HR9_HIGH = 1.50
 XFIP_WARN = 4.20
 XFIP_HIGH = 4.80
+
+K_EVENTS = {"strikeout", "strikeout_double_play"}
 
 PITCH_NAMES = {
     "FF": "4-Seam Fastball",
@@ -321,6 +331,86 @@ def fetch_batter_hand_k_rates(
                         entry["k_pct_vs_rhp"] = k_pct
                         entry["pa_vs_rhp"] = pa
             out[int(pid)] = entry
+    return out
+
+
+def _pitch_k_rates_from_pa_df(pa_df: pd.DataFrame) -> dict[str, dict[str, float]]:
+    """pitch_type -> {k_percent, pa} from PA-ending Statcast rows."""
+    if pa_df is None or pa_df.empty:
+        return {}
+    work = pa_df.copy()
+    work["pitch_type"] = work["pitch_type"].astype(str).str.upper()
+    work = work[~work["pitch_type"].isin(SKIP_PITCH_TYPES)]
+    if work.empty:
+        return {}
+    events = work["events"].astype(str).str.lower()
+    work["is_k"] = events.isin(K_EVENTS)
+    out: dict[str, dict[str, float]] = {}
+    for pt, g in work.groupby("pitch_type"):
+        pa = float(len(g))
+        if pa <= 0:
+            continue
+        k = float(g["is_k"].sum())
+        out[str(pt)] = {"k_percent": 100.0 * k / pa, "pa": pa}
+    return out
+
+
+def fetch_batter_pitch_k_vs_hand(
+    batter_ids: list[int],
+    year: int,
+    verbose: bool,
+    log: Callable[[bool, str], None],
+    *,
+    min_pa: int = MIN_PA_PITCH_VS_HAND,
+) -> dict[int, dict[str, dict[str, dict[str, float]]]]:
+    """True batter K% by pitch_type vs LHP / RHP from Statcast PA endings.
+
+    Returns: batter_id -> {"L"|"R" -> pitch_type -> {k_percent, pa}}
+    Only keeps pitch buckets with pa >= min_pa.
+    """
+    ids = sorted({int(x) for x in batter_ids if x is not None})
+    out: dict[int, dict[str, dict[str, dict[str, float]]]] = {}
+
+    def _one(bid: int) -> tuple[int, dict[str, dict[str, dict[str, float]]] | None]:
+        url = STATCAST_BATTER_URL.format(year=year, batter_id=bid)
+        try:
+            resp = _get(url, verbose, log)
+            text = resp.content.decode("utf-8-sig")
+            if not text.strip() or "pitch_type" not in text.split("\n", 1)[0]:
+                return bid, None
+            df = pd.read_csv(StringIO(text))
+        except Exception as exc:  # noqa: BLE001
+            log(verbose, f"batter pitch×hand fetch failed for {bid}: {exc}")
+            return bid, None
+        if df.empty or "events" not in df.columns or "p_throws" not in df.columns:
+            return bid, None
+        pa = df[df["events"].notna() & (df["events"].astype(str).str.len() > 0)].copy()
+        if pa.empty:
+            return bid, None
+        pa["p_throws"] = pa["p_throws"].astype(str).str.upper()
+        sides: dict[str, dict[str, dict[str, float]]] = {}
+        for hand in ("L", "R"):
+            rates = _pitch_k_rates_from_pa_df(pa[pa["p_throws"] == hand])
+            kept = {
+                pt: vals
+                for pt, vals in rates.items()
+                if float(vals.get("pa") or 0) >= float(min_pa)
+            }
+            if kept:
+                sides[hand] = kept
+        return bid, sides or None
+
+    workers = min(10, max(1, len(ids)))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futs = [pool.submit(_one, bid) for bid in ids]
+        for fut in as_completed(futs):
+            bid, sides = fut.result()
+            if sides:
+                out[bid] = sides
+    log(
+        verbose,
+        f"batter pitch×hand rates: {len(out)}/{len(ids)} batters with usable splits",
+    )
     return out
 
 

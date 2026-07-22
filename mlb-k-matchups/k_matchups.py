@@ -20,6 +20,7 @@ from sharpen import (  # noqa: E402
     classify_outing_risk,
     effective_bat_side,
     fetch_batter_hand_k_rates,
+    fetch_batter_pitch_k_vs_hand,
     fetch_fangraphs_pitching,
     fetch_pitcher_hand_mixes,
     fetch_pitcher_rate_stats,
@@ -599,15 +600,21 @@ def score_batter_vs_arsenal(
     batter_rates: pd.DataFrame,
     *,
     bat_side: str | None = None,
+    pitcher_hand: str | None = None,
+    pitch_k_vs_hand: dict[str, dict[str, dict[str, float]]] | None = None,
     league_pitch: dict[str, dict[str, float]] | None = None,
     league_side_pitch: dict[tuple[str, str], dict[str, float]] | None = None,
 ) -> dict[str, Any] | None:
     """Arsenal-weighted K%/whiff for one batter, plus per-pitch K breakdown.
 
-    Prefer the batter's own Savant K% vs each arsenal pitch. If they have no
-    sample vs that pitch, use same-handed league-average K% vs that pitch
-    (else overall league vs that pitch). Never copy another pitch's K% from
-    the same batter — that skews rare/unseen pitches.
+    Preference order per arsenal pitch:
+      1. batter's true K% vs that pitch against this pitcher hand (Statcast)
+      2. batter's overall Savant K% vs that pitch
+      3. same-handed league-average K% vs that pitch
+      4. overall league vs that pitch
+
+    Never copy another pitch's K% from the same batter — that skews rare/unseen
+    pitches.
     """
     league_pitch = league_pitch or {}
     league_side_pitch = league_side_pitch or {}
@@ -616,10 +623,18 @@ def score_batter_vs_arsenal(
         if not batter_rates.empty
         else pd.DataFrame()
     )
+    hand_key = str(pitcher_hand).upper() if pitcher_hand else None
+    hand_pitch_rates = (
+        (pitch_k_vs_hand or {}).get(hand_key) if hand_key in {"L", "R"} else None
+    )
+    hand_source = (
+        f"pitch_vs_{hand_key.lower()}hp" if hand_key in {"L", "R"} else None
+    )
 
     exp_k = 0.0
     exp_whiff = 0.0
     covered = 0.0
+    hand_covered = 0.0
     pitch_breakdown: list[dict[str, Any]] = []
     for _, row in usage.iterrows():
         pt = str(row["pitch_type"])
@@ -640,7 +655,17 @@ def score_batter_vs_arsenal(
             "k_source": None,
         }
 
-        if not by_pitch.empty and pt in by_pitch.index:
+        hand_hit = hand_pitch_rates.get(pt) if hand_pitch_rates else None
+        if hand_hit is not None and float(hand_hit.get("pa") or 0) > 0:
+            entry["k_percent"] = float(hand_hit["k_percent"])
+            entry["pa"] = float(hand_hit["pa"])
+            entry["k_source"] = hand_source
+            # Whiff not derived from PA endings; fall back to overall pitch whiff.
+            if not by_pitch.empty and pt in by_pitch.index:
+                wh = by_pitch.loc[pt, "whiff_percent"]
+                entry["whiff_percent"] = float(wh) if pd.notna(wh) else None
+            hand_covered += w
+        elif not by_pitch.empty and pt in by_pitch.index:
             k = float(by_pitch.loc[pt, "k_percent"])
             wh = by_pitch.loc[pt, "whiff_percent"]
             pa = by_pitch.loc[pt, "pa"] if "pa" in by_pitch.columns else None
@@ -680,6 +705,7 @@ def score_batter_vs_arsenal(
         "expected_k_pct": exp_k,
         "expected_whiff_pct": exp_whiff,
         "usage_covered": covered,
+        "hand_pitch_coverage": hand_covered / covered if covered else 0.0,
         "pitch_breakdown": pitch_breakdown,
         "used_league_fill": any(
             p.get("k_source") in {"league_pitch", "league_platoon"}
@@ -698,16 +724,19 @@ def score_vs_lineup(
     pitcher_hand: str | None = None,
     hand_mixes: dict[str, Any] | None = None,
     batter_hand_rates: dict[int, dict[str, Any]] | None = None,
+    batter_pitch_k_vs_hand: dict[int, dict[str, dict[str, dict[str, float]]]]
+    | None = None,
 ) -> dict[str, Any]:
     """Score starter arsenal vs opposing starting nine over a full outing.
 
-    Prefer each batter's own Savant K% vs arsenal pitches. Missing pitch-type
-    samples use same-handed league-average K% vs that pitch (else overall
-    league vs that pitch), so every heatmap cell can show a pitch-specific rate.
+    Prefer each batter's true pitch-type K% vs this pitcher hand, then overall
+    Savant pitch rates. Missing samples use same-handed league-average K% vs
+    that pitch (else overall league), so every heatmap cell can show a rate.
 
     When Statcast hand mixes are available, each batter is scored against the
     pitcher's usage vs that batter's stand (switch-hitters use the platoon
-    stand). Batter K% vs pitcher hand then softly adjusts the arsenal K%.
+    stand). Soft overall batter-hand K% adjust is skipped when pitch×hand
+    rates already cover most of the arsenal.
 
     expected_k_pct       = mean arsenal-weighted K% across lineup batters with data
     expected_ks_1x       = known K expectation for one trip through the order
@@ -716,9 +745,22 @@ def score_vs_lineup(
     """
     people = people or {}
     batter_hand_rates = batter_hand_rates or {}
+    batter_pitch_k_vs_hand = batter_pitch_k_vs_hand or {}
     league_pitch, league_side_pitch = build_pitch_reference_rates(batter_df, people)
     batter_scores: list[dict[str, Any]] = []
     missing: list[str] = []
+
+    def _finalize_batter_k(
+        raw_k: float,
+        bid: int,
+        hand_pitch_coverage: float,
+    ) -> tuple[float, float | None, str]:
+        # Avoid double-counting platoon when pitch×hand rates already dominate.
+        if hand_pitch_coverage >= 0.60:
+            return raw_k, None, "pitch_vs_hand"
+        return platoon_adjust_k_pct(
+            raw_k, batter_hand_rates.get(bid), pitcher_hand
+        )
 
     for slot_row in lineup:
         bid = int(slot_row["batter_id"])
@@ -749,6 +791,8 @@ def score_vs_lineup(
             batter_usage,
             rates,
             bat_side=stand or bat_side,
+            pitcher_hand=pitcher_hand,
+            pitch_k_vs_hand=batter_pitch_k_vs_hand.get(bid),
             league_pitch=league_pitch,
             league_side_pitch=league_side_pitch,
         )
@@ -789,9 +833,7 @@ def score_vs_lineup(
                 mean_k = sum(
                     float(p["usage_frac"]) * float(p["k_percent"]) for p in known
                 ) / sum(float(p["usage_frac"]) for p in known)
-                adj_k, platoon_factor, platoon_src = platoon_adjust_k_pct(
-                    mean_k, batter_hand_rates.get(bid), pitcher_hand
-                )
+                adj_k, platoon_factor, platoon_src = _finalize_batter_k(mean_k, bid, 0.0)
                 batter_scores.append(
                     {
                         "slot": slot_row.get("slot"),
@@ -804,6 +846,7 @@ def score_vs_lineup(
                         "expected_k_pct_raw": mean_k,
                         "platoon_factor": platoon_factor,
                         "platoon_source": platoon_src,
+                        "hand_pitch_coverage": 0.0,
                         "expected_whiff_pct": mean_k,
                         "status": "ok",
                         "pitches": empty_pitches,
@@ -825,10 +868,9 @@ def score_vs_lineup(
                     }
                 )
             continue
-        adj_k, platoon_factor, platoon_src = platoon_adjust_k_pct(
-            float(scored["expected_k_pct"]),
-            batter_hand_rates.get(bid),
-            pitcher_hand,
+        hand_cov = float(scored.get("hand_pitch_coverage") or 0.0)
+        adj_k, platoon_factor, platoon_src = _finalize_batter_k(
+            float(scored["expected_k_pct"]), bid, hand_cov
         )
         batter_scores.append(
             {
@@ -842,6 +884,7 @@ def score_vs_lineup(
                 "expected_k_pct_raw": float(scored["expected_k_pct"]),
                 "platoon_factor": platoon_factor,
                 "platoon_source": platoon_src,
+                "hand_pitch_coverage": hand_cov,
                 "expected_whiff_pct": scored["expected_whiff_pct"],
                 "status": "ok",
                 "pitches": scored.get("pitch_breakdown") or [],
@@ -1199,6 +1242,9 @@ def main(argv: list[str] | None = None) -> int:
     batter_k_vs_hand = fetch_batter_hand_k_rates(
         batter_ids, year, args.verbose, log
     )
+    batter_pitch_k_vs_hand = fetch_batter_pitch_k_vs_hand(
+        batter_ids, year, args.verbose, log
+    )
     recent_form = fetch_pitcher_recent_form(
         pitcher_ids, year, args.verbose, log
     )
@@ -1315,6 +1361,7 @@ def main(argv: list[str] | None = None) -> int:
                     pitcher_hand=pitcher_hand,
                     hand_mixes=mixes,
                     batter_hand_rates=batter_k_vs_hand,
+                    batter_pitch_k_vs_hand=batter_pitch_k_vs_hand,
                 )
                 detail = scores.pop("batter_detail", [])
                 row.update(scores)

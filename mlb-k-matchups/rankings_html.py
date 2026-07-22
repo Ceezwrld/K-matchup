@@ -291,8 +291,10 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         f"{''.join(blocks)}"
         "<p class='hint'>"
         "Open a pitch to see each batter’s K% vs that pitch. "
-        "Longer/darker bar = more K-prone. "
-        "<code>†</code> = same-handed league average (no direct sample vs that pitch)."
+        "Rates prefer true K% vs this pitcher’s hand when sample ≥15 PA; "
+        "else overall pitch K%; "
+        "<code>†</code> = same-handed league average. "
+        "Longer/darker bar = more K-prone."
         "</p>"
         "</div>"
     )

@@ -8,6 +8,7 @@ import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -87,6 +88,33 @@ MIN_GS_RELIABLE = 5
 MAX_PROJECTED_IP = 7.0
 MAX_PROJECTED_BF = 30
 DEFAULT_MIN_PA_BATTER = 1
+
+
+CENTRAL_TZ = ZoneInfo("America/Chicago")
+
+
+def format_game_time_ct(game_date_iso: Any, *, start_tbd: bool = False) -> str | None:
+    """Format MLB Stats API gameDate (UTC ISO) as Central Time, e.g. '12:05 PM CT'."""
+    if start_tbd:
+        return "TBD CT"
+    if game_date_iso is None or (isinstance(game_date_iso, float) and pd.isna(game_date_iso)):
+        return None
+    text = str(game_date_iso).strip()
+    if not text:
+        return None
+    try:
+        if text.endswith("Z"):
+            dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        else:
+            dt = datetime.fromisoformat(text)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+        local = dt.astimezone(CENTRAL_TZ)
+        # Platform-safe 12h clock without leading zero quirks.
+        hour = local.strftime("%I").lstrip("0") or "12"
+        return f"{hour}:{local.strftime('%M %p')} CT"
+    except (TypeError, ValueError):
+        return None
 
 
 def log(verbose: bool, msg: str) -> None:
@@ -435,6 +463,11 @@ def fetch_probable_matchups(game_date: str, verbose: bool) -> pd.DataFrame:
             away_team = normalize_team(away.get("team", {}).get("abbreviation"))
             game_label = f"{away_team}@{home_team}"
             game_pk = game.get("gamePk")
+            status = game.get("status") or {}
+            game_time_ct = format_game_time_ct(
+                game.get("gameDate"),
+                start_tbd=bool(status.get("startTimeTBD")),
+            )
             posted = _team_lineups_from_game(game)
             for side, opp_team in ((home, away_team), (away, home_team)):
                 pp = side.get("probablePitcher") or {}
@@ -450,6 +483,8 @@ def fetch_probable_matchups(game_date: str, verbose: bool) -> pd.DataFrame:
                         "opponent": opp_team,
                         "game": game_label,
                         "game_pk": game_pk,
+                        "game_time_utc": game.get("gameDate"),
+                        "game_time_ct": game_time_ct,
                         "lineup": opp_lineup,
                         "lineup_source": "official" if opp_lineup else None,
                     }
@@ -516,6 +551,8 @@ def load_matchups_csv(path: str) -> pd.DataFrame:
     df["opponent"] = df["opponent"].map(normalize_team)
     df["pitcher_team"] = df["pitcher_team"].map(normalize_team)
     df["game_pk"] = pd.NA
+    df["game_time_utc"] = pd.NA
+    df["game_time_ct"] = pd.NA
     df["lineup"] = [[] for _ in range(len(df))]
     df["lineup_source"] = None
     return df[
@@ -526,6 +563,8 @@ def load_matchups_csv(path: str) -> pd.DataFrame:
             "pitcher_team",
             "game",
             "game_pk",
+            "game_time_utc",
+            "game_time_ct",
             "lineup",
             "lineup_source",
         ]
@@ -997,6 +1036,7 @@ def format_table(df: pd.DataFrame) -> str:
             "pitcher_team",
             "opponent",
             "game",
+            "game_time_ct",
             "expected_ks",
             "projected_ip",
             "times_through_order",
@@ -1226,6 +1266,8 @@ def main(argv: list[str] | None = None) -> int:
                 "pitcher_team": normalize_team(m.get("pitcher_team")),
                 "opponent": opponent,
                 "game": m.get("game"),
+                "game_time_utc": m.get("game_time_utc"),
+                "game_time_ct": m.get("game_time_ct"),
                 "status": status,
                 "lineup": lineup,
                 "lineup_source": lineup_source,
@@ -1290,6 +1332,8 @@ def main(argv: list[str] | None = None) -> int:
             "pitch_hand": pitcher_hand,
             "opponent": item.get("opponent"),
             "game": item.get("game"),
+            "game_time_ct": item.get("game_time_ct"),
+            "game_time_utc": item.get("game_time_utc"),
             "status": item.get("status"),
             "lineup_source": item.get("lineup_source"),
             "projected_ip": projected_ip,

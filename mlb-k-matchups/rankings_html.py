@@ -174,6 +174,7 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "pitch_hand": r.get("pitch_hand"),
                 "opponent": r.get("opponent"),
                 "game": r.get("game"),
+                "game_time_ct": r.get("game_time_ct"),
                 "status": r.get("status"),
                 "lineup_source": r.get("lineup_source"),
                 "expected_ks": _json_safe(r.get("expected_ks")),
@@ -342,6 +343,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             row.get("pitcher_team"),
             row.get("opponent"),
             row.get("game"),
+            row.get("game_time_ct"),
             row.get("lineup_source"),
             status,
         ]
@@ -349,6 +351,11 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     ).lower()
 
     uid = f"m{idx}"
+    game_time = row.get("game_time_ct")
+    game_html = f"<div class='game'>{_esc(row.get('game') or '—')}"
+    if game_time:
+        game_html += f"<span class='gametime'>{_esc(game_time)}</span>"
+    game_html += "</div>"
     summary = (
         "<div class='summary-grid'>"
         f"<div class='rank'>{_esc(row.get('rank') if row.get('rank') is not None else '—')}</div>"
@@ -358,7 +365,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"{_esc(row.get('opponent') or '?')}"
         f"{'' if status in ('', 'ok') else ' · ' + _esc(status)}</div>"
         "</div>"
-        f"<div class='game'>{_esc(row.get('game') or '—')}</div>"
+        f"{game_html}"
         f"<div class='num ks'>{_fmt(row.get('expected_ks'))}</div>"
         f"<div class='num'>{_fmt(row.get('projected_ip'), 1)}</div>"
         f"<div class='num'>{tto_s}</div>"
@@ -669,6 +676,18 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     vertical-align: middle;
   }
   .sub { color: var(--muted); font-size: 0.8rem; margin-top: 0.12rem; }
+  .game {
+    font-weight: 650;
+    line-height: 1.25;
+  }
+  .gametime {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
   .num { font-variant-numeric: tabular-nums; font-weight: 700; }
   .ks { color: var(--accent); font-size: 1.05rem; }
   .badge {

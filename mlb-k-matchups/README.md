@@ -45,6 +45,8 @@ No league-average blending: rates come only from the opposing lineup’s batters
 4. **Recent form** — last 3 starts’ K/9 blended into `expected_ks` (~30% weight when available); `expected_ks_model` keeps the pre-form number.
 5. **Outing risk** — BB/9, HR/9, xFIP (FanGraphs, Stats API fallback) → `outing_risk` flags; elevated BB/9 mildly shortens projected BF/IP for overs.
 
+If a starter is missing from the Savant arsenal board (common for returning arms below the default `min` PA filter), the model falls back to **Statcast pitch-level usage** for that pitcher instead of leaving them unscored.
+
 ## Daily automation (GitHub Actions)
 
 After this workflow is on `main`, rankings refresh automatically **twice a day** (no Cursor tokens used):

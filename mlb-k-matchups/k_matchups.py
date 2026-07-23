@@ -1481,15 +1481,18 @@ def main(argv: list[str] | None = None) -> int:
             results.append(row)
             continue
 
-        if status == "ok" and pid is not None:
+        if pid is not None and status in ("ok", "missing_arsenal"):
             usage = pitcher_usage_weights(arsenal, pid, args.min_usage)
             mixes = hand_mixes.get(pid)
+            used_statcast_mix = False
             if usage is None and not (mixes and mixes.get("usage_all") is not None):
                 row["status"] = "missing_arsenal"
             else:
-                # Prefer Savant overall mix from pitch-level when arsenal board misses.
+                # Prefer Savant arsenal board; fall back to Statcast pitch-level
+                # when the board drops low-sample / returning starters (e.g. Bieber).
                 if usage is None and mixes is not None:
                     usage = mixes.get("usage_all")
+                    used_statcast_mix = True
                 scores = score_vs_lineup(
                     usage,
                     lineup,
@@ -1523,6 +1526,8 @@ def main(argv: list[str] | None = None) -> int:
                     row["expected_ks"] = blended
                     row["form_ks"] = form_ks
                     row["form_weight"] = form_w
+                    if used_statcast_mix:
+                        row["arsenal_source"] = "statcast_fallback"
         elif status == "ok":
             row["status"] = "missing_arsenal"
 

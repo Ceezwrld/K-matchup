@@ -87,6 +87,14 @@ DEFAULT_BF_PER_IP = 4.25
 MIN_GS_RELIABLE = 5
 MAX_PROJECTED_IP = 7.0
 MAX_PROJECTED_BF = 30
+# Opener / swingman: total IP÷GS is inflated by relief work.
+MIN_APPEARANCES_FOR_ROLE = 10
+OPENER_START_SHARE = 0.25  # GS/G below this → opener candidate
+SWINGMAN_START_SHARE = 0.50  # GS/G below this → contaminated IP/GS
+OPENER_PROJECTED_IP = 1.5
+OPENER_EST_START_IP = 2.5  # est start IP below this → treat as opener
+RELIEF_IP_PER_APP = 1.0  # assume ~1 IP per non-start when backing out start IP
+SWINGMAN_PROJECTED_IP = 3.0  # fallback only if start IP can't be estimated
 DEFAULT_MIN_PA_BATTER = 1
 
 
@@ -217,15 +225,64 @@ def fetch_pitcher_season_outings(
             stat = splits[0].get("stat") or {}
             ip = parse_innings_pitched(stat.get("inningsPitched"))
             gs = float(stat.get("gamesStarted") or 0)
+            g = float(stat.get("gamesPlayed") or 0)
             bf = float(stat.get("battersFaced") or 0)
             so = float(stat.get("strikeOuts") or 0)
             out[int(pid)] = {
                 "ip": ip if ip is not None else 0.0,
                 "gs": gs,
+                "g": g,
                 "bf": bf,
                 "so": so,
             }
     return out
+
+
+def estimate_start_ip(season_ip: float, season_gs: float, season_g: float) -> float | None:
+    """Estimate IP per start when season totals include relief appearances.
+
+    Backs out ~1 IP per non-start so IP÷GS is not inflated by bullpen work.
+    """
+    if season_gs <= 0:
+        return None
+    if season_g <= season_gs:
+        return season_ip / season_gs
+    relief_g = max(0.0, season_g - season_gs)
+    est_relief_ip = min(season_ip, relief_g * RELIEF_IP_PER_APP)
+    return max(0.5, (season_ip - est_relief_ip) / season_gs)
+
+
+def classify_outing_role(
+    season_gs: float,
+    season_g: float,
+    season_ip: float,
+    *,
+    est_start_ip: float | None = None,
+) -> str:
+    """starter | swingman | opener_likely from season appearance mix."""
+    if season_g < MIN_APPEARANCES_FOR_ROLE or season_g <= 0:
+        return "starter"
+    start_share = season_gs / season_g
+    ip_per_g = season_ip / season_g if season_g > 0 else 0.0
+    est = est_start_ip if est_start_ip is not None else estimate_start_ip(
+        season_ip, season_gs, season_g
+    )
+    # True openers: rarely start, and estimated start length is short.
+    if (
+        start_share < OPENER_START_SHARE
+        and est is not None
+        and est < OPENER_EST_START_IP
+    ):
+        return "opener_likely"
+    if (
+        start_share < SWINGMAN_START_SHARE
+        and ip_per_g < 2.0
+        and (est is None or est < OPENER_EST_START_IP)
+    ):
+        return "opener_likely"
+    if start_share < SWINGMAN_START_SHARE:
+        return "swingman"
+    return "starter"
 
 
 def project_starter_outing(
@@ -239,13 +296,22 @@ def project_starter_outing(
 
     Preference:
       1. explicit --batters-faced / --ip overrides
-      2. season averages: BF/GS and IP/GS
-      3. defaults (5.5 IP × 4.25 BF/IP)
+      2. opener short-outing when role is opener_likely
+      3. season averages (with relief-backed-out start IP when G > GS)
+      4. defaults (5.5 IP × 4.25 BF/IP)
+
+    Note: raw season IP÷GS is unreliable for openers/swingmen because relief
+    innings inflate the numerator.
     """
     season = season_outings.get(int(pitcher_id)) if pitcher_id is not None else None
     season_ip = float(season["ip"]) if season else 0.0
     season_gs = float(season["gs"]) if season else 0.0
+    season_g = float(season.get("g") or 0.0) if season else 0.0
     season_bf = float(season["bf"]) if season else 0.0
+    est_start_ip = estimate_start_ip(season_ip, season_gs, season_g)
+    outing_role = classify_outing_role(
+        season_gs, season_g, season_ip, est_start_ip=est_start_ip
+    )
 
     bf_per_ip = DEFAULT_BF_PER_IP
     if season_ip > 0 and season_bf > 0:
@@ -267,6 +333,28 @@ def project_starter_outing(
         projected_ip = float(ip_override)
         projected_bf = projected_ip * bf_per_ip
         source = "override_ip"
+    elif outing_role == "opener_likely":
+        projected_ip = OPENER_PROJECTED_IP
+        projected_bf = projected_ip * bf_per_ip
+        source = "opener_profile"
+    elif est_start_ip is not None and season_gs > 0:
+        # Prefer relief-adjusted start IP whenever we have GS (fixes G>GS inflation).
+        projected_ip = float(est_start_ip)
+        if season_bf > 0 and season_ip > 0:
+            # Scale BF with the same relief adjustment ratio when possible.
+            raw_ip_gs = season_ip / season_gs
+            raw_bf_gs = season_bf / season_gs
+            if raw_ip_gs > 0:
+                projected_bf = raw_bf_gs * (projected_ip / raw_ip_gs)
+            else:
+                projected_bf = projected_ip * bf_per_ip
+        else:
+            projected_bf = projected_ip * bf_per_ip
+        source = (
+            "season_start_est"
+            if season_g > season_gs
+            else "season_avg"
+        )
     elif season_gs > 0 and season_bf > 0:
         projected_bf = season_bf / season_gs
         projected_ip = season_ip / season_gs if season_ip > 0 else projected_bf / bf_per_ip
@@ -281,6 +369,7 @@ def project_starter_outing(
         source = "default"
 
     # Shrink thin samples toward a typical starter outing, then cap extremes.
+    # Skip for openers — those already use role-based short outings.
     if source.startswith("season") and season_gs < MIN_GS_RELIABLE:
         weight = season_gs / MIN_GS_RELIABLE
         projected_ip = weight * projected_ip + (1.0 - weight) * DEFAULT_PROJECTED_IP
@@ -301,9 +390,12 @@ def project_starter_outing(
         "projected_bf": projected_bf_rounded,
         "times_through_order": times_through,
         "outing_source": source,
+        "outing_role": outing_role,
         "season_ip": season_ip if season_gs else float("nan"),
         "season_gs": season_gs if season_gs else float("nan"),
+        "season_g": season_g if season_g else float("nan"),
         "season_bf_per_start": (season_bf / season_gs) if season_gs else float("nan"),
+        "est_start_ip": est_start_ip if est_start_ip is not None else float("nan"),
     }
 
 
@@ -1047,6 +1139,7 @@ def format_table(df: pd.DataFrame) -> str:
             "hr9",
             "xfip",
             "outing_risk",
+            "outing_role",
             "lineup_source",
             "lineup_coverage",
             "status",
@@ -1340,6 +1433,7 @@ def main(argv: list[str] | None = None) -> int:
             "projected_bf": int(round(projected_bf)),
             "times_through_order": tto,
             "outing_source": outing["outing_source"],
+            "outing_role": outing.get("outing_role") or "starter",
             "expected_k_pct": float("nan"),
             "expected_whiff_pct": float("nan"),
             "expected_ks": float("nan"),

@@ -19,6 +19,14 @@ times_through_order = projected_bf / 9
 Fallbacks: `--ip` / `--batters-faced` overrides, else `5.5 IP × 4.25 BF/IP`.
 Thin samples (`GS < 5`) shrink toward that default; uncapped season averages are limited to **7.0 IP / 30 BF** so projections stay in a realistic starter range.
 
+**Opener / swingman guard** — raw IP÷GS is unreliable when appearances include relief (relief IP inflates the numerator). The model:
+
+1. Estimates start IP by backing out ~1 IP per non-start appearance
+2. Labels **opener_likely** when starts are rare *and* estimated start length is short → project **1.5 IP**
+3. Labels **swingman** when start share is mixed but length looks starter-ish (uses the relief-adjusted start IP)
+
+These show as `outing_role` / `outing_source` in the CSV and HTML.
+
 **Lineup rollup**
 
 ```

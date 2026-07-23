@@ -224,6 +224,7 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "projected_bf": _json_safe(r.get("projected_bf")),
                 "times_through_order": _json_safe(r.get("times_through_order")),
                 "outing_source": r.get("outing_source"),
+                "outing_role": r.get("outing_role"),
                 "lineup_batters": _json_safe(r.get("lineup_batters")),
                 "lineup_scored": _json_safe(r.get("lineup_scored")),
                 "lineup_coverage": _json_safe(r.get("lineup_coverage")),
@@ -430,6 +431,12 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"{'' if not risk_flags else ' · ' + _esc(risk_flags)}"
         "</span>"
     )
+    role = row.get("outing_role") or "starter"
+    role_html = ""
+    if role and role != "starter":
+        role_html = (
+            f" <span class='role role-{_esc(role)}'>{_esc(role.replace('_', ' '))}</span>"
+        )
     form_bits = []
     if row.get("last3_ks") is not None:
         form_bits.append(f"L3 {_fmt(row.get('last3_ks'), 1)} K/start")
@@ -455,7 +462,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"Projected outing {_fmt(row.get('projected_ip'), 1)} IP · "
         f"{tto_s} through order · "
         f"BF {row.get('projected_bf') if row.get('projected_bf') is not None else row.get('batters_faced_assumed') or '—'} "
-        f"({_esc(row.get('outing_source') or 'n/a')}) · "
+        f"({_esc(row.get('outing_source') or 'n/a')}){role_html} · "
         f"lineup cover "
         f"{'—' if row.get('lineup_coverage') is None else str(int(round(100 * float(row['lineup_coverage'])))) + '%'}"
         f"{_esc(model_txt)}"
@@ -786,6 +793,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .risk-low { background: rgba(154, 91, 18, 0.12); color: var(--warn); }
   .risk-medium { background: rgba(154, 91, 18, 0.18); color: #8a4b0f; }
   .risk-high { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
+  .role {
+    display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+    text-transform: none;
+  }
+  .role-opener_likely { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
+  .role-swingman { background: rgba(154, 91, 18, 0.16); color: #8a4b0f; }
   .detail-head.sharpen { text-transform: none; letter-spacing: 0.01em; }
   .detail {
     padding: 0 1rem 1.1rem;

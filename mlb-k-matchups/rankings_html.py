@@ -67,6 +67,44 @@ def _heat_style(k: Any) -> str:
     return f"background:rgba(15,106,77,{alpha:.3f});color:{color}"
 
 
+def _grade_band(value: Any, low: float, mid: float, high: float) -> str | None:
+    """Map a numeric value onto low / mid / high / elite."""
+    v = _json_safe(value)
+    if v is None:
+        return None
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return None
+    if x < low:
+        return "low"
+    if x < mid:
+        return "mid"
+    if x < high:
+        return "high"
+    return "elite"
+
+
+def _grade_for(metric: str, value: Any) -> str | None:
+    """Color-grade key projection metrics for the HTML board."""
+    if metric == "expected_ks":
+        return _grade_band(value, 4.0, 5.0, 6.0)
+    if metric == "expected_k_pct":
+        return _grade_band(value, 18.0, 21.0, 24.0)
+    if metric == "projected_ip":
+        return _grade_band(value, 5.0, 5.75, 6.5)
+    if metric == "tto":
+        return _grade_band(value, 2.2, 2.6, 3.0)
+    if metric == "batter_k_pct":
+        return _grade_band(value, 15.0, 20.0, 25.0)
+    return None
+
+
+def _grade_class(metric: str, value: Any) -> str:
+    band = _grade_for(metric, value)
+    return f" grade-{band}" if band else ""
+
+
 def _lineup_label(src: Any) -> tuple[str, str]:
     if not src:
         return "miss", "none"
@@ -252,6 +290,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             width = 0 if k is None else max(4, min(100, float(k)))
             pa = hit.get("pa")
             pa_txt = "—" if pa is None else _fmt(pa, 0)
+            k_grade = _grade_class("batter_k_pct", k)
             rows_html.append(
                 "<div class='pitch-row'>"
                 "<div class='who'>"
@@ -261,19 +300,22 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
                 "<div class='meter'>"
                 f"<span class='bar' style='width:{width:.0f}%;{_heat_style(k)}'></span>"
                 "</div>"
-                f"<div class='kval' title='source {_esc(src or 'pitch')} · PA {_esc(pa_txt)}'>"
+                f"<div class='kval{k_grade}' "
+                f"title='source {_esc(src or 'pitch')} · PA {_esc(pa_txt)}'>"
                 f"{k_txt}</div>"
                 "</div>"
             )
 
         width_avg = 0 if avg_k is None else max(4, min(100, float(avg_k)))
+        avg_grade = _grade_class("batter_k_pct", avg_k)
         rows_html.append(
             "<div class='pitch-row avg'>"
             "<div class='who'><span class='name'>Lineup avg</span></div>"
             "<div class='meter'>"
             f"<span class='bar' style='width:{width_avg:.0f}%;{_heat_style(avg_k)}'></span>"
             "</div>"
-            f"<div class='kval'>{'—' if avg_k is None else _fmt(avg_k, 1) + '%'}</div>"
+            f"<div class='kval{avg_grade}'>"
+            f"{'—' if avg_k is None else _fmt(avg_k, 1) + '%'}</div>"
             "</div>"
         )
         blocks.append(
@@ -306,14 +348,16 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
     cards = []
     for b in row.get("batters") or []:
         miss = b.get("status") != "ok"
-        k = "n/a" if miss else f"{_fmt(b.get('expected_k_pct'), 1)}%"
+        k_raw = None if miss else b.get("expected_k_pct")
+        k = "n/a" if miss else f"{_fmt(k_raw, 1)}%"
+        k_grade = "" if miss else _grade_class("batter_k_pct", k_raw)
         side = _hand_label(b.get("bat_side"), "B")
         side_html = f" <span class='hand'>{_esc(side)}</span>" if side else ""
         cards.append(
             f"<div class='batter {'missing' if miss else ''}'>"
             f"<span><span class='slot'>{_esc(b.get('slot'))}.</span> "
             f"{_esc(b.get('batter') or '—')}{side_html}</span>"
-            f"<span class='k'>{k}</span>"
+            f"<span class='k{k_grade}'>{k}</span>"
             "</div>"
         )
     if not cards:
@@ -356,6 +400,10 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     if game_time:
         game_html += f"<span class='gametime'>{_esc(game_time)}</span>"
     game_html += "</div>"
+    ks_grade = _grade_class("expected_ks", row.get("expected_ks"))
+    ip_grade = _grade_class("projected_ip", row.get("projected_ip"))
+    tto_grade = _grade_class("tto", row.get("times_through_order"))
+    kpct_grade = _grade_class("expected_k_pct", row.get("expected_k_pct"))
     summary = (
         "<div class='summary-grid'>"
         f"<div class='rank'>{_esc(row.get('rank') if row.get('rank') is not None else '—')}</div>"
@@ -366,10 +414,10 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"{'' if status in ('', 'ok') else ' · ' + _esc(status)}</div>"
         "</div>"
         f"{game_html}"
-        f"<div class='num ks'>{_fmt(row.get('expected_ks'))}</div>"
-        f"<div class='num'>{_fmt(row.get('projected_ip'), 1)}</div>"
-        f"<div class='num'>{tto_s}</div>"
-        f"<div class='num'>{_fmt(row.get('expected_k_pct'))}</div>"
+        f"<div class='num ks{ks_grade}'>{_fmt(row.get('expected_ks'))}</div>"
+        f"<div class='num{ip_grade}'>{_fmt(row.get('projected_ip'), 1)}</div>"
+        f"<div class='num{tto_grade}'>{tto_s}</div>"
+        f"<div class='num{kpct_grade}'>{_fmt(row.get('expected_k_pct'))}</div>"
         f"<div><span class='badge {kind}'>{_esc(label)}</span></div>"
         "</div>"
     )
@@ -689,7 +737,40 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     letter-spacing: 0.02em;
   }
   .num { font-variant-numeric: tabular-nums; font-weight: 700; }
-  .ks { color: var(--accent); font-size: 1.05rem; }
+  .ks { font-size: 1.05rem; }
+  .grade-low { color: #6a7a72; }
+  .grade-mid { color: var(--ink); }
+  .grade-high { color: #0f6a4d; }
+  .grade-elite {
+    color: #064832;
+    background: rgba(15, 106, 77, 0.14);
+    border-radius: 8px;
+    padding: 0.12rem 0.45rem;
+    justify-self: start;
+  }
+  .grade-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.7rem;
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .grade-legend .swatch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .grade-legend .swatch::before {
+    content: "";
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: currentColor;
+  }
   .badge {
     display: inline-flex; padding: 0.22rem 0.55rem; border-radius: 999px;
     font-size: 0.72rem; font-weight: 700;
@@ -761,7 +842,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .batter.missing { opacity: 0.55; }
   .batter .slot { color: var(--muted); min-width: 1.2rem; }
-  .batter .k { font-weight: 700; color: var(--accent); }
+  .batter .k { font-weight: 700; }
   .pitch-stack {
     display: grid;
     gap: 0.45rem;
@@ -913,6 +994,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         opposing batting order. Open a pitcher to see pitch-by-pitch K weaknesses.
       </p>
       <div class="meta">__META_CHIPS__</div>
+      <div class="grade-legend" aria-label="Number color scale">
+        Scale
+        <span class="swatch grade-low">low</span>
+        <span class="swatch grade-mid">mid</span>
+        <span class="swatch grade-high">high</span>
+        <span class="swatch grade-elite">elite</span>
+        <span>Exp K · IP · K%</span>
+      </div>
     </header>
 
     <noscript>

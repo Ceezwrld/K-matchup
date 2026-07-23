@@ -274,6 +274,14 @@ def classify_outing_role(
         and est < OPENER_EST_START_IP
     ):
         return "opener_likely"
+    # Few "starts" with a heavy relief workload — treat as opener even if
+    # IP÷GS is contaminated (e.g. Legumina 2 GS / 33 G listed as probable).
+    if (
+        season_gs <= 3
+        and season_g >= MIN_APPEARANCES_FOR_ROLE
+        and start_share < SWINGMAN_START_SHARE
+    ):
+        return "opener_likely"
     if (
         start_share < SWINGMAN_START_SHARE
         and ip_per_g < 2.0

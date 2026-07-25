@@ -83,11 +83,9 @@ python3 mlb-k-matchups/k_matchups.py --date $(date +%F) \
   -o rankings.csv --html rankings.html
 ```
 
-Open `rankings.html` in a browser (**download the file and open it locally** — GitHub’s raw view blocks scripts and may show plain text).
+Open `rankings.html` in a browser (**download the file and open it locally** — GitHub’s raw view serves plain text and blocks scripts).
 
-Interactive preview (renders in-browser):
-
-https://htmlpreview.github.io/?https://github.com/Ceezwrld/K-matchup/blob/cursor/interactive-rankings-html-106c/rankings.html
+`htmlpreview.github.io` is unreliable for this file; prefer a local open. On pre-lineup days every row is **Prior** — if the Lineup filter is set to **Official only**, the board will look empty. Use **All sources**.
 
 Expand any pitcher → **Pitch weaknesses** shows each pitch (overall + vs L/R usage) and batter K%s. Re-run after lineups post to refresh.
 

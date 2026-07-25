@@ -1025,27 +1025,27 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       </p>
     </noscript>
 
-    <section class="controls" id="controls">
+    <section class="controls" id="controls" autocomplete="off">
       <label>Search
-        <input id="q" type="search" placeholder="Pitcher, team, game…" />
+        <input id="q" type="search" placeholder="Pitcher, team, game…" autocomplete="off" />
       </label>
       <label>Lineup
-        <select id="lineupFilter">
-          <option value="all">All sources</option>
+        <select id="lineupFilter" autocomplete="off">
+          <option value="all" selected>All sources</option>
           <option value="official">Official only</option>
           <option value="prior">Prior only</option>
         </select>
       </label>
       <label>Status
-        <select id="statusFilter">
-          <option value="scored">Scored</option>
+        <select id="statusFilter" autocomplete="off">
+          <option value="scored" selected>Scored</option>
           <option value="all">All rows</option>
           <option value="missing">Missing / unresolved</option>
         </select>
       </label>
       <label>Sort
-        <select id="sort">
-          <option value="expected_ks:desc">Expected Ks ↓</option>
+        <select id="sort" autocomplete="off">
+          <option value="expected_ks:desc" selected>Expected Ks ↓</option>
           <option value="expected_ks:asc">Expected Ks ↑</option>
           <option value="projected_ip:desc">Proj IP ↓</option>
           <option value="tto:desc">TTO ↓</option>
@@ -1064,13 +1064,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <div class="board" id="board">
 __MATCHUP_CARDS__
     </div>
-    <div class="empty" id="empty" hidden>No matchups match these filters.</div>
+    <div class="empty" id="empty" hidden>
+      No matchups match these filters.
+      <span id="emptyHint"></span>
+    </div>
 
     <p class="footnote">
       Expand a pitcher, then open <strong>Pitch weaknesses</strong> to see each batter’s
       K% vs every pitch in that starter’s arsenal (darker green = more K-prone).
       If this page opened as plain text from GitHub raw, download the file and open it
-      locally, or use the HTML preview link in the README/PR.
+      locally. Pre-lineup days are all <strong>Prior</strong> — set Lineup to
+      <strong>All sources</strong> (not Official only) or the board will look empty.
     </p>
   </div>
 
@@ -1087,10 +1091,18 @@ __MATCHUP_CARDS__
 
       function apply() {
         const query = (q.value || "").trim().toLowerCase();
-        const lineup = lineupFilter.value;
+        let lineup = lineupFilter.value;
         const status = statusFilter.value;
         const [key, dir] = sort.value.split(":");
         const cards = Array.from(board.querySelectorAll("details.matchup"));
+        const hasPrior = cards.some((el) => (el.dataset.lineup || "").startsWith("prior"));
+        const hasOfficial = cards.some((el) => (el.dataset.lineup || "") === "official");
+        // Browsers may restore "Official only" from a prior visit; on pre-lineup
+        // slates that hides every card. Reset to All sources in that case.
+        if (lineup === "official" && !hasOfficial && hasPrior) {
+          lineupFilter.value = "all";
+          lineup = "all";
+        }
         let visible = 0;
         cards.forEach((el) => {
           const hay = el.dataset.search || "";
@@ -1106,6 +1118,13 @@ __MATCHUP_CARDS__
           if (show) visible += 1;
         });
         empty.hidden = visible > 0;
+        const hint = document.getElementById("emptyHint");
+        if (hint) {
+          hint.textContent =
+            visible === 0 && lineup === "official"
+              ? " Official lineups are not posted yet — switch Lineup to All sources."
+              : "";
+        }
 
         const attrKey = {
           expected_ks: "expectedKs",

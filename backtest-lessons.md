@@ -11,6 +11,31 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - **Medium/high** outing risk → need *more* edge for overs (or pass).
 - Exact-K MAE ~2 is normal; use model for **side selection**, not hammering exact totals.
 
+## 2026-07-26 lessons (MAE ~2.09, n=30; NYY@PHI still live at grade)
+
+| What happened | Lesson |
+|---------------|--------|
+| Soft **O3.5** clear/low e≥0.75 → **11/13 (85%)** | O3.5 floor still the most reliable over lane |
+| Soft **O4.5** clear/low e≥0.75 → **5/8 (62%)**; e≥1.0 → **3/6 (50%)** | O4.5 weaker than 7/25 — early hooks (Sánchez 2 IP / 2 K) and SEA@TEX both 4 K |
+| **Ashcraft** 6.24→**5** | Soft **O4.5 HIT**, max **O5.5 MISS** — reinforces O5.5 as juice-only even at ~6.2–6.5 |
+| **Misiorowski** 6.70→**12** | PP soft **6.5 More** would have cashed; model undershot ceiling. SPIKE + soft COL = smash. Don’t need O4.5 hesitation when board soft is already 6.5 |
+| **Gilbert / deGrom** both **4 K** | Same-game opposing K overs both missed — correlation risk was real |
+| **Gausman** 5.57→**6** | Avoiding him for “form tilt” left a cashing O4.5; last-start sample ≠ fade with clear edge |
+| **Buehler** 3.67→**7** | Soft **U4.5/U5.5** on medium arms still leaky — need wider under lines |
+| **Rasmussen** 4.53→**9** / **Messick** 4.04→**6** | Low-mid proj clear arms can still rack Ks in volume outings — don’t skinny-under |
+| **Sánchez** 5.74→**2** (2 IP) | Clear + edge died on early exit — outing length risk dominates K overs |
+| Bats: **Peña / Chourio** Hits cashed; **Vaughn** 1 H (HRRBI cashed); **Lopez / Walker / Yordan** missed | Prefer Hits on elite vs-hand AVGs; H+R+RBI saved Vaughn-style power nights |
+
+### 7/26 card scorecard (discussed tickets)
+
+- **Ashcraft O4.5** — HIT (5). **Ashcraft O5.5** — MISS.
+- **Gilbert O4.5 / deGrom O4.5** — both MISS (4).
+- **Misiorowski** — we passed PP 6.5; actual **12** (would have hit every over).
+- **Gausman O4.5** — HIT (6); fade was wrong today.
+- **Peña Hits O1.5** — HIT (2). **Vaughn Hits** — MISS (1); **H+R+RBI** HIT.
+- **Chourio Hits** — HIT. **Yordan / Lopez / Walker** — MISS.
+- **NYY@PHI live:** Sánchez **2 K / 2 IP** (O4.5 dead), Warren **2 H** through 2 IP, Marsh **0-1** (in progress).
+
 ## 2026-07-25 lessons (MAE ~2.00, n=29; Paredes scratched)
 
 | What happened | Lesson |

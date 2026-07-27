@@ -9,10 +9,12 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - **Fade unders on SPIKE arms (K9 ≥ ~10)** — they can jump a soft under even when proj is mid.
 - Fade **openers / uncertain swingmen** for full-outing K props.
 - **Medium/high** outing risk → need *more* edge for overs (or pass).
+- **Soft-contact / low-K volume arms (K9 ≲ ~7, soft L3 Ks, elev_xFIP):** even if proj clears O4.5 on lineup K% + IP, label them **FILLER — not ticket-benefiting**. Say that out loud before adding to any nuke/longshot. Prefer **O3.5** or **pass** on multis; never treat as an anchor next to Wheeler-tier legs. (7/27 Montero: proj 5.46 O4.5 → live 0 K / 7 H through 2.1 IP.)
 - Exact-K MAE ~2 is normal; use model for **side selection**, not hammering exact totals.
 - **Card size: 2–3 legs only.** No 4/5/6-mans. Correlation and early hooks kill bigger tickets.
 - **Daily volume (when slate is full):** up to **6–7 tickets × 3 legs**. One chalk/nuke; rest mix **1P+2B** or **2P+1B**. Cap any single player at **~2 tickets**.
 - **Accuracy lock (before firing):** refresh with **official lineups**; only lock a leg if (1) batter is in the posted nine, (2) pitcher role is starter not opener/swingman, (3) soft line edge holds on the *current* proj, (4) no same-game opposing K-over stack. Prior-lineup tickets are provisional only.
+- **Disclose weak links:** if a recommended leg is filler/thin-sample/prior-lineup/SPIKE-capped, state that in the ticket writeup — don’t bury it.
 
 ## 2026-07-26 lessons (MAE ~2.09, n=30; NYY@PHI still live at grade)
 

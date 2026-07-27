@@ -4,7 +4,7 @@ rank,pitcher,pitcher_id,team,opponent,game,expected_ks,expected_ks_model,actual_
 3,Logan Gilbert,669302,SEA,TEX,SEA@TEX,5.979782,5.884660031539557,4,5.2,24,-1.979782,1.979782,starter,clear,official,Final
 4,Jacob deGrom,594798,TEX,SEA,SEA@TEX,5.807035,5.55534268584502,4,5.0,22,-1.807035,1.807035,starter,low,official,Final
 5,Erick Fedde,607200,CWS,HOU,HOU@CWS,5.744844,5.731919684871892,2,4.1,18,-3.744844,3.744844,starter,high,official,Final
-6,Cristopher Sánchez,650911,PHI,NYY,NYY@PHI,5.744124,5.6136209359205305,2,2.0,8,-3.744124,3.744124,starter,clear,official,In Progress
+6,Cristopher Sánchez,650911,PHI,NYY,NYY@PHI,5.744124,5.6136209359205305,6,6.0,28,0.255876,0.255876,starter,clear,official,Final (starter complete)
 7,Reynaldo López,625643,ATL,BAL,ATL@BAL,5.719575,5.9993928394681975,6,5.2,23,0.280425,0.280425,swingman,medium,official,Final
 8,Jameson Taillon,592791,CHC,PIT,CHC@PIT,5.645943,5.506449713626463,3,4.0,19,-2.645943,2.645943,starter,medium,official,Final
 9,Kevin Gausman,592332,TOR,BOS,TOR@BOS,5.569788,5.63823419054644,6,6.0,24,0.430212,0.430212,starter,clear,official,Final
@@ -14,7 +14,7 @@ rank,pitcher,pitcher_id,team,opponent,game,expected_ks,expected_ks_model,actual_
 13,Shane Baz,669358,BAL,ATL,ATL@BAL,5.131014,4.508251905126236,2,4.1,19,-3.131014,3.131014,starter,low,official,Final
 14,Carson Whisenhunt,687931,SF,LAA,LAA@SF,5.125518,5.615177051982891,7,5.0,21,1.874482,1.874482,starter,high,official,Final
 15,Ranger Suarez,624133,BOS,TOR,TOR@BOS,5.086989,3.862365779451757,6,4.0,15,0.913011,0.913011,starter,clear,official,Final
-16,Will Warren,701542,NYY,PHI,NYY@PHI,4.959370,5.23414161682467,4,2.0,8,-0.959370,0.959370,starter,low,official,In Progress
+16,Will Warren,701542,NYY,PHI,NYY@PHI,4.959370,5.23414161682467,5,3.0,17,0.040630,0.040630,starter,low,official,Final (starter complete)
 17,Emmet Sheehan,686218,LAD,NYM,LAD@NYM,4.869848,4.555389577970393,5,5.0,21,0.130152,0.130152,starter,medium,official,Final
 18,Miles Mikolas,571945,WSH,AZ,AZ@WSH,4.839656,5.6785004806339066,1,4.0,18,-3.839656,3.839656,swingman,medium,official,Final
 19,Ronel Blanco,669854,HOU,CWS,HOU@CWS,4.777643,4.541054074404818,4,5.1,22,-0.777643,0.777643,starter,high,official,Final

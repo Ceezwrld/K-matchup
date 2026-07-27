@@ -7,6 +7,9 @@
 5. Outing-risk flags from BB/9, HR/9, xFIP
 6. Outing survival / early-exit haircut (BB + short recent IP + HR/xFIP)
 7. Opposing lineup K% / contact form overlay on expected Ks
+
+Hits-prop helpers (barrel / hard-hit / xwOBA) live here too but are
+display-only — they never modify expected_ks.
 """
 
 from __future__ import annotations
@@ -67,6 +70,15 @@ STATCAST_BATTER_URL = (
     "&batters_lookup%5B%5D={batter_id}&min_pitches=1&type=details"
 )
 
+SAVANT_BARRELS_URL = (
+    "https://baseballsavant.mlb.com/leaderboard/statcast"
+    "?type=batter&year={year}&position=&team=&min=1&csv=true"
+)
+SAVANT_EXPECTED_URL = (
+    "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
+    "?type=batter&year={year}&position=&team=&filterType=pa&min=1&csv=true"
+)
+
 # Ignore non-pitch / rare codes when building mixes.
 SKIP_PITCH_TYPES = {"PO", "IN", "AB", "UN", "FA", ""}
 
@@ -93,6 +105,16 @@ LEAGUE_AVG = 0.245
 OFFENSE_FACTOR_MAX = 0.07
 OFFENSE_RECENT_GAMES = 10
 OFFENSE_MIN_RECENT_PA = 25
+
+# Hits-prop contact baselines (display-only; not used in expected_ks).
+LEAGUE_BARREL_PCT = 8.0
+LEAGUE_HARD_HIT_PCT = 40.0
+LEAGUE_XWOBA = 0.320
+LEAGUE_XBA = 0.250
+HITS_AVG_WEIGHT = 0.40
+HITS_CONTACT_WEIGHT = 0.35
+HITS_EXPECTED_WEIGHT = 0.25
+MIN_BIP_CONTACT = 20
 
 K_EVENTS = {"strikeout", "strikeout_double_play"}
 
@@ -332,6 +354,8 @@ def fetch_batter_hand_k_rates(
             entry: dict[str, Any] = {
                 "k_pct_vs_lhp": None,
                 "k_pct_vs_rhp": None,
+                "avg_vs_lhp": None,
+                "avg_vs_rhp": None,
                 "pa_vs_lhp": 0.0,
                 "pa_vs_rhp": 0.0,
             }
@@ -344,12 +368,22 @@ def fetch_batter_hand_k_rates(
                     if pa <= 0:
                         continue
                     k_pct = 100.0 * so / pa
+                    avg = None
+                    try:
+                        ab = float(stat.get("atBats") or 0)
+                        h = float(stat.get("hits") or 0)
+                        if ab > 0:
+                            avg = h / ab
+                    except (TypeError, ValueError, ZeroDivisionError):
+                        avg = None
                     if code == "vl":
                         entry["k_pct_vs_lhp"] = k_pct
                         entry["pa_vs_lhp"] = pa
+                        entry["avg_vs_lhp"] = avg
                     elif code == "vr":
                         entry["k_pct_vs_rhp"] = k_pct
                         entry["pa_vs_rhp"] = pa
+                        entry["avg_vs_rhp"] = avg
             out[int(pid)] = entry
     return out
 
@@ -963,6 +997,264 @@ def apply_lineup_offense_overlay(
         "offense_n": summary.get("offense_n"),
     }
     return blended, factor, meta
+
+
+def fetch_batter_contact_quality(
+    year: int,
+    verbose: bool,
+    log: Callable[[bool, str], None],
+) -> dict[int, dict[str, Any]]:
+    """Season barrel% / hard-hit% / xwOBA from Savant (Hits props only)."""
+    out: dict[int, dict[str, Any]] = {}
+
+    def _load(url: str) -> pd.DataFrame | None:
+        try:
+            resp = _get(url, verbose, log)
+            text = resp.content.decode("utf-8-sig")
+            if not text.strip():
+                return None
+            return pd.read_csv(StringIO(text))
+        except Exception as exc:  # noqa: BLE001
+            log(verbose, f"contact-quality fetch failed ({url}): {exc}")
+            return None
+
+    barrels = _load(SAVANT_BARRELS_URL.format(year=year))
+    if barrels is not None and not barrels.empty and "player_id" in barrels.columns:
+        for _, row in barrels.iterrows():
+            try:
+                pid = int(row["player_id"])
+            except (TypeError, ValueError):
+                continue
+            entry = out.setdefault(pid, {})
+            try:
+                bip = float(row["attempts"]) if pd.notna(row.get("attempts")) else None
+            except (TypeError, ValueError):
+                bip = None
+            entry["bip"] = bip
+            for src, dst in (
+                ("brl_percent", "barrel_pct"),
+                ("ev95percent", "hard_hit_pct"),
+                ("avg_hit_speed", "avg_ev"),
+                ("brl_pa", "barrel_pa_pct"),
+            ):
+                if src not in row.index or pd.isna(row.get(src)):
+                    continue
+                try:
+                    entry[dst] = float(row[src])
+                except (TypeError, ValueError):
+                    continue
+
+    expected = _load(SAVANT_EXPECTED_URL.format(year=year))
+    if expected is not None and not expected.empty and "player_id" in expected.columns:
+        for _, row in expected.iterrows():
+            try:
+                pid = int(row["player_id"])
+            except (TypeError, ValueError):
+                continue
+            entry = out.setdefault(pid, {})
+            for src, dst in (
+                ("est_woba", "xwoba"),
+                ("est_ba", "xba"),
+                ("ba", "ba"),
+                ("woba", "woba"),
+                ("bip", "bip_expected"),
+                ("pa", "pa"),
+            ):
+                if src not in row.index or pd.isna(row.get(src)):
+                    continue
+                try:
+                    entry[dst] = float(row[src])
+                except (TypeError, ValueError):
+                    continue
+            if entry.get("bip") is None and entry.get("bip_expected") is not None:
+                entry["bip"] = entry["bip_expected"]
+
+    return out
+
+
+def score_batter_hits_props(
+    batter_id: int,
+    pitcher_hand: str | None,
+    *,
+    contact: dict[int, dict[str, Any]] | None,
+    hand_rates: dict[int, dict[str, Any]] | None,
+    offense: dict[int, dict[str, Any]] | None,
+) -> dict[str, Any]:
+    """Hits / H+R+RBI helper scores. Never used by expected_ks.
+
+    Returns a ~0–100 score where ~50 ≈ league-average quality.
+    """
+    contact = contact or {}
+    hand_rates = hand_rates or {}
+    offense = offense or {}
+    cq = contact.get(int(batter_id)) or {}
+    hr = hand_rates.get(int(batter_id)) or {}
+    off = offense.get(int(batter_id)) or {}
+
+    ph = (pitcher_hand or "").upper()
+    avg_vs_hand = None
+    avg_source = None
+    if ph == "L" and hr.get("avg_vs_lhp") is not None:
+        avg_vs_hand = float(hr["avg_vs_lhp"])
+        avg_source = "vs_lhp"
+    elif ph == "R" and hr.get("avg_vs_rhp") is not None:
+        avg_vs_hand = float(hr["avg_vs_rhp"])
+        avg_source = "vs_rhp"
+    elif off.get("recent_avg") is not None:
+        avg_vs_hand = float(off["recent_avg"])
+        avg_source = "recent"
+    elif off.get("season_avg") is not None:
+        avg_vs_hand = float(off["season_avg"])
+        avg_source = "season"
+    elif cq.get("ba") is not None:
+        avg_vs_hand = float(cq["ba"])
+        avg_source = "savant_ba"
+
+    barrel = cq.get("barrel_pct")
+    hard_hit = cq.get("hard_hit_pct")
+    xwoba = cq.get("xwoba")
+    xba = cq.get("xba")
+    bip = cq.get("bip")
+    thin = bip is not None and float(bip) < MIN_BIP_CONTACT
+
+    # Component z-ish scores centered at 50.
+    def _comp(val: float | None, league: float, scale: float) -> float | None:
+        if val is None:
+            return None
+        return 50.0 + (float(val) - league) / scale * 10.0
+
+    avg_s = _comp(avg_vs_hand, LEAGUE_AVG, 0.040)
+    # Contact quality: blend barrel + hard-hit when both exist.
+    barrel_s = _comp(None if thin else barrel, LEAGUE_BARREL_PCT, 4.0)
+    hard_s = _comp(None if thin else hard_hit, LEAGUE_HARD_HIT_PCT, 8.0)
+    if barrel_s is not None and hard_s is not None:
+        contact_s = 0.55 * barrel_s + 0.45 * hard_s
+    else:
+        contact_s = barrel_s if barrel_s is not None else hard_s
+
+    xwoba_s = _comp(None if thin else xwoba, LEAGUE_XWOBA, 0.040)
+    xba_s = _comp(None if thin else xba, LEAGUE_XBA, 0.035)
+    if xwoba_s is not None and xba_s is not None:
+        expected_s = 0.65 * xwoba_s + 0.35 * xba_s
+    else:
+        expected_s = xwoba_s if xwoba_s is not None else xba_s
+
+    parts: list[tuple[float, float]] = []
+    if avg_s is not None:
+        parts.append((HITS_AVG_WEIGHT, avg_s))
+    if contact_s is not None:
+        parts.append((HITS_CONTACT_WEIGHT, contact_s))
+    if expected_s is not None:
+        parts.append((HITS_EXPECTED_WEIGHT, expected_s))
+
+    hits_score = None
+    if parts:
+        wsum = sum(w for w, _ in parts)
+        hits_score = sum(w * s for w, s in parts) / wsum
+
+    # H+R+RBI leans more on barrel/xwOBA (power + on-base quality).
+    hr_rbi_score = None
+    power_parts: list[tuple[float, float]] = []
+    if contact_s is not None:
+        power_parts.append((0.45, contact_s))
+    if expected_s is not None:
+        power_parts.append((0.35, expected_s))
+    if avg_s is not None:
+        power_parts.append((0.20, avg_s))
+    if power_parts:
+        wsum = sum(w for w, _ in power_parts)
+        hr_rbi_score = sum(w * s for w, s in power_parts) / wsum
+
+    return {
+        "barrel_pct": None if barrel is None else float(barrel),
+        "hard_hit_pct": None if hard_hit is None else float(hard_hit),
+        "avg_ev": cq.get("avg_ev"),
+        "xwoba": None if xwoba is None else float(xwoba),
+        "xba": None if xba is None else float(xba),
+        "avg_vs_hand": avg_vs_hand,
+        "avg_vs_hand_source": avg_source,
+        "bip": bip,
+        "hits_score": hits_score,
+        "hr_rbi_score": hr_rbi_score,
+        "hits_thin_sample": bool(thin),
+    }
+
+
+def enrich_lineup_hits_props(
+    batter_detail: list[dict[str, Any]],
+    pitcher_hand: str | None,
+    *,
+    contact: dict[int, dict[str, Any]],
+    hand_rates: dict[int, dict[str, Any]],
+    offense: dict[int, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Attach Hits-prop fields onto batter_detail without touching K fields."""
+    for b in batter_detail:
+        bid = b.get("batter_id")
+        if bid is None:
+            continue
+        try:
+            pid = int(bid)
+        except (TypeError, ValueError):
+            continue
+        scored = score_batter_hits_props(
+            pid,
+            pitcher_hand,
+            contact=contact,
+            hand_rates=hand_rates,
+            offense=offense,
+        )
+        # Explicitly do not write expected_k_pct / status used by K model.
+        for key, val in scored.items():
+            b[key] = val
+    return batter_detail
+
+
+def build_hits_board(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Flat slate of batters ranked by hits_score (separate from pitcher K board)."""
+    board: list[dict[str, Any]] = []
+    for row in rows:
+        if row.get("status") != "ok":
+            continue
+        for b in row.get("batter_detail") or []:
+            if b.get("hits_score") is None:
+                continue
+            board.append(
+                {
+                    "batter": b.get("batter"),
+                    "batter_id": b.get("batter_id"),
+                    "slot": b.get("slot"),
+                    "bat_side": b.get("bat_side"),
+                    "team": row.get("opponent"),
+                    "pitcher": row.get("pitcher"),
+                    "pitcher_team": row.get("pitcher_team"),
+                    "pitch_hand": row.get("pitch_hand"),
+                    "game": row.get("game"),
+                    "game_time_ct": row.get("game_time_ct"),
+                    "lineup_source": row.get("lineup_source"),
+                    "avg_vs_hand": b.get("avg_vs_hand"),
+                    "avg_vs_hand_source": b.get("avg_vs_hand_source"),
+                    "barrel_pct": b.get("barrel_pct"),
+                    "hard_hit_pct": b.get("hard_hit_pct"),
+                    "xwoba": b.get("xwoba"),
+                    "xba": b.get("xba"),
+                    "hits_score": b.get("hits_score"),
+                    "hr_rbi_score": b.get("hr_rbi_score"),
+                    "hits_thin_sample": b.get("hits_thin_sample"),
+                    # K% shown for context only — not an input to hits_score blend beyond display.
+                    "expected_k_pct": b.get("expected_k_pct"),
+                }
+            )
+    board.sort(
+        key=lambda r: (
+            -float(r["hits_score"]),
+            -float(r["hr_rbi_score"] or 0),
+            str(r.get("batter") or ""),
+        )
+    )
+    for i, r in enumerate(board, 1):
+        r["rank"] = i
+    return board
 
 
 def strip_html_name(value: Any) -> str:

@@ -70,3 +70,5 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - **Outing survival:** `bf_risk_factor` now also haircuts for short recent IP and HR/xFIP+BB exit risk (floor 0.82).
 - **Opp. lineup offense:** recent (else season) lineup K%/AVG → mild ±7% `offense_factor` on matchup Ks before form blend.
 - Next: optional batter barrel/hard-hit layer for Hits props (not for pitcher K mean).
+
+- **Hits board (2026-07-27):** barrel% / hard-hit% / xwOBA + AVG vs hand → `hits_score` / `hr_rbi_score` only. Explicitly isolated from `expected_ks`.

@@ -172,6 +172,15 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "platoon_factor": _json_safe(b.get("platoon_factor")),
                     "expected_whiff_pct": _json_safe(b.get("expected_whiff_pct")),
                     "status": b.get("status"),
+                    "barrel_pct": _json_safe(b.get("barrel_pct")),
+                    "hard_hit_pct": _json_safe(b.get("hard_hit_pct")),
+                    "xwoba": _json_safe(b.get("xwoba")),
+                    "xba": _json_safe(b.get("xba")),
+                    "avg_vs_hand": _json_safe(b.get("avg_vs_hand")),
+                    "avg_vs_hand_source": b.get("avg_vs_hand_source"),
+                    "hits_score": _json_safe(b.get("hits_score")),
+                    "hr_rbi_score": _json_safe(b.get("hr_rbi_score")),
+                    "hits_thin_sample": bool(b.get("hits_thin_sample")),
                     "pitches": pitches,
                 }
             )
@@ -360,10 +369,20 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
         k_grade = "" if miss else _grade_class("batter_k_pct", k_raw)
         side = _hand_label(b.get("bat_side"), "B")
         side_html = f" <span class='hand'>{_esc(side)}</span>" if side else ""
+        hits = b.get("hits_score")
+        hits_html = ""
+        if hits is not None:
+            hits_html = (
+                f"<span class='hits-meta' title='Hits prop score (not used in expected Ks)'>"
+                f"hits {_fmt(hits, 0)}"
+                f"{'' if b.get('barrel_pct') is None else ' · brl ' + _fmt(b.get('barrel_pct'), 1) + '%'}"
+                f"{'' if b.get('hard_hit_pct') is None else ' · hh ' + _fmt(b.get('hard_hit_pct'), 1) + '%'}"
+                f"</span>"
+            )
         cards.append(
             f"<div class='batter {'missing' if miss else ''}'>"
             f"<span><span class='slot'>{_esc(b.get('slot'))}.</span> "
-            f"{_esc(b.get('batter') or '—')}{side_html}</span>"
+            f"{_esc(b.get('batter') or '—')}{side_html}{hits_html}</span>"
             f"<span class='k{k_grade}'>{k}</span>"
             "</div>"
         )
@@ -371,8 +390,41 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
         return "<div class='empty'>No batter detail</div>"
     return (
         f"<div class='batter-grid'>{''.join(cards)}</div>"
-        "<p class='hint'>Values are arsenal-weighted K% for each batter vs this "
-        "starter’s pitch mix.</p>"
+        "<p class='hint'>Right-side values are arsenal-weighted <strong>K%</strong> vs this "
+        "starter. Hits / barrel / hard-hit scores are a separate Hits-prop layer and "
+        "<strong>do not</strong> change expected strikeouts.</p>"
+    )
+
+
+def _render_hits_board(hits_board: list[dict[str, Any]] | None) -> str:
+    if not hits_board:
+        return ""
+    rows = []
+    for r in hits_board[:15]:
+        rows.append(
+            "<div class='hits-row'>"
+            f"<span class='rk'>{_esc(r.get('rank'))}</span>"
+            f"<span class='name'>{_esc(r.get('batter') or '—')}</span>"
+            f"<span class='vs'>vs {_esc(r.get('pitcher') or '—')} "
+            f"({_esc(r.get('pitch_hand') or '?')}HP)</span>"
+            f"<span class='num'>{_fmt(r.get('hits_score'), 0)}</span>"
+            f"<span class='num'>{_fmt(r.get('hr_rbi_score'), 0)}</span>"
+            f"<span class='num'>{_fmt(r.get('barrel_pct'), 1)}</span>"
+            f"<span class='num'>{_fmt(r.get('hard_hit_pct'), 1)}</span>"
+            f"<span class='num'>{_fmt(r.get('avg_vs_hand'), 3)}</span>"
+            "</div>"
+        )
+    return (
+        "<section class='hits-board' id='hitsBoard'>"
+        "<h2>Hits board <span>(display-only)</span></h2>"
+        "<p class='hits-lede'>Barrel%, hard-hit%, xwOBA, and AVG vs pitcher hand — "
+        "ranked for Hits / H+R+RBI props. This board never feeds the strikeout model.</p>"
+        "<div class='hits-colhead'>"
+        "<div>#</div><div>Batter</div><div>Matchup</div>"
+        "<div>Hits</div><div>H+R+RBI</div><div>Brl%</div><div>HH%</div><div>AVG vs</div>"
+        "</div>"
+        f"<div class='hits-list'>{''.join(rows)}</div>"
+        "</section>"
     )
 
 
@@ -532,6 +584,7 @@ def write_interactive_html(
     *,
     game_date: str,
     batters_faced: float | None = None,
+    hits_board: list[dict[str, Any]] | None = None,
 ) -> None:
     rows = rows_for_html(df)
     scored = [r for r in rows if r.get("status") == "ok" and r.get("expected_ks") is not None]
@@ -555,6 +608,7 @@ def write_interactive_html(
 
     # Prefer scored first, then missing — same as CLI rank order already in df.
     cards = "\n".join(_render_matchup_card(r, i) for i, r in enumerate(rows))
+    hits_html = _render_hits_board(hits_board)
 
     meta_bits = [
         ("Date", game_date),
@@ -576,10 +630,12 @@ def write_interactive_html(
         "avg_projected_ip": avg_ip,
         "avg_times_through": avg_tto,
         "row_count": len(rows),
+        "hits_board_count": len(hits_board or []),
     }
 
     html = HTML_TEMPLATE
     html = html.replace("__META_CHIPS__", meta_html)
+    html = html.replace("__HITS_BOARD__", hits_html)
     html = html.replace("__MATCHUP_CARDS__", cards)
     html = html.replace("__DATA_JSON__", json.dumps(payload, ensure_ascii=False))
     with open(path, "w", encoding="utf-8") as f:
@@ -1013,6 +1069,43 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     .pitch-list { padding: 0.1rem 0.65rem 0.45rem; }
   }
   .hint { margin: 0.65rem 0 0; color: var(--muted); font-size: 0.78rem; }
+  .hits-meta {
+    display: inline-block; margin-left: 0.45rem; color: var(--muted);
+    font-size: 0.72rem; font-weight: 500;
+  }
+  .hits-board {
+    margin: 0 0 1.25rem; padding: 1rem 1.1rem 1.15rem;
+    border: 1px solid var(--line); border-radius: 14px;
+    background: rgba(255,255,255,0.55);
+  }
+  .hits-board h2 {
+    margin: 0 0 0.25rem; font-family: "Archivo Black", sans-serif;
+    font-size: 1.15rem; letter-spacing: -0.02em;
+  }
+  .hits-board h2 span { color: var(--muted); font-family: Manrope, sans-serif; font-size: 0.75rem; font-weight: 600; }
+  .hits-lede { margin: 0 0 0.75rem; color: var(--muted); font-size: 0.8rem; }
+  .hits-colhead, .hits-row {
+    display: grid;
+    grid-template-columns: 2rem minmax(7rem,1.2fr) minmax(9rem,1.4fr) repeat(5, 3.2rem);
+    gap: 0.4rem; align-items: center;
+  }
+  .hits-colhead {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted); padding: 0 0 0.35rem; border-bottom: 1px solid var(--line);
+  }
+  .hits-row { padding: 0.35rem 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.82rem; }
+  .hits-row .rk { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hits-row .name { font-weight: 650; }
+  .hits-row .vs { color: var(--muted); font-size: 0.75rem; }
+  .hits-row .num { font-variant-numeric: tabular-nums; text-align: right; }
+  @media (max-width: 720px) {
+    .hits-colhead, .hits-row {
+      grid-template-columns: 1.6rem minmax(5rem,1fr) repeat(3, 2.6rem);
+    }
+    .hits-colhead div:nth-child(3), .hits-row .vs,
+    .hits-colhead div:nth-child(7), .hits-colhead div:nth-child(8),
+    .hits-row .num:nth-child(7), .hits-row .num:nth-child(8) { display: none; }
+  }
   .empty { padding: 1.2rem; text-align: center; color: var(--muted); }
   .footnote { margin-top: 1rem; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
   .noscript {
@@ -1077,6 +1170,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </select>
       </label>
     </section>
+
+    __HITS_BOARD__
 
     <div class="colhead">
       <div>#</div><div>Pitcher</div><div>Game</div><div>Exp. Ks</div>

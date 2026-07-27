@@ -47,6 +47,10 @@ No league-average blending: rates come only from the opposing lineup’s batters
 6. **Recent form** — last 3 starts’ K/9 blended into `expected_ks` (~30% weight when available); `expected_ks_model` keeps the pre-form (post-offense) number.
 7. **Outing risk** — BB/9, HR/9, xFIP (FanGraphs, Stats API fallback) → `outing_risk` flags.
 
+**Hits props (separate board — does not affect `expected_ks`)**
+
+Barrel%, hard-hit% (EV95%), xwOBA/xBA from Savant plus AVG vs pitcher hand feed `hits_score` / `hr_rbi_score` on each batter. Written to `hits-YYYY-MM-DD.csv` beside rankings and shown in the HTML Hits board / lineup panel for Hits and H+R+RBI tickets only.
+
 If a starter is missing from the Savant arsenal board (common for returning arms below the default `min` PA filter), the model falls back to **Statcast pitch-level usage** for that pitcher instead of leaving them unscored.
 
 ## Daily automation (GitHub Actions)

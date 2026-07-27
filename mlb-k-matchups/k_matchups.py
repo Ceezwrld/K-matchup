@@ -19,8 +19,11 @@ from sharpen import (  # noqa: E402
     apply_lineup_offense_overlay,
     apply_recent_form_overlay,
     arsenal_from_mixes,
+    build_hits_board,
     classify_outing_risk,
     effective_bat_side,
+    enrich_lineup_hits_props,
+    fetch_batter_contact_quality,
     fetch_batter_hand_k_rates,
     fetch_batter_offense_profiles,
     fetch_batter_pitch_k_vs_hand,
@@ -1190,8 +1193,19 @@ def format_batter_detail(row: dict[str, Any]) -> str:
         k_s = f"{float(k):.1f}%" if k is not None and pd.notna(k) else "  n/a"
         side = b.get("bat_side")
         side_s = f" ({side}HB)" if side else ""
+        hits = b.get("hits_score")
+        hits_s = f" hits={float(hits):.0f}" if hits is not None else ""
+        brl = b.get("barrel_pct")
+        hh = b.get("hard_hit_pct")
+        contact_s = ""
+        if brl is not None or hh is not None:
+            contact_s = (
+                f" brl={'' if brl is None else f'{float(brl):.1f}%'}"
+                f" hh={'' if hh is None else f'{float(hh):.1f}%'}"
+            )
         lines.append(
-            f"    {b.get('slot'):>2}. {b.get('batter')}{side_s:<6} {k_s}  {b.get('status')}"
+            f"    {b.get('slot'):>2}. {b.get('batter')}{side_s:<6} "
+            f"{k_s}{hits_s}{contact_s}  {b.get('status')}"
         )
     return "\n".join(lines)
 
@@ -1291,6 +1305,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--html",
         metavar="PATH",
         help="Write self-contained interactive HTML rankings to this path",
+    )
+    p.add_argument(
+        "--hits-output",
+        metavar="PATH",
+        help=(
+            "Write Hits-prop board CSV (barrel/hard-hit/xwOBA scores). "
+            "Does not affect expected_ks. Default: beside -o as hits-YYYY-MM-DD.csv"
+        ),
     )
     p.add_argument(
         "-v",
@@ -1405,6 +1427,8 @@ def main(argv: list[str] | None = None) -> int:
     batter_offense = fetch_batter_offense_profiles(
         batter_ids, year, args.verbose, log
     )
+    # Hits-prop contact quality (barrel/hard-hit/xwOBA). Display-only vs K model.
+    batter_contact = fetch_batter_contact_quality(year, args.verbose, log)
 
     results: list[dict[str, Any]] = []
     for item in resolved:
@@ -1537,6 +1561,13 @@ def main(argv: list[str] | None = None) -> int:
                     batter_pitch_k_vs_hand=batter_pitch_k_vs_hand,
                 )
                 detail = scores.pop("batter_detail", [])
+                enrich_lineup_hits_props(
+                    detail,
+                    pitcher_hand,
+                    contact=batter_contact,
+                    hand_rates=batter_k_vs_hand,
+                    offense=batter_offense,
+                )
                 row.update(scores)
                 row["batter_detail"] = detail
                 if detail:
@@ -1600,6 +1631,39 @@ def main(argv: list[str] | None = None) -> int:
             block = format_batter_detail(r.to_dict())
             if block:
                 print(block)
+
+    hits_rows = build_hits_board(out.to_dict(orient="records"))
+    if hits_rows:
+        print("\nHits board (display-only; does not affect expected_ks)")
+        print(
+            f"{'rk':>3} {'batter':22} {'vs':3} {'pitcher':18} "
+            f"{'hits':>5} {'hrbi':>5} {'avgH':>5} {'brl':>5} {'hh':>5}"
+        )
+        for r in hits_rows[:8]:
+            avg_s = (
+                ""
+                if r.get("avg_vs_hand") is None
+                else f"{float(r['avg_vs_hand']):.3f}"
+            )
+            brl_s = (
+                ""
+                if r.get("barrel_pct") is None
+                else f"{float(r['barrel_pct']):.1f}"
+            )
+            hh_s = (
+                ""
+                if r.get("hard_hit_pct") is None
+                else f"{float(r['hard_hit_pct']):.1f}"
+            )
+            print(
+                f"{r['rank']:>3} {str(r.get('batter') or '')[:22]:22} "
+                f"{str(r.get('pitch_hand') or '?'):>3} "
+                f"{str(r.get('pitcher') or '')[:18]:18} "
+                f"{float(r['hits_score']):5.1f} "
+                f"{float(r['hr_rbi_score'] or 0):5.1f} "
+                f"{avg_s:>5} {brl_s:>5} {hh_s:>5}"
+            )
+
     if args.output:
         # Drop nested objects from CSV (kept in HTML JSON payload).
         csv_out = out.drop(
@@ -1609,12 +1673,25 @@ def main(argv: list[str] | None = None) -> int:
         csv_out.to_csv(args.output, index=False)
         log(True, f"Wrote {args.output}")
 
+    hits_path = args.hits_output
+    if hits_path is None and args.output:
+        out_p = Path(args.output)
+        name = out_p.name
+        if name.startswith("rankings-") and name.endswith(".csv"):
+            hits_path = str(out_p.with_name("hits-" + name[len("rankings-") :]))
+        else:
+            hits_path = str(out_p.with_name(out_p.stem + "-hits.csv"))
+    if hits_path and hits_rows:
+        pd.DataFrame(hits_rows).to_csv(hits_path, index=False)
+        log(True, f"Wrote {hits_path}")
+
     if args.html:
         write_interactive_html(
             args.html,
             out,
             game_date=game_date,
             batters_faced=args.batters_faced,
+            hits_board=hits_rows,
         )
         log(True, f"Wrote {args.html}")
 

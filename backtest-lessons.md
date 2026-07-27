@@ -10,6 +10,7 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - Fade **openers / uncertain swingmen** for full-outing K props.
 - **Medium/high** outing risk → need *more* edge for overs (or pass).
 - Exact-K MAE ~2 is normal; use model for **side selection**, not hammering exact totals.
+- **Card size: 2–3 legs only.** No 4/5/6-mans. Correlation and early hooks kill bigger tickets.
 
 ## 2026-07-26 lessons (MAE ~2.09, n=30; NYY@PHI still live at grade)
 

@@ -16,11 +16,13 @@ import requests
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rankings_html import write_interactive_html  # noqa: E402
 from sharpen import (  # noqa: E402
+    apply_lineup_offense_overlay,
     apply_recent_form_overlay,
     arsenal_from_mixes,
     classify_outing_risk,
     effective_bat_side,
     fetch_batter_hand_k_rates,
+    fetch_batter_offense_profiles,
     fetch_batter_pitch_k_vs_hand,
     fetch_fangraphs_pitching,
     fetch_pitcher_hand_mixes,
@@ -28,6 +30,7 @@ from sharpen import (  # noqa: E402
     fetch_pitcher_recent_form,
     merge_risk_metrics,
     platoon_adjust_k_pct,
+    summarize_lineup_offense,
     usage_for_batter_side,
 )
 
@@ -1122,11 +1125,15 @@ def format_table(df: pd.DataFrame) -> str:
         )
     if "rank" in show.columns:
         show["rank"] = show["rank"].map(lambda x: "" if pd.isna(x) else int(x))
-    for col in ("last3_ks", "bb9", "hr9", "xfip"):
+    for col in ("last3_ks", "bb9", "hr9", "xfip", "lineup_k_pct", "offense_factor"):
         if col in show.columns:
             show[col] = show[col].map(
                 lambda x: "" if pd.isna(x) or x is None else f"{float(x):.2f}"
             )
+    if "lineup_avg" in show.columns:
+        show["lineup_avg"] = show["lineup_avg"].map(
+            lambda x: "" if pd.isna(x) or x is None else f"{float(x):.3f}"
+        )
     cols = [
         c
         for c in [
@@ -1142,6 +1149,8 @@ def format_table(df: pd.DataFrame) -> str:
             "times_through_order",
             "projected_bf",
             "expected_k_pct",
+            "lineup_k_pct",
+            "offense_factor",
             "last3_ks",
             "bb9",
             "hr9",
@@ -1393,6 +1402,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     fangraphs = fetch_fangraphs_pitching(year, args.verbose, log)
     api_rates = fetch_pitcher_rate_stats(pitcher_ids, year, args.verbose, log)
+    batter_offense = fetch_batter_offense_profiles(
+        batter_ids, year, args.verbose, log
+    )
 
     results: list[dict[str, Any]] = []
     for item in resolved:
@@ -1411,12 +1423,16 @@ def main(argv: list[str] | None = None) -> int:
         )
         pitcher_hand = (people.get(pid) or {}).get("pitch_hand") if pid is not None else None
         risk_metrics = merge_risk_metrics(pid, fangraphs, api_rates)
+        form = recent_form.get(pid) if pid is not None else None
+        # Survival haircut uses BB/HR/xFIP plus short recent IP.
         risk = classify_outing_risk(
             risk_metrics.get("bb9"),
             risk_metrics.get("hr9"),
             risk_metrics.get("xfip"),
+            form=form,
+            projected_ip=outing.get("projected_ip"),
         )
-        # Mild BF haircut for high-walk pitchers (early-exit risk on overs).
+        # Mild BF haircut for early-exit / survival risk on overs.
         projected_bf = float(outing["projected_bf"]) * float(risk["bf_risk_factor"])
         if args.batters_faced is None and args.ip is None:
             projected_bf = min(projected_bf, float(MAX_PROJECTED_BF))
@@ -1424,7 +1440,9 @@ def main(argv: list[str] | None = None) -> int:
         if risk["bf_risk_factor"] < 1.0 and args.ip is None and args.batters_faced is None:
             projected_ip = projected_ip * float(risk["bf_risk_factor"])
         tto = projected_bf / 9.0 if projected_bf else float("nan")
-        form = recent_form.get(pid) if pid is not None else None
+        offense_summary = summarize_lineup_offense(
+            item.get("lineup") or [], batter_offense
+        )
 
         row: dict[str, Any] = {
             "pitcher": item.get("pitcher"),
@@ -1459,11 +1477,17 @@ def main(argv: list[str] | None = None) -> int:
             "xfip": risk_metrics.get("xfip"),
             "outing_risk": risk.get("outing_risk"),
             "risk_flags": risk.get("risk_flags") or "",
+            "bf_risk_factor": risk.get("bf_risk_factor"),
+            "survival_flags": risk.get("survival_flags") or "",
             "last3_ks": None if not form else form.get("last3_ks"),
             "last3_k9": None if not form else form.get("last3_k9"),
             "last3_ip": None if not form else form.get("last3_ip"),
             "form_ks": None,
             "form_weight": None,
+            "lineup_k_pct": offense_summary.get("lineup_k_pct"),
+            "lineup_avg": offense_summary.get("lineup_avg"),
+            "offense_source": offense_summary.get("offense_source"),
+            "offense_factor": None,
             "hand_mix_pitches_l": None
             if pid is None or pid not in hand_mixes
             else hand_mixes[pid].get("pitches_l"),
@@ -1526,10 +1550,18 @@ def main(argv: list[str] | None = None) -> int:
                     row["status"] = "insufficient_batter_rates"
                 else:
                     row["status"] = "ok"
-                    model_ks = float(row["expected_ks"])
-                    row["expected_ks_model"] = model_ks
+                    matchup_ks = float(row["expected_ks"])
+                    offense_ks, offense_factor, offense_meta = (
+                        apply_lineup_offense_overlay(matchup_ks, offense_summary)
+                    )
+                    row["offense_factor"] = offense_factor
+                    row["lineup_k_pct"] = offense_meta.get("lineup_k_pct")
+                    row["lineup_avg"] = offense_meta.get("lineup_avg")
+                    row["offense_source"] = offense_meta.get("offense_source")
+                    # expected_ks_model = matchup + offense, before recent-form blend
+                    row["expected_ks_model"] = float(offense_ks)
                     blended, form_ks, form_w = apply_recent_form_overlay(
-                        model_ks, projected_ip, form
+                        float(offense_ks), projected_ip, form
                     )
                     row["expected_ks"] = blended
                     row["form_ks"] = form_ks

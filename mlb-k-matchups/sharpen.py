@@ -5,6 +5,8 @@
 3. Batter overall K% vs pitcher hand (Stats API vl/vr splits)
 4. Recent-form overlay from last 3 starts
 5. Outing-risk flags from BB/9, HR/9, xFIP
+6. Outing survival / early-exit haircut (BB + short recent IP + HR/xFIP)
+7. Opposing lineup K% / contact form overlay on expected Ks
 """
 
 from __future__ import annotations
@@ -53,6 +55,12 @@ PEOPLE_SEASON_PITCHING_URL = (
     "&hydrate=stats(group=[pitching],type=[season],season={year})"
 )
 
+PEOPLE_HITTING_OFFENSE_URL = (
+    "https://statsapi.mlb.com/api/v1/people"
+    "?personIds={ids}"
+    "&hydrate=stats(group=[hitting],type=[season,gameLog],season={year})"
+)
+
 STATCAST_BATTER_URL = (
     "https://baseballsavant.mlb.com/statcast_search/csv"
     "?all=true&hfSea={year}%7C&hfGT=R%7C&player_type=batter"
@@ -73,6 +81,18 @@ HR9_WARN = 1.20
 HR9_HIGH = 1.50
 XFIP_WARN = 4.20
 XFIP_HIGH = 4.80
+
+# Early-exit / survival haircuts (multiplicative on projected BF/IP).
+SURVIVAL_FLOOR = 0.82
+SHORT_RECENT_IP_HARD = 4.0
+SHORT_RECENT_IP_SOFT = 4.75
+
+# Opposing lineup offense overlay (mild ± on matchup expected_ks).
+LEAGUE_K_PCT = 22.5
+LEAGUE_AVG = 0.245
+OFFENSE_FACTOR_MAX = 0.07
+OFFENSE_RECENT_GAMES = 10
+OFFENSE_MIN_RECENT_PA = 25
 
 K_EVENTS = {"strikeout", "strikeout_double_play"}
 
@@ -643,7 +663,13 @@ def merge_risk_metrics(
     }
 
 
-def classify_outing_risk(bb9: float | None, hr9: float | None, xfip: float | None) -> dict[str, Any]:
+def classify_outing_risk(
+    bb9: float | None,
+    hr9: float | None,
+    xfip: float | None,
+    form: dict[str, Any] | None = None,
+    projected_ip: float | None = None,
+) -> dict[str, Any]:
     flags: list[str] = []
     score = 0
     if bb9 is not None:
@@ -677,20 +703,266 @@ def classify_outing_risk(bb9: float | None, hr9: float | None, xfip: float | Non
     else:
         level = "clear"
 
-    # Mild early-exit haircut for walk risk only (overs care about innings).
+    # Survival / early-exit haircut on projected BF/IP (overs care about innings).
     bf_factor = 1.0
+    survival_flags: list[str] = []
     if bb9 is not None:
         if bb9 >= BB9_HIGH:
-            bf_factor = 0.90
+            bf_factor *= 0.90
         elif bb9 >= BB9_WARN:
-            bf_factor = 0.95
+            bf_factor *= 0.95
+
+    last3_ip = None if not form else form.get("last3_ip")
+    try:
+        last3_ip_f = float(last3_ip) if last3_ip is not None else None
+    except (TypeError, ValueError):
+        last3_ip_f = None
+    try:
+        proj_ip_f = float(projected_ip) if projected_ip is not None else None
+    except (TypeError, ValueError):
+        proj_ip_f = None
+
+    if last3_ip_f is not None:
+        if last3_ip_f < SHORT_RECENT_IP_HARD:
+            bf_factor *= 0.93
+            survival_flags.append("short_recent_ip")
+            score += 1
+        elif last3_ip_f < SHORT_RECENT_IP_SOFT and (
+            proj_ip_f is None or last3_ip_f < proj_ip_f * 0.80
+        ):
+            bf_factor *= 0.96
+            survival_flags.append("short_recent_ip")
+
+    if hr9 is not None and hr9 >= HR9_HIGH:
+        bf_factor *= 0.97
+        survival_flags.append("exit_hr")
+
+    if (
+        xfip is not None
+        and xfip >= XFIP_HIGH
+        and bb9 is not None
+        and bb9 >= BB9_WARN
+    ):
+        bf_factor *= 0.97
+        survival_flags.append("exit_xfip_bb")
+
+    bf_factor = max(SURVIVAL_FLOOR, min(1.0, bf_factor))
+
+    # Re-tier if survival bumps pushed score.
+    if score >= 4:
+        level = "high"
+    elif score >= 2:
+        level = "medium"
+    elif score >= 1:
+        level = "low"
+    else:
+        level = "clear"
+
+    all_flags = list(flags)
+    for sf in survival_flags:
+        if sf not in all_flags:
+            all_flags.append(sf)
 
     return {
         "outing_risk": level,
-        "risk_flags": ",".join(flags),
+        "risk_flags": ",".join(all_flags),
         "risk_score": score,
         "bf_risk_factor": bf_factor,
+        "survival_flags": ",".join(survival_flags),
     }
+
+
+def fetch_batter_offense_profiles(
+    batter_ids: list[int],
+    year: int,
+    verbose: bool,
+    log: Callable[[bool, str], None],
+) -> dict[int, dict[str, Any]]:
+    """Season + recent hitting K%/AVG for lineup offense overlays."""
+    ids = sorted({int(x) for x in batter_ids if x is not None})
+    out: dict[int, dict[str, Any]] = {}
+    for i in range(0, len(ids), 25):
+        chunk = ids[i : i + 25]
+        url = PEOPLE_HITTING_OFFENSE_URL.format(
+            ids=",".join(str(x) for x in chunk), year=year
+        )
+        try:
+            payload = _get(url, verbose, log).json()
+        except Exception as exc:  # noqa: BLE001
+            log(verbose, f"batter offense fetch failed: {exc}")
+            continue
+        for person in payload.get("people", []):
+            pid = person.get("id")
+            if pid is None:
+                continue
+            season_k = season_avg = season_pa = None
+            recent_so = recent_ab = recent_h = recent_pa = 0.0
+            for block in person.get("stats") or []:
+                typ = ((block.get("type") or {}).get("displayName") or "").lower()
+                splits = block.get("splits") or []
+                if not splits:
+                    continue
+                if typ == "season":
+                    st = splits[0].get("stat") or {}
+                    so = st.get("strikeOuts")
+                    ab = st.get("atBats")
+                    h = st.get("hits")
+                    pa = st.get("plateAppearances")
+                    try:
+                        if so is not None and pa not in (None, 0, "0"):
+                            season_k = 100.0 * float(so) / float(pa)
+                        elif so is not None and ab not in (None, 0, "0"):
+                            season_k = 100.0 * float(so) / float(ab)
+                        if h is not None and ab not in (None, 0, "0"):
+                            season_avg = float(h) / float(ab)
+                        if pa is not None:
+                            season_pa = float(pa)
+                    except (TypeError, ValueError, ZeroDivisionError):
+                        pass
+                elif typ in ("game log", "gamelog"):
+                    # Splits are chronological; take last N games with AB/PA.
+                    games = []
+                    for s in splits:
+                        st = s.get("stat") or {}
+                        try:
+                            ab = float(st.get("atBats") or 0)
+                            pa = float(st.get("plateAppearances") or ab)
+                            if pa <= 0 and ab <= 0:
+                                continue
+                            games.append(
+                                {
+                                    "date": str(s.get("date") or ""),
+                                    "so": float(st.get("strikeOuts") or 0),
+                                    "ab": ab,
+                                    "h": float(st.get("hits") or 0),
+                                    "pa": pa if pa > 0 else ab,
+                                }
+                            )
+                        except (TypeError, ValueError):
+                            continue
+                    games.sort(key=lambda g: g["date"])
+                    for g in games[-OFFENSE_RECENT_GAMES:]:
+                        recent_so += g["so"]
+                        recent_ab += g["ab"]
+                        recent_h += g["h"]
+                        recent_pa += g["pa"]
+            recent_k = (
+                100.0 * recent_so / recent_pa if recent_pa > 0 else None
+            )
+            recent_avg = recent_h / recent_ab if recent_ab > 0 else None
+            out[int(pid)] = {
+                "season_k_pct": season_k,
+                "season_avg": season_avg,
+                "season_pa": season_pa,
+                "recent_k_pct": recent_k,
+                "recent_avg": recent_avg,
+                "recent_pa": recent_pa,
+                "recent_ab": recent_ab,
+            }
+    return out
+
+
+def summarize_lineup_offense(
+    lineup: list[dict[str, Any]],
+    profiles: dict[int, dict[str, Any]],
+) -> dict[str, Any]:
+    """PA-weighted lineup K% / AVG; prefer recent form when sample is enough."""
+    recent_rows: list[tuple[float, float, float]] = []  # pa, k, avg
+    season_rows: list[tuple[float, float, float]] = []
+    for slot in lineup:
+        try:
+            bid = int(slot["batter_id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        prof = profiles.get(bid) or {}
+        r_pa = float(prof.get("recent_pa") or 0.0)
+        r_k = prof.get("recent_k_pct")
+        r_avg = prof.get("recent_avg")
+        if r_pa > 0 and r_k is not None:
+            recent_rows.append((r_pa, float(r_k), float(r_avg) if r_avg is not None else LEAGUE_AVG))
+        s_pa = float(prof.get("season_pa") or 0.0) or 1.0
+        s_k = prof.get("season_k_pct")
+        s_avg = prof.get("season_avg")
+        if s_k is not None:
+            season_rows.append(
+                (s_pa, float(s_k), float(s_avg) if s_avg is not None else LEAGUE_AVG)
+            )
+
+    def _wavg(rows: list[tuple[float, float, float]]) -> tuple[float | None, float | None, float]:
+        if not rows:
+            return None, None, 0.0
+        tw = sum(r[0] for r in rows)
+        if tw <= 0:
+            return None, None, 0.0
+        k = sum(r[0] * r[1] for r in rows) / tw
+        avg = sum(r[0] * r[2] for r in rows) / tw
+        return k, avg, tw
+
+    recent_pa_total = sum(r[0] for r in recent_rows)
+    if recent_pa_total >= OFFENSE_MIN_RECENT_PA and recent_rows:
+        k_pct, avg, pa = _wavg(recent_rows)
+        source = "recent"
+    elif season_rows:
+        k_pct, avg, pa = _wavg(season_rows)
+        source = "season"
+    else:
+        return {
+            "lineup_k_pct": None,
+            "lineup_avg": None,
+            "offense_pa": 0.0,
+            "offense_source": None,
+            "offense_n": 0,
+        }
+
+    return {
+        "lineup_k_pct": k_pct,
+        "lineup_avg": avg,
+        "offense_pa": pa,
+        "offense_source": source,
+        "offense_n": len(recent_rows) if source == "recent" else len(season_rows),
+    }
+
+
+def apply_lineup_offense_overlay(
+    expected_ks: float,
+    summary: dict[str, Any] | None,
+) -> tuple[float, float | None, dict[str, Any]]:
+    """Mild ± adjust matchup Ks from opposing lineup K%/contact.
+
+    Higher lineup K% → more pitcher Ks. Higher AVG / contact → fewer Ks.
+    Capped at ±OFFENSE_FACTOR_MAX so this stays a sharpening layer.
+    """
+    empty = {
+        "lineup_k_pct": None,
+        "lineup_avg": None,
+        "offense_source": None,
+        "offense_factor": None,
+    }
+    if expected_ks is None or summary is None:
+        return expected_ks, None, empty
+    k_pct = summary.get("lineup_k_pct")
+    avg = summary.get("lineup_avg")
+    if k_pct is None:
+        return expected_ks, None, {**empty, **{k: summary.get(k) for k in empty}}
+
+    k_edge = (float(k_pct) - LEAGUE_K_PCT) / 100.0
+    contact_edge = 0.0
+    if avg is not None:
+        # Elevated AVG with soft K% is a contact environment.
+        contact_edge = -(float(avg) - LEAGUE_AVG) * 0.55
+    raw = (k_edge * 1.15) + contact_edge
+    delta = max(-OFFENSE_FACTOR_MAX, min(OFFENSE_FACTOR_MAX, raw))
+    factor = 1.0 + delta
+    blended = float(expected_ks) * factor
+    meta = {
+        "lineup_k_pct": float(k_pct),
+        "lineup_avg": None if avg is None else float(avg),
+        "offense_source": summary.get("offense_source"),
+        "offense_factor": factor,
+        "offense_pa": summary.get("offense_pa"),
+        "offense_n": summary.get("offense_n"),
+    }
+    return blended, factor, meta
 
 
 def strip_html_name(value: Any) -> str:

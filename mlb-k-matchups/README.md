@@ -42,8 +42,10 @@ No league-average blending: rates come only from the opposing lineup’s batters
 1. **Pitch mix vs LHB/RHB** — Statcast pitch-level usage by batter stand; each lineup batter is scored with the mix that pitcher actually throws to that side (switch-hitters take the platoon stand).
 2. **Batter pitch-type K% vs LHP/RHP** — Statcast PA-ending K% by pitch against lefties/righties (min 15 PA); falls back to overall pitch K% then league fill.
 3. **Batter K% vs pitcher hand** — Stats API `vl`/`vr` hitting splits softly adjust arsenal-weighted K% when pitch×hand coverage is thin (skipped when ≥60% of usage already uses pitch×hand rates).
-4. **Recent form** — last 3 starts’ K/9 blended into `expected_ks` (~30% weight when available); `expected_ks_model` keeps the pre-form number.
-5. **Outing risk** — BB/9, HR/9, xFIP (FanGraphs, Stats API fallback) → `outing_risk` flags; elevated BB/9 mildly shortens projected BF/IP for overs.
+4. **Outing survival / early-exit** — BB/9 haircut plus short recent IP and high HR/xFIP+BB flags shrink projected BF/IP (`bf_risk_factor`, `survival_flags`).
+5. **Opposing lineup offense form** — lineup K% and AVG (prefer last ~10 games when PA sample is enough, else season) apply a mild ±7% overlay on matchup Ks (`offense_factor`, `lineup_k_pct`).
+6. **Recent form** — last 3 starts’ K/9 blended into `expected_ks` (~30% weight when available); `expected_ks_model` keeps the pre-form (post-offense) number.
+7. **Outing risk** — BB/9, HR/9, xFIP (FanGraphs, Stats API fallback) → `outing_risk` flags.
 
 If a starter is missing from the Savant arsenal board (common for returning arms below the default `min` PA filter), the model falls back to **Statcast pitch-level usage** for that pitcher instead of leaving them unscored.
 

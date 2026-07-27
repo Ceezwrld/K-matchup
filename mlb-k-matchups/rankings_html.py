@@ -237,10 +237,16 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "xfip": _json_safe(r.get("xfip")),
                 "outing_risk": r.get("outing_risk"),
                 "risk_flags": r.get("risk_flags") or "",
+                "bf_risk_factor": _json_safe(r.get("bf_risk_factor")),
+                "survival_flags": r.get("survival_flags") or "",
                 "last3_ks": _json_safe(r.get("last3_ks")),
                 "last3_k9": _json_safe(r.get("last3_k9")),
                 "form_ks": _json_safe(r.get("form_ks")),
                 "form_weight": _json_safe(r.get("form_weight")),
+                "lineup_k_pct": _json_safe(r.get("lineup_k_pct")),
+                "lineup_avg": _json_safe(r.get("lineup_avg")),
+                "offense_source": r.get("offense_source"),
+                "offense_factor": _json_safe(r.get("offense_factor")),
                 "arsenal": clean_arsenal,
                 "pitch_lineup_avg": clean_pitch_avg,
                 "batters": clean_detail,
@@ -450,6 +456,20 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"HR/9 {_fmt(row.get('hr9'), 2)} · "
         f"xFIP {_fmt(row.get('xfip'), 2)}"
     )
+    offense_bits = []
+    if row.get("lineup_k_pct") is not None:
+        src = row.get("offense_source") or ""
+        offense_bits.append(
+            f"opp K% {_fmt(row.get('lineup_k_pct'), 1)}"
+            f"{'' if not src else ' (' + str(src) + ')'}"
+        )
+    if row.get("lineup_avg") is not None:
+        offense_bits.append(f"opp AVG {_fmt(row.get('lineup_avg'), 3)}")
+    if row.get("offense_factor") is not None:
+        offense_bits.append(f"offense ×{_fmt(row.get('offense_factor'), 3)}")
+    if row.get("bf_risk_factor") is not None and float(row["bf_risk_factor"]) < 0.999:
+        offense_bits.append(f"survival ×{_fmt(row.get('bf_risk_factor'), 3)}")
+    offense_txt = " · ".join(offense_bits)
     model_txt = ""
     if (
         row.get("expected_ks_model") is not None
@@ -469,6 +489,8 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</p>"
         f"<p class='detail-head sharpen'>{_esc(rates_txt)} · {_esc(form_txt)} · {risk_html}</p>"
     )
+    if offense_txt:
+        head += f"<p class='detail-head sharpen'>{_esc(offense_txt)}</p>"
 
     # CSS-only tabs via radio buttons (works with JS disabled).
     tabs = (

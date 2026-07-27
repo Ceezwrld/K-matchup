@@ -61,5 +61,12 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 
 ## Prior days (short)
 
+- **7/26:** MAE ~2.09; O3.5 strong / O4.5 mixed; Ashcraft O5.5 miss; Misio 12; Sánchez early hook; Gausman fade wrong.
 - **7/24:** Soft O3.5 ~76%, O4.5 ~67%; Miller 0 K killed multis; Manaea swingman fade / Way opener correct.
 - **7/23:** MAE ~2.03; Sale U7 failed (SPIKE/high K night) — don’t soft-under elite K arms.
+
+## Model upgrades (2026-07-27)
+
+- **Outing survival:** `bf_risk_factor` now also haircuts for short recent IP and HR/xFIP+BB exit risk (floor 0.82).
+- **Opp. lineup offense:** recent (else season) lineup K%/AVG → mild ±7% `offense_factor` on matchup Ks before form blend.
+- Next: optional batter barrel/hard-hit layer for Hits props (not for pitcher K mean).

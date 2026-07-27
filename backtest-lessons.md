@@ -11,6 +11,7 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - **Medium/high** outing risk → need *more* edge for overs (or pass).
 - Exact-K MAE ~2 is normal; use model for **side selection**, not hammering exact totals.
 - **Card size: 2–3 legs only.** No 4/5/6-mans. Correlation and early hooks kill bigger tickets.
+- **Daily volume (when slate is full):** up to **6–7 tickets × 3 legs**. One chalk/nuke; rest mix **1P+2B** or **2P+1B**. Cap any single player at **~2 tickets**.
 
 ## 2026-07-26 lessons (MAE ~2.09, n=30; NYY@PHI still live at grade)
 

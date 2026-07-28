@@ -16,26 +16,31 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - **Accuracy lock (before firing):** refresh with **official lineups**; only lock a leg if (1) batter is in the posted nine, (2) pitcher role is starter not opener/swingman, (3) soft line edge holds on the *current* proj, (4) no same-game opposing K-over stack. Prior-lineup tickets are provisional only.
 - **Disclose weak links:** if a recommended leg is filler/thin-sample/prior-lineup/SPIKE-capped, state that in the ticket writeup — don’t bury it.
 
-## 2026-07-27 lessons (partial — Final MAE ~1.28, n=12; 5 games still live; CLE@CIN rain postponement)
+## 2026-07-27 lessons (MAE ~1.34, n=20 Final; HOU@LAA still live — excluded; CLE@CIN rain postponement)
 
 | What happened | Lesson |
 |---------------|--------|
-| **Montero** 5.18→**1** (4.1 IP / 9 H), low risk / K9 6.6 | FILLER rule confirmed on final box — O4.5 on soft-contact low-K arms is poison for multis |
-| Soft **O4.5** clear/low (Final) → **2/3** (Wheeler HIT, Rocker HIT, **Kirby MISS 3**) | Kirby short outing (4 IP / 7 H) — length risk even on clear SPIKE-ish mid-K arms |
-| Soft **O3.5** clear/low (Final) → **2/4** with Montero+Kirby dragging | Don’t let FILLER arms into the O3.5 clear/low tally as “process wins” either |
-| **Wheeler** 5.85→**6** in only **3 IP** | SPIKE + clear still clears soft O4.5 / O5.5 even when hooked early — never soft-under |
-| **Rocker** 5.29→**7** (6.2 IP) | Volume clear O4.5 cashed; O5.5 would have hit too — juice lane when IP holds |
-| **Kelly** 5.30→**6** despite K9 5.6 / high risk | Low-K season rate ≠ auto-miss when outing length holds; still FILLER for *tickets*, not a fade of the over side alone |
-| **Yean** opener-ish 2.51→**0** / **Scherzer** short 2.91→**4** | Openers/short tags continue to matter more than raw proj for full-outing props |
+| **Montero** 5.18→**1** (4.1 IP / 9 H), low risk / K9 6.6 | FILLER rule confirmed — O4.5 on soft-contact low-K arms is poison for multis |
+| Soft **O3.5** clear/low → **4/6 (67%)** | Floor still usable; Montero+Kirby are the leaks |
+| Soft **O4.5** clear/low e≥0.75 → **2/4 (50%)**; e≥1.0 → **1/2** | Weaker O4.5 night — Kirby 3 / Fried 4 (3 IP) both missed |
+| **Wheeler** 5.85→**6** in only **3 IP** | SPIKE + clear still clears soft O4.5/O5.5 when hooked early — never soft-under |
+| **Tolle** 5.13→**7** (5.1 IP) | Clear mid-board O4.5 cashed; thin O4.5 with real K9 is fine |
+| **Fried** 5.40→**4** (3 IP) | Clear + edge died on early exit — outing length > matchup K% |
+| **Perkins** 6.80→**4** (5.2 IP, medium) | Top-board swingman/medium risk O5.5+ chalk failed — don’t nuke medium tops |
+| **Rocker** 5.29→**7** (6.2 IP) | Volume clear O4.5/O5.5 cashed when IP held |
+| **Kelly** 5.30→**6** despite K9 5.6 / high risk | Low-K season ≠ auto-miss if length holds; still FILLER for *tickets* |
+| **Yean** 2.51→**0** / **Scherzer** 2.91→**4** (2.2 IP) | Openers/short tags matter more than raw proj for full-outing props |
 | CLE@CIN **Postponed** (Burns/Cecconi) | Rain outs void prior-lineup locks — don’t carry provisional tickets overnight |
 
 ### 7/27 card scorecard (discussed / late tickets)
 
-- **Montero O4.5** — MISS (1). Correctly flagged FILLER mid-slate; still burned if used as anchor.
+- **Montero O4.5** — MISS (1). Correctly flagged FILLER; still burned if used as anchor.
 - **Wheeler** — HIT soft overs (6 K / 3 IP).
 - **Kirby O4.5** — MISS (3).
-- **Fried / Tolle / late bats** — still In Progress at grade time; re-grade when Final.
-- Live snapshot: Perkins 4 K / 5 IP; Fried 4 K / 3 IP; Tolle 5 K / 4.1 IP; Imai hooked 1 K / 0.2 IP.
+- **Fried O4.5** — MISS (4 / 3 IP early hook).
+- **Tolle O4.5** — HIT (7).
+- **Perkins** top-board — MISS vs high chalk (4 K).
+- **HOU@LAA (Imai / Ureña)** — still live; excluded from this grade.
 
 ## 2026-07-26 lessons (MAE ~2.09, n=30; NYY@PHI still live at grade)
 

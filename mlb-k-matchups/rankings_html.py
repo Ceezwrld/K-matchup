@@ -582,11 +582,12 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
     )
     ticket_note = (row.get("ticket_note") or "").strip()
-    if outlook or ticket_note:
+    # Banner only for flagged soft-contact outlooks (FILLER / MATCHUP_OK).
+    if outlook:
         note = _esc(ticket_note) if ticket_note else matchup_val
         head += (
-            f"<div class='outlook-banner outlook-{_esc((outlook or 'note').lower())}'>"
-            f"<strong>{_esc((outlook or 'NOTE').replace('_', ' '))}</strong>"
+            f"<div class='outlook-banner outlook-{_esc(outlook.lower())}'>"
+            f"<strong>{_esc(outlook.replace('_', ' '))}</strong>"
             f"<span>{note}</span>"
             "</div>"
         )

@@ -445,6 +445,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     hand_html = (
         f" <span class='hand'>{_esc(pitcher_hand)}</span>" if pitcher_hand else ""
     )
+    outlook = (row.get("ticket_outlook") or "").strip()
     search = " ".join(
         str(x)
         for x in [
@@ -456,7 +457,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             row.get("game_time_ct"),
             row.get("lineup_source"),
             status,
-            row.get("ticket_outlook"),
+            outlook,
             row.get("matchup_grade"),
         ]
         if x
@@ -472,13 +473,24 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     ip_grade = _grade_class("projected_ip", row.get("projected_ip"))
     tto_grade = _grade_class("tto", row.get("times_through_order"))
     kpct_grade = _grade_class("expected_k_pct", row.get("expected_k_pct"))
-    outlook = (row.get("ticket_outlook") or "").strip()
+
     badge_html = f"<span class='badge {kind}'>{_esc(label)}</span>"
     if outlook:
         badge_html += (
-            f" <span class='outlook outlook-{_esc(outlook.lower())}'>"
+            f"<span class='outlook outlook-{_esc(outlook.lower())}'>"
             f"{_esc(outlook.replace('_', ' '))}</span>"
         )
+    # Arsenal matchup rank chip — slate rank of pitcher-vs-lineup K%.
+    ark = row.get("arsenal_matchup_rank")
+    ark_html = ""
+    if ark is not None and scored:
+        grade = (row.get("matchup_grade") or "").strip()
+        ark_html = (
+            f"<span class='ark ark-{_esc(grade or 'avg')}' "
+            f"title='Slate rank of this pitcher vs opposing lineup arsenal K%'>"
+            f"#{_esc(ark)}</span>"
+        )
+
     summary = (
         "<div class='summary-grid'>"
         f"<div class='rank'>{_esc(row.get('rank') if row.get('rank') is not None else '—')}</div>"
@@ -492,107 +504,105 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"<div class='num ks{ks_grade}'>{_fmt(row.get('expected_ks'))}</div>"
         f"<div class='num{ip_grade}'>{_fmt(row.get('projected_ip'), 1)}</div>"
         f"<div class='num{tto_grade}'>{tto_s}</div>"
-        f"<div class='num{kpct_grade}'>{_fmt(row.get('expected_k_pct'))}</div>"
-        f"<div>{badge_html}</div>"
+        f"<div class='num kpct{kpct_grade}'>"
+        f"<span class='kpct-val'>{_fmt(row.get('expected_k_pct'))}</span>"
+        f"{ark_html}</div>"
+        f"<div class='badges'>{badge_html}</div>"
         "</div>"
     )
 
     risk = row.get("outing_risk") or "clear"
     risk_flags = row.get("risk_flags") or ""
-    risk_html = (
-        f"<span class='risk risk-{_esc(risk)}'>"
-        f"risk {_esc(risk)}"
-        f"{'' if not risk_flags else ' · ' + _esc(risk_flags)}"
-        "</span>"
-    )
     role = row.get("outing_role") or "starter"
     role_html = ""
     if role and role != "starter":
         role_html = (
-            f" <span class='role role-{_esc(role)}'>{_esc(role.replace('_', ' '))}</span>"
-        )
-    outlook_html = ""
-    if outlook:
-        outlook_html = (
-            f" <span class='outlook outlook-{_esc(outlook.lower())}'>"
-            f"{_esc(outlook.replace('_', ' '))}</span>"
-        )
-    form_bits = []
-    if row.get("last3_ks") is not None:
-        form_bits.append(f"L3 {_fmt(row.get('last3_ks'), 1)} K/start")
-    if row.get("last3_k9") is not None:
-        form_bits.append(f"{_fmt(row.get('last3_k9'), 1)} K/9")
-    if row.get("form_weight") is not None:
-        form_bits.append(f"form blend {_fmt(100 * float(row['form_weight']), 0)}%")
-    form_txt = " · ".join(form_bits) if form_bits else "no recent form"
-    rates_txt = (
-        f"BB/9 {_fmt(row.get('bb9'), 2)} · "
-        f"HR/9 {_fmt(row.get('hr9'), 2)} · "
-        f"xFIP {_fmt(row.get('xfip'), 2)}"
-    )
-    offense_bits = []
-    if row.get("lineup_k_pct") is not None:
-        src = row.get("offense_source") or ""
-        offense_bits.append(
-            f"opp K% {_fmt(row.get('lineup_k_pct'), 1)}"
-            f"{'' if not src else ' (' + str(src) + ')'}"
-        )
-    if row.get("lineup_avg") is not None:
-        offense_bits.append(f"opp AVG {_fmt(row.get('lineup_avg'), 3)}")
-    if row.get("offense_factor") is not None:
-        offense_bits.append(f"offense ×{_fmt(row.get('offense_factor'), 3)}")
-    if row.get("bf_risk_factor") is not None and float(row["bf_risk_factor"]) < 0.999:
-        offense_bits.append(f"survival ×{_fmt(row.get('bf_risk_factor'), 3)}")
-    offense_txt = " · ".join(offense_bits)
-    model_txt = ""
-    if (
-        row.get("expected_ks_model") is not None
-        and row.get("expected_ks") is not None
-        and abs(float(row["expected_ks_model"]) - float(row["expected_ks"])) >= 0.05
-    ):
-        model_txt = f" · model {_fmt(row.get('expected_ks_model'))} K before form"
-    head = (
-        "<p class='detail-head'>"
-        f"Projected outing {_fmt(row.get('projected_ip'), 1)} IP · "
-        f"{tto_s} through order · "
-        f"BF {row.get('projected_bf') if row.get('projected_bf') is not None else row.get('batters_faced_assumed') or '—'} "
-        f"({_esc(row.get('outing_source') or 'n/a')}){role_html}{outlook_html} · "
-        f"lineup cover "
-        f"{'—' if row.get('lineup_coverage') is None else str(int(round(100 * float(row['lineup_coverage'])))) + '%'}"
-        f"{_esc(model_txt)}"
-        "</p>"
-        f"<p class='detail-head sharpen'>{_esc(rates_txt)} · {_esc(form_txt)} · {risk_html}</p>"
-    )
-    if offense_txt:
-        head += f"<p class='detail-head sharpen'>{_esc(offense_txt)}</p>"
-    ticket_note = (row.get("ticket_note") or "").strip()
-    if outlook or ticket_note:
-        matchup_bits = []
-        if row.get("matchup_grade"):
-            matchup_bits.append(f"matchup {_esc(row.get('matchup_grade'))}")
-        if row.get("arsenal_matchup_rank") is not None:
-            matchup_bits.append(f"arsenal rank #{_esc(row.get('arsenal_matchup_rank'))}")
-        if row.get("expected_k_pct") is not None:
-            matchup_bits.append(f"arsenal K% {_fmt(row.get('expected_k_pct'), 1)}")
-        bit = " · ".join(matchup_bits)
-        note = _esc(ticket_note) if ticket_note else bit
-        head += (
-            f"<p class='detail-head ticket-outlook outlook-{_esc((outlook or 'note').lower())}'>"
-            f"{note}</p>"
+            f"<span class='role role-{_esc(role)}'>{_esc(role.replace('_', ' '))}</span>"
         )
 
-    # CSS-only tabs via radio buttons (works with JS disabled).
+    bf = (
+        row.get("projected_bf")
+        if row.get("projected_bf") is not None
+        else row.get("batters_faced_assumed")
+    )
+    cover = (
+        "—"
+        if row.get("lineup_coverage") is None
+        else f"{int(round(100 * float(row['lineup_coverage'])))}%"
+    )
+    outing_val = (
+        f"{_fmt(row.get('projected_ip'), 1)} IP · {tto_s} · BF {_esc(bf)} · cover {cover}"
+    )
+    rates_val = (
+        f"BB/9 {_fmt(row.get('bb9'), 2)} · HR/9 {_fmt(row.get('hr9'), 2)} · "
+        f"xFIP {_fmt(row.get('xfip'), 2)} · K9 {_fmt(row.get('k9'), 1)}"
+    )
+    form_bits = []
+    if row.get("last3_ks") is not None:
+        form_bits.append(f"L3 {_fmt(row.get('last3_ks'), 1)} K")
+    if row.get("last3_k9") is not None:
+        form_bits.append(f"{_fmt(row.get('last3_k9'), 1)} K/9")
+    form_val = " · ".join(form_bits) if form_bits else "no L3 form"
+
+    opp = row.get("opponent") or "opp"
+    matchup_bits = []
+    if ark is not None:
+        matchup_bits.append(f"#{_esc(ark)} vs {_esc(opp)} on slate")
+    if row.get("matchup_grade"):
+        matchup_bits.append(_esc(row.get("matchup_grade")))
+    if row.get("expected_k_pct") is not None:
+        matchup_bits.append(f"arsenal K% {_fmt(row.get('expected_k_pct'), 1)}")
+    if row.get("lineup_k_pct") is not None:
+        src = row.get("offense_source") or ""
+        matchup_bits.append(
+            f"opp K% {_fmt(row.get('lineup_k_pct'), 1)}"
+            f"{'' if not src else ' (' + _esc(src) + ')'}"
+        )
+    matchup_val = " · ".join(matchup_bits) if matchup_bits else "—"
+
+    risk_chip = (
+        f"<span class='risk risk-{_esc(risk)}'>risk {_esc(risk)}"
+        f"{'' if not risk_flags else ' · ' + _esc(risk_flags)}</span>"
+    )
+
+    head = (
+        "<div class='meta-strip'>"
+        "<div class='meta-cell'>"
+        "<span class='meta-label'>Outing</span>"
+        f"<span class='meta-value'>{outing_val}{role_html}</span>"
+        "</div>"
+        "<div class='meta-cell'>"
+        "<span class='meta-label'>Rates / form</span>"
+        f"<span class='meta-value'>{_esc(rates_val)} · {_esc(form_val)} {risk_chip}</span>"
+        "</div>"
+        "<div class='meta-cell meta-matchup'>"
+        "<span class='meta-label'>Arsenal matchup</span>"
+        f"<span class='meta-value'>{matchup_val}</span>"
+        "</div>"
+        "</div>"
+    )
+    ticket_note = (row.get("ticket_note") or "").strip()
+    if outlook or ticket_note:
+        note = _esc(ticket_note) if ticket_note else matchup_val
+        head += (
+            f"<div class='outlook-banner outlook-{_esc((outlook or 'note').lower())}'>"
+            f"<strong>{_esc((outlook or 'NOTE').replace('_', ' '))}</strong>"
+            f"<span>{note}</span>"
+            "</div>"
+        )
+
+    # CSS-only tabs — full-width segmented control.
     tabs = (
-        f"<div class='tabs'>"
+        f"<div class='tabs' role='tablist'>"
         f"<input type='radio' name='tab-{uid}' id='tab-{uid}-pitches' checked />"
         f"<label class='tab' for='tab-{uid}-pitches'>"
-        f"<span class='tab-full'>Pitch weaknesses</span>"
-        f"<span class='tab-short'>Pitches</span>"
+        f"<span class='tab-full'>Arsenal vs lineup</span>"
+        f"<span class='tab-short'>Arsenal</span>"
         f"</label>"
         f"<input type='radio' name='tab-{uid}' id='tab-{uid}-lineup' />"
         f"<label class='tab' for='tab-{uid}-lineup'>"
-        f"<span class='tab-full'>Lineup K%</span>"
-        f"<span class='tab-short'>Lineup</span>"
+        f"<span class='tab-full'>Batting order</span>"
+        f"<span class='tab-short'>Order</span>"
         f"</label>"
         f"<div class='tab-panel panel-pitches'>{_render_pitch_matrix(row, uid)}</div>"
         f"<div class='tab-panel panel-lineup'>{_render_lineup_panel(row)}</div>"
@@ -803,16 +813,19 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     .summary-grid {
       grid-template-columns: 2.2rem 1fr auto;
       grid-template-areas:
-        "rank who badge"
+        "rank who badges"
         "rank game game"
-        "ks ip tto";
+        "ks ip tto"
+        "kpct kpct kpct";
     }
     .summary-grid .rank { grid-area: rank; }
     .summary-grid .who { grid-area: who; }
+    .summary-grid .badges { grid-area: badges; justify-self: end; }
     .summary-grid .game { grid-area: game; }
     .summary-grid .ks { grid-area: ks; }
     .summary-grid .num:nth-of-type(2) { grid-area: ip; }
     .summary-grid .num:nth-of-type(3) { grid-area: tto; }
+    .summary-grid .kpct { grid-area: kpct; }
   }
   details.matchup {
     background: var(--panel);
@@ -900,6 +913,24 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .badge.official { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
   .badge.prior { background: rgba(154, 91, 18, 0.14); color: var(--warn); }
   .badge.miss { background: rgba(20, 32, 26, 0.08); color: var(--muted); }
+  .badges {
+    display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end;
+    align-items: center;
+  }
+  .kpct {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+  }
+  .kpct-val { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .ark {
+    display: inline-flex; align-items: center;
+    padding: 0.1rem 0.4rem; border-radius: 6px;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em;
+    background: rgba(20, 32, 26, 0.08); color: var(--muted);
+  }
+  .ark-elite { background: rgba(15, 106, 77, 0.16); color: #064832; }
+  .ark-strong { background: rgba(15, 106, 77, 0.10); color: var(--ok); }
+  .ark-avg { background: rgba(154, 91, 18, 0.12); color: var(--warn); }
+  .ark-soft { background: rgba(140, 40, 40, 0.12); color: #8c2828; }
   .risk {
     display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 999px;
     font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
@@ -909,40 +940,93 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .risk-medium { background: rgba(154, 91, 18, 0.18); color: #8a4b0f; }
   .risk-high { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
   .role {
-    display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 999px;
-    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
-    text-transform: none;
+    display: inline-flex; margin-left: 0.35rem; padding: 0.15rem 0.45rem;
+    border-radius: 999px; font-size: 0.72rem; font-weight: 700;
   }
   .role-opener_likely { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
   .role-swingman { background: rgba(154, 91, 18, 0.16); color: #8a4b0f; }
   .outlook {
     display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 999px;
     font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
-    text-transform: none;
   }
   .outlook-filler { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
   .outlook-matchup_ok { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
-  .detail-head.ticket-outlook { font-weight: 600; }
-  .detail-head.ticket-outlook.outlook-filler { color: #8c2828; }
-  .detail-head.ticket-outlook.outlook-matchup_ok { color: var(--ok); }
-  .detail-head.sharpen { text-transform: none; letter-spacing: 0.01em; }
   .detail {
-    padding: 0 1rem 1.1rem;
+    padding: 0 1rem 1.15rem;
     border-top: 1px solid var(--line);
     background: rgba(20, 32, 26, 0.03);
     overflow: visible;
+    animation: detailIn 0.22s ease-out;
   }
-  .detail-head {
+  @keyframes detailIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+  .meta-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
     margin: 0.85rem 0 0.75rem;
-    font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase;
-    color: var(--muted); line-height: 1.45;
+  }
+  @media (max-width: 820px) {
+    .meta-strip { grid-template-columns: 1fr; gap: 0.4rem; }
+  }
+  .meta-cell {
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.7);
+    min-width: 0;
+  }
+  .meta-matchup {
+    border-color: rgba(15, 106, 77, 0.28);
+    background: rgba(15, 106, 77, 0.06);
+  }
+  .meta-label {
+    display: block;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 0.25rem;
+  }
+  .meta-value {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem;
+    font-size: 0.84rem; line-height: 1.4; color: var(--ink); font-weight: 600;
+  }
+  .outlook-banner {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.55rem 0.75rem;
+    align-items: start;
+    margin: 0 0 0.85rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    font-size: 0.84rem; line-height: 1.4;
+  }
+  .outlook-banner strong {
+    font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .outlook-banner.outlook-filler {
+    background: rgba(140, 40, 40, 0.08); border-color: rgba(140, 40, 40, 0.22);
+    color: #6e2020;
+  }
+  .outlook-banner.outlook-matchup_ok {
+    background: rgba(15, 106, 77, 0.08); border-color: rgba(15, 106, 77, 0.22);
+    color: #0a4a36;
+  }
+  @media (max-width: 560px) {
+    .outlook-banner { grid-template-columns: 1fr; gap: 0.25rem; }
   }
   .tabs {
     display: grid;
-    grid-template-columns: repeat(2, max-content);
-    gap: 0.4rem 0.45rem;
-    align-items: center;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    align-items: stretch;
     width: 100%;
+    margin-top: 0.15rem;
+    padding: 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.55);
   }
   .tabs > input {
     position: absolute;
@@ -953,19 +1037,28 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     white-space: nowrap;
   }
   .tab {
-    display: inline-flex; align-items: center;
-    border: 1px solid var(--line); background: rgba(255,255,255,0.65);
-    color: var(--muted); border-radius: 999px; padding: 0.4rem 0.85rem;
-    font-size: 0.82rem; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; background: transparent;
+    color: var(--muted); border-radius: 10px; padding: 0.55rem 0.75rem;
+    font-size: 0.86rem; font-weight: 700; cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
   }
+  .tab:hover { color: var(--ink); }
   .tab-short { display: none; }
   .tabs > input:checked + .tab {
-    background: var(--accent); border-color: var(--accent); color: #fff;
+    background: var(--accent); color: #fff;
+    box-shadow: 0 6px 16px rgba(15, 106, 77, 0.22);
   }
   .tab-panel {
     display: none;
     grid-column: 1 / -1;
-    margin-top: 0.35rem;
+    margin-top: 0.55rem;
+    padding: 0.15rem 0.2rem 0.35rem;
+    animation: panelIn 0.18s ease-out;
+  }
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: none; }
   }
   .tabs > input[id$="-pitches"]:checked ~ .panel-pitches { display: block; }
   .tabs > input[id$="-lineup"]:checked ~ .panel-lineup { display: block; }
@@ -1066,6 +1159,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     height: 100%;
     border-radius: inherit;
     min-width: 0;
+    transition: width 0.25s ease;
   }
   .kval {
     text-align: right;
@@ -1074,33 +1168,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 0.88rem;
   }
   @media (max-width: 560px) {
-    /* Phone-only: compact tab pills so they don't crowd / overlap content. */
-    .tabs {
-      position: relative;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.35rem;
-    }
     .tab {
-      flex: 0 1 auto;
-      justify-content: center;
-      max-width: calc(50% - 0.2rem);
-      box-sizing: border-box;
-      padding: 0.28rem 0.55rem;
-      font-size: 0.72rem;
-      line-height: 1.2;
-      white-space: nowrap;
+      padding: 0.48rem 0.5rem;
+      font-size: 0.78rem;
     }
     .tab-full { display: none; }
     .tab-short { display: inline; }
-    .tab-panel {
-      flex: 1 1 100%;
-      width: 100%;
-      min-width: 0;
-      margin-top: 0.45rem;
-      clear: both;
-    }
     .pitch-row {
       grid-template-columns: minmax(0, 1fr) 3rem;
       grid-template-rows: auto auto;
@@ -1166,8 +1239,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <header class="hero">
       <h1 class="brand">K-<span>Matchup</span></h1>
       <p class="lede">
-        Full-outing strikeout projections from each starter’s pitch mix against the
-        opposing batting order. Open a pitcher to see pitch-by-pitch K weaknesses.
+        Full-outing K projections from each starter’s arsenal against the opposing
+        order. <strong>Arsenal K%</strong> is pitcher-vs-lineup whiff rate;
+        the <strong>#</strong> next to it is that matchup’s slate rank (not the opponent alone).
       </p>
       <div class="meta">__META_CHIPS__</div>
       <div class="grade-legend" aria-label="Number color scale">
@@ -1176,14 +1250,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <span class="swatch grade-mid">mid</span>
         <span class="swatch grade-high">high</span>
         <span class="swatch grade-elite">elite</span>
-        <span>Exp K · IP · K%</span>
+        <span>Exp K · IP · Arsenal K%</span>
       </div>
     </header>
 
     <noscript>
       <p class="noscript">
         JavaScript is off or blocked — rankings still work.
-        Expand any pitcher, open <strong>Pitch weaknesses</strong>, then open a pitch.
+        Expand any pitcher, open <strong>Arsenal vs lineup</strong>, then open a pitch.
       </p>
     </noscript>
 
@@ -1211,7 +1285,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <option value="expected_ks:asc">Expected Ks ↑</option>
           <option value="projected_ip:desc">Proj IP ↓</option>
           <option value="tto:desc">TTO ↓</option>
-          <option value="kpct:desc">Lineup K% ↓</option>
+          <option value="kpct:desc">Arsenal K% ↓</option>
           <option value="rank:asc">Rank</option>
           <option value="pitcher:asc">Pitcher A–Z</option>
         </select>
@@ -1222,7 +1296,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
     <div class="colhead">
       <div>#</div><div>Pitcher</div><div>Game</div><div>Exp. Ks</div>
-      <div>Proj IP</div><div>TTO</div><div>Lineup K%</div><div>Lineup</div>
+      <div>Proj IP</div><div>TTO</div><div>Arsenal K%</div><div>Flags</div>
     </div>
 
     <div class="board" id="board">
@@ -1234,11 +1308,11 @@ __MATCHUP_CARDS__
     </div>
 
     <p class="footnote">
-      Expand a pitcher, then open <strong>Pitch weaknesses</strong> to see each batter’s
-      K% vs every pitch in that starter’s arsenal (darker green = more K-prone).
-      If this page opened as plain text from GitHub raw, download the file and open it
-      locally. Pre-lineup days are all <strong>Prior</strong> — set Lineup to
-      <strong>All sources</strong> (not Official only) or the board will look empty.
+      Expand a pitcher → <strong>Arsenal vs lineup</strong> for pitch-by-pitch K%,
+      or <strong>Batting order</strong> for the nine. Arsenal <strong>#</strong> ranks
+      this pitcher-vs-lineup matchup on today’s slate. FILLER / MATCHUP OK flag soft-contact
+      arms. If this opened as plain text from GitHub raw, download and open locally.
+      Pre-lineup days are all <strong>Prior</strong> — use Lineup <strong>All sources</strong>.
     </p>
   </div>
 

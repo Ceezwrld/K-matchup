@@ -15,8 +15,8 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
   - **Alt lane — pitcher outs:** when Ks are a poor fit (FILLER, or MATCHUP_OK but you don’t want the K over), consider **pitcher outs** instead if outing length / risk is clear-low and projected IP holds. Soft-contact arms often pile outs via BIP; outs props track survival + efficiency better than K volume. Still fade openers/swingmen and early-exit flags.
   - (7/27 Montero: soft profile + weak matchup → FILLER confirmed **1 K / 4.1 IP / 9 H** — K over dead; outs only if IP/risk still supported.)
 - Exact-K MAE ~2 is normal; use model for **side selection**, not hammering exact totals.
-- **Card size: 2–3 legs only.** No 4/5/6-mans. Correlation and early hooks kill bigger tickets.
-- **Daily volume (when slate is full):** up to **6–7 tickets × 3 legs**. One chalk/nuke; rest mix **1P+2B** or **2P+1B**. Cap any single player at **~2 tickets**.
+- **Card size: 2 legs.** Prefer straight 2-mans. 3-legs only when all legs are clear process (no filler/thin/prior). No 4/5/6-mans — correlation and early hooks kill bigger tickets.
+- **Daily volume (when slate is full):** several **2-leg** tickets over fewer 3-mans. One chalk/nuke pair max; rest mix pitcher+bat or bat+bat. Cap any single player at **~2 tickets**.
 - **Accuracy lock (before firing):** refresh with **official lineups**; only lock a leg if (1) batter is in the posted nine, (2) pitcher role is starter not opener/swingman, (3) soft line edge holds on the *current* proj, (4) no same-game opposing K-over stack. Prior-lineup tickets are provisional only.
 - **Disclose weak links:** if a recommended leg is filler/thin-sample/prior-lineup/SPIKE-capped, state that in the ticket writeup — don’t bury it.
 

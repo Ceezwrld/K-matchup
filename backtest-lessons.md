@@ -109,3 +109,4 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - **Hits board (2026-07-27):** barrel% / hard-hit% / xwOBA + AVG vs hand → `hits_score` / `hr_rbi_score` only. Explicitly isolated from `expected_ks`.
 
 - **Ticket outlook (2026-07-28):** FILLER is no longer pitcher-only. Soft-contact profile is gated by opposing lineup **arsenal rank** (`expected_k_pct` percentile → `MATCHUP_OK` vs `FILLER`).
+- **Plate discipline (2026-07-28):** opposing lineup **BB%** + K% shape → `discipline_grade` / `pitch_count_risk`. Patient/walk-heavy nines trim BF/IP and soften K projections (beyond raw batter K%).

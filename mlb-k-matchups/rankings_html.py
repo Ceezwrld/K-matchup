@@ -254,8 +254,13 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "form_weight": _json_safe(r.get("form_weight")),
                 "lineup_k_pct": _json_safe(r.get("lineup_k_pct")),
                 "lineup_avg": _json_safe(r.get("lineup_avg")),
+                "lineup_bb_pct": _json_safe(r.get("lineup_bb_pct")),
                 "offense_source": r.get("offense_source"),
                 "offense_factor": _json_safe(r.get("offense_factor")),
+                "discipline_grade": r.get("discipline_grade") or "",
+                "discipline_ks_factor": _json_safe(r.get("discipline_ks_factor")),
+                "discipline_bf_factor": _json_safe(r.get("discipline_bf_factor")),
+                "pitch_count_risk": r.get("pitch_count_risk") or "",
                 "soft_contact_profile": bool(r.get("soft_contact_profile")),
                 "profile_flags": r.get("profile_flags") or "",
                 "arsenal_matchup_rank": _json_safe(r.get("arsenal_matchup_rank")),
@@ -558,6 +563,14 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"opp K% {_fmt(row.get('lineup_k_pct'), 1)}"
             f"{'' if not src else ' (' + _esc(src) + ')'}"
         )
+    if row.get("lineup_bb_pct") is not None:
+        matchup_bits.append(f"opp BB% {_fmt(row.get('lineup_bb_pct'), 1)}")
+    grade = (row.get("discipline_grade") or "").strip()
+    if grade:
+        matchup_bits.append(_esc(grade.replace("_", " ")))
+    pc = (row.get("pitch_count_risk") or "").strip()
+    if pc and pc not in ("neutral", "low"):
+        matchup_bits.append(f"pitch-count {_esc(pc)}")
     matchup_val = " · ".join(matchup_bits) if matchup_bits else "—"
 
     risk_chip = (

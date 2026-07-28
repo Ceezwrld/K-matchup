@@ -108,6 +108,13 @@ OFFENSE_FACTOR_MAX = 0.07
 OFFENSE_RECENT_GAMES = 10
 OFFENSE_MIN_RECENT_PA = 25
 
+# Plate discipline / pitch-count layer (lineup BB% + K% shape).
+LEAGUE_BB_PCT = 8.3
+DISCIPLINE_KS_FACTOR_MAX = 0.05  # mild ± on expected_ks
+DISCIPLINE_BF_FLOOR = 0.90  # patient lineups can trim up to ~10% BF/IP
+PATIENT_BB_PCT = 9.5
+FREE_SWING_BB_PCT = 7.0
+
 # Hits-prop contact baselines (display-only; not used in expected_ks).
 LEAGUE_BARREL_PCT = 8.0
 LEAGUE_HARD_HIT_PCT = 40.0
@@ -814,7 +821,7 @@ def fetch_batter_offense_profiles(
     verbose: bool,
     log: Callable[[bool, str], None],
 ) -> dict[int, dict[str, Any]]:
-    """Season + recent hitting K%/AVG for lineup offense overlays."""
+    """Season + recent hitting K%/AVG/BB% for offense + discipline overlays."""
     ids = sorted({int(x) for x in batter_ids if x is not None})
     out: dict[int, dict[str, Any]] = {}
     for i in range(0, len(ids), 25):
@@ -831,8 +838,8 @@ def fetch_batter_offense_profiles(
             pid = person.get("id")
             if pid is None:
                 continue
-            season_k = season_avg = season_pa = None
-            recent_so = recent_ab = recent_h = recent_pa = 0.0
+            season_k = season_avg = season_pa = season_bb = None
+            recent_so = recent_ab = recent_h = recent_pa = recent_bb = 0.0
             for block in person.get("stats") or []:
                 typ = ((block.get("type") or {}).get("displayName") or "").lower()
                 splits = block.get("splits") or []
@@ -844,6 +851,7 @@ def fetch_batter_offense_profiles(
                     ab = st.get("atBats")
                     h = st.get("hits")
                     pa = st.get("plateAppearances")
+                    bb = st.get("baseOnBalls")
                     try:
                         if so is not None and pa not in (None, 0, "0"):
                             season_k = 100.0 * float(so) / float(pa)
@@ -853,10 +861,11 @@ def fetch_batter_offense_profiles(
                             season_avg = float(h) / float(ab)
                         if pa is not None:
                             season_pa = float(pa)
+                        if bb is not None and pa not in (None, 0, "0"):
+                            season_bb = 100.0 * float(bb) / float(pa)
                     except (TypeError, ValueError, ZeroDivisionError):
                         pass
                 elif typ in ("game log", "gamelog"):
-                    # Splits are chronological; take last N games with AB/PA.
                     games = []
                     for s in splits:
                         st = s.get("stat") or {}
@@ -871,6 +880,7 @@ def fetch_batter_offense_profiles(
                                     "so": float(st.get("strikeOuts") or 0),
                                     "ab": ab,
                                     "h": float(st.get("hits") or 0),
+                                    "bb": float(st.get("baseOnBalls") or 0),
                                     "pa": pa if pa > 0 else ab,
                                 }
                             )
@@ -881,19 +891,25 @@ def fetch_batter_offense_profiles(
                         recent_so += g["so"]
                         recent_ab += g["ab"]
                         recent_h += g["h"]
+                        recent_bb += g["bb"]
                         recent_pa += g["pa"]
             recent_k = (
                 100.0 * recent_so / recent_pa if recent_pa > 0 else None
             )
             recent_avg = recent_h / recent_ab if recent_ab > 0 else None
+            recent_bb_pct = (
+                100.0 * recent_bb / recent_pa if recent_pa > 0 else None
+            )
             out[int(pid)] = {
                 "season_k_pct": season_k,
                 "season_avg": season_avg,
                 "season_pa": season_pa,
+                "season_bb_pct": season_bb,
                 "recent_k_pct": recent_k,
                 "recent_avg": recent_avg,
                 "recent_pa": recent_pa,
                 "recent_ab": recent_ab,
+                "recent_bb_pct": recent_bb_pct,
             }
     return out
 
@@ -902,9 +918,9 @@ def summarize_lineup_offense(
     lineup: list[dict[str, Any]],
     profiles: dict[int, dict[str, Any]],
 ) -> dict[str, Any]:
-    """PA-weighted lineup K% / AVG; prefer recent form when sample is enough."""
-    recent_rows: list[tuple[float, float, float]] = []  # pa, k, avg
-    season_rows: list[tuple[float, float, float]] = []
+    """PA-weighted lineup K% / AVG / BB%; prefer recent form when sample is enough."""
+    recent_rows: list[tuple[float, float, float, float]] = []  # pa, k, avg, bb
+    season_rows: list[tuple[float, float, float, float]] = []
     for slot in lineup:
         try:
             bid = int(slot["batter_id"])
@@ -914,49 +930,94 @@ def summarize_lineup_offense(
         r_pa = float(prof.get("recent_pa") or 0.0)
         r_k = prof.get("recent_k_pct")
         r_avg = prof.get("recent_avg")
+        r_bb = prof.get("recent_bb_pct")
         if r_pa > 0 and r_k is not None:
-            recent_rows.append((r_pa, float(r_k), float(r_avg) if r_avg is not None else LEAGUE_AVG))
+            recent_rows.append(
+                (
+                    r_pa,
+                    float(r_k),
+                    float(r_avg) if r_avg is not None else LEAGUE_AVG,
+                    float(r_bb) if r_bb is not None else LEAGUE_BB_PCT,
+                )
+            )
         s_pa = float(prof.get("season_pa") or 0.0) or 1.0
         s_k = prof.get("season_k_pct")
         s_avg = prof.get("season_avg")
+        s_bb = prof.get("season_bb_pct")
         if s_k is not None:
             season_rows.append(
-                (s_pa, float(s_k), float(s_avg) if s_avg is not None else LEAGUE_AVG)
+                (
+                    s_pa,
+                    float(s_k),
+                    float(s_avg) if s_avg is not None else LEAGUE_AVG,
+                    float(s_bb) if s_bb is not None else LEAGUE_BB_PCT,
+                )
             )
 
-    def _wavg(rows: list[tuple[float, float, float]]) -> tuple[float | None, float | None, float]:
+    def _wavg(
+        rows: list[tuple[float, float, float, float]],
+    ) -> tuple[float | None, float | None, float | None, float]:
         if not rows:
-            return None, None, 0.0
+            return None, None, None, 0.0
         tw = sum(r[0] for r in rows)
         if tw <= 0:
-            return None, None, 0.0
+            return None, None, None, 0.0
         k = sum(r[0] * r[1] for r in rows) / tw
         avg = sum(r[0] * r[2] for r in rows) / tw
-        return k, avg, tw
+        bb = sum(r[0] * r[3] for r in rows) / tw
+        return k, avg, bb, tw
 
     recent_pa_total = sum(r[0] for r in recent_rows)
     if recent_pa_total >= OFFENSE_MIN_RECENT_PA and recent_rows:
-        k_pct, avg, pa = _wavg(recent_rows)
+        k_pct, avg, bb_pct, pa = _wavg(recent_rows)
         source = "recent"
+        n = len(recent_rows)
     elif season_rows:
-        k_pct, avg, pa = _wavg(season_rows)
+        k_pct, avg, bb_pct, pa = _wavg(season_rows)
         source = "season"
+        n = len(season_rows)
     else:
         return {
             "lineup_k_pct": None,
             "lineup_avg": None,
+            "lineup_bb_pct": None,
             "offense_pa": 0.0,
             "offense_source": None,
             "offense_n": 0,
+            "discipline_grade": None,
         }
 
+    grade = classify_discipline_grade(bb_pct, k_pct)
     return {
         "lineup_k_pct": k_pct,
         "lineup_avg": avg,
+        "lineup_bb_pct": bb_pct,
         "offense_pa": pa,
         "offense_source": source,
-        "offense_n": len(recent_rows) if source == "recent" else len(season_rows),
+        "offense_n": n,
+        "discipline_grade": grade,
     }
+
+
+def classify_discipline_grade(
+    bb_pct: float | None, k_pct: float | None
+) -> str | None:
+    """Label opposing lineup plate approach from BB% + K% shape."""
+    if bb_pct is None:
+        return None
+    bb = float(bb_pct)
+    k = float(k_pct) if k_pct is not None else LEAGUE_K_PCT
+    if bb >= PATIENT_BB_PCT and k >= 25.0:
+        return "three_true"  # walks + whiffs — pitch-count heavy but still Ks
+    if bb >= PATIENT_BB_PCT and k <= 23.0:
+        return "patient"  # true discipline — dangerous for K overs / pitch counts
+    if bb >= 10.0:
+        return "patient"
+    if bb <= FREE_SWING_BB_PCT and k >= 24.0:
+        return "free_swing"
+    if bb <= FREE_SWING_BB_PCT:
+        return "aggressive"
+    return "neutral"
 
 
 def apply_lineup_offense_overlay(
@@ -971,15 +1032,22 @@ def apply_lineup_offense_overlay(
     empty = {
         "lineup_k_pct": None,
         "lineup_avg": None,
+        "lineup_bb_pct": None,
         "offense_source": None,
         "offense_factor": None,
+        "discipline_grade": None,
     }
     if expected_ks is None or summary is None:
         return expected_ks, None, empty
     k_pct = summary.get("lineup_k_pct")
     avg = summary.get("lineup_avg")
     if k_pct is None:
-        return expected_ks, None, {**empty, **{k: summary.get(k) for k in empty}}
+        return expected_ks, None, {
+            **empty,
+            **{k: summary.get(k) for k in empty if k in (summary or {})},
+            "lineup_bb_pct": summary.get("lineup_bb_pct"),
+            "discipline_grade": summary.get("discipline_grade"),
+        }
 
     k_edge = (float(k_pct) - LEAGUE_K_PCT) / 100.0
     contact_edge = 0.0
@@ -993,12 +1061,87 @@ def apply_lineup_offense_overlay(
     meta = {
         "lineup_k_pct": float(k_pct),
         "lineup_avg": None if avg is None else float(avg),
+        "lineup_bb_pct": summary.get("lineup_bb_pct"),
         "offense_source": summary.get("offense_source"),
         "offense_factor": factor,
         "offense_pa": summary.get("offense_pa"),
         "offense_n": summary.get("offense_n"),
+        "discipline_grade": summary.get("discipline_grade"),
     }
     return blended, factor, meta
+
+
+def apply_lineup_discipline_overlay(
+    expected_ks: float,
+    projected_bf: float,
+    projected_ip: float,
+    summary: dict[str, Any] | None,
+) -> tuple[float, float, float, dict[str, Any]]:
+    """Haircut Ks + outing length when the opposing nine is patient / walk-heavy.
+
+    High lineup BB% → longer PAs / pitch counts → earlier hooks and fewer K
+    opportunities beyond what raw batter K% already captures. Returns adjusted
+    expected_ks, projected_bf, projected_ip, and discipline meta.
+    """
+    empty = {
+        "lineup_bb_pct": None,
+        "discipline_grade": None,
+        "discipline_ks_factor": None,
+        "discipline_bf_factor": None,
+        "pitch_count_risk": None,
+    }
+    if summary is None:
+        return expected_ks, projected_bf, projected_ip, empty
+    bb_pct = summary.get("lineup_bb_pct")
+    k_pct = summary.get("lineup_k_pct")
+    grade = summary.get("discipline_grade") or classify_discipline_grade(bb_pct, k_pct)
+    if bb_pct is None:
+        return expected_ks, projected_bf, projected_ip, {
+            **empty,
+            "discipline_grade": grade,
+        }
+
+    bb = float(bb_pct)
+    bb_edge = (bb - LEAGUE_BB_PCT) / 100.0  # + = more walks than league
+
+    # K overlay: patient / walk-heavy softens Ks; free-swingers nudge up slightly.
+    if grade == "patient":
+        ks_raw = -bb_edge * 1.35 - 0.015
+    elif grade == "three_true":
+        ks_raw = -bb_edge * 0.55  # still whiff; lighter K haircut
+    elif grade in ("free_swing", "aggressive"):
+        ks_raw = -bb_edge * 0.80  # low BB → slight K bump when bb_edge negative
+    else:
+        ks_raw = -bb_edge * 0.90
+    ks_delta = max(-DISCIPLINE_KS_FACTOR_MAX, min(DISCIPLINE_KS_FACTOR_MAX, ks_raw))
+    ks_factor = 1.0 + ks_delta
+
+    # Pitch-count / survival: only haircut when BB% is elevated.
+    if bb >= PATIENT_BB_PCT:
+        trim = min(1.0 - DISCIPLINE_BF_FLOOR, max(0.0, (bb - LEAGUE_BB_PCT) * 0.012))
+        if grade == "three_true":
+            trim *= 0.75
+        bf_factor = max(DISCIPLINE_BF_FLOOR, 1.0 - trim)
+        pitch_risk = "high" if bf_factor <= 0.93 else "elevated"
+    elif bb >= LEAGUE_BB_PCT + 0.6:
+        bf_factor = max(0.96, 1.0 - (bb - LEAGUE_BB_PCT) * 0.008)
+        pitch_risk = "mild"
+    else:
+        bf_factor = 1.0
+        pitch_risk = "low" if grade in ("free_swing", "aggressive") else "neutral"
+
+    new_ks = float(expected_ks) * ks_factor
+    new_bf = float(projected_bf) * bf_factor
+    new_ip = float(projected_ip) * bf_factor
+    meta = {
+        "lineup_bb_pct": bb,
+        "lineup_k_pct": None if k_pct is None else float(k_pct),
+        "discipline_grade": grade,
+        "discipline_ks_factor": ks_factor,
+        "discipline_bf_factor": bf_factor,
+        "pitch_count_risk": pitch_risk,
+    }
+    return new_ks, new_bf, new_ip, meta
 
 
 def fetch_batter_contact_quality(

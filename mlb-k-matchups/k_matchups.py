@@ -16,6 +16,7 @@ import requests
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rankings_html import write_interactive_html  # noqa: E402
 from sharpen import (  # noqa: E402
+    apply_lineup_discipline_overlay,
     apply_lineup_offense_overlay,
     apply_recent_form_overlay,
     apply_ticket_outlook,
@@ -1129,7 +1130,7 @@ def format_table(df: pd.DataFrame) -> str:
         )
     if "rank" in show.columns:
         show["rank"] = show["rank"].map(lambda x: "" if pd.isna(x) else int(x))
-    for col in ("last3_ks", "bb9", "hr9", "xfip", "lineup_k_pct", "offense_factor"):
+    for col in ("last3_ks", "bb9", "hr9", "xfip", "lineup_k_pct", "lineup_bb_pct", "offense_factor"):
         if col in show.columns:
             show[col] = show[col].map(
                 lambda x: "" if pd.isna(x) or x is None else f"{float(x):.2f}"
@@ -1154,6 +1155,7 @@ def format_table(df: pd.DataFrame) -> str:
             "projected_bf",
             "expected_k_pct",
             "lineup_k_pct",
+            "lineup_bb_pct",
             "offense_factor",
             "last3_ks",
             "bb9",
@@ -1164,6 +1166,8 @@ def format_table(df: pd.DataFrame) -> str:
             "ticket_outlook",
             "matchup_grade",
             "arsenal_matchup_rank",
+            "discipline_grade",
+            "pitch_count_risk",
             "lineup_source",
             "lineup_coverage",
             "status",
@@ -1467,10 +1471,21 @@ def main(argv: list[str] | None = None) -> int:
         projected_ip = float(outing["projected_ip"])
         if risk["bf_risk_factor"] < 1.0 and args.ip is None and args.batters_faced is None:
             projected_ip = projected_ip * float(risk["bf_risk_factor"])
-        tto = projected_bf / 9.0 if projected_bf else float("nan")
         offense_summary = summarize_lineup_offense(
             item.get("lineup") or [], batter_offense
         )
+        # Patient / walk-heavy lineups trim BF/IP before walking the order.
+        if args.ip is None and args.batters_faced is None:
+            _, projected_bf, projected_ip, discipline_meta = (
+                apply_lineup_discipline_overlay(
+                    0.0, projected_bf, projected_ip, offense_summary
+                )
+            )
+        else:
+            _, _, _, discipline_meta = apply_lineup_discipline_overlay(
+                0.0, projected_bf, projected_ip, offense_summary
+            )
+        tto = projected_bf / 9.0 if projected_bf else float("nan")
 
         row: dict[str, Any] = {
             "pitcher": item.get("pitcher"),
@@ -1514,8 +1529,13 @@ def main(argv: list[str] | None = None) -> int:
             "form_weight": None,
             "lineup_k_pct": offense_summary.get("lineup_k_pct"),
             "lineup_avg": offense_summary.get("lineup_avg"),
+            "lineup_bb_pct": offense_summary.get("lineup_bb_pct"),
             "offense_source": offense_summary.get("offense_source"),
             "offense_factor": None,
+            "discipline_grade": discipline_meta.get("discipline_grade"),
+            "discipline_ks_factor": discipline_meta.get("discipline_ks_factor"),
+            "discipline_bf_factor": discipline_meta.get("discipline_bf_factor"),
+            "pitch_count_risk": discipline_meta.get("pitch_count_risk"),
             "hand_mix_pitches_l": None
             if pid is None or pid not in hand_mixes
             else hand_mixes[pid].get("pitches_l"),
@@ -1592,11 +1612,21 @@ def main(argv: list[str] | None = None) -> int:
                     row["offense_factor"] = offense_factor
                     row["lineup_k_pct"] = offense_meta.get("lineup_k_pct")
                     row["lineup_avg"] = offense_meta.get("lineup_avg")
+                    row["lineup_bb_pct"] = offense_meta.get("lineup_bb_pct")
                     row["offense_source"] = offense_meta.get("offense_source")
-                    # expected_ks_model = matchup + offense, before recent-form blend
-                    row["expected_ks_model"] = float(offense_ks)
+                    row["discipline_grade"] = (
+                        offense_meta.get("discipline_grade")
+                        or row.get("discipline_grade")
+                    )
+                    # Discipline K haircut (BF already trimmed before the lineup walk).
+                    ks_factor = row.get("discipline_ks_factor")
+                    if ks_factor is None:
+                        ks_factor = 1.0
+                    disciplined_ks = float(offense_ks) * float(ks_factor)
+                    # expected_ks_model = matchup + offense + discipline, before form
+                    row["expected_ks_model"] = float(disciplined_ks)
                     blended, form_ks, form_w = apply_recent_form_overlay(
-                        float(offense_ks), projected_ip, form
+                        float(disciplined_ks), projected_ip, form
                     )
                     row["expected_ks"] = blended
                     row["form_ks"] = form_ks
@@ -1639,6 +1669,23 @@ def main(argv: list[str] | None = None) -> int:
                 f"  {r.get('ticket_outlook'):<11} {r.get('pitcher')}: "
                 f"{r.get('ticket_note')}"
             )
+    # Discipline / pitch-count watch list.
+    if "discipline_grade" in out.columns:
+        watch = out[
+            out["status"].eq("ok")
+            & out["discipline_grade"].isin(["patient", "three_true"])
+        ]
+        if not watch.empty:
+            print("\nPlate discipline watch (patient / walk-heavy lineups)")
+            for _, r in watch.iterrows():
+                bb = r.get("lineup_bb_pct")
+                bb_s = "" if bb is None or pd.isna(bb) else f"{float(bb):.1f}"
+                print(
+                    f"  {r.get('discipline_grade'):<11} vs {r.get('opponent')}: "
+                    f"{r.get('pitcher')} · opp BB% {bb_s} · "
+                    f"pitch-count {r.get('pitch_count_risk')} · "
+                    f"bf×{r.get('discipline_bf_factor')} ks×{r.get('discipline_ks_factor')}"
+                )
     if args.detail:
         print()
         for _, r in out.iterrows():

@@ -44,9 +44,10 @@ No league-average blending: rates come only from the opposing lineup’s batters
 3. **Batter K% vs pitcher hand** — Stats API `vl`/`vr` hitting splits softly adjust arsenal-weighted K% when pitch×hand coverage is thin (skipped when ≥60% of usage already uses pitch×hand rates).
 4. **Outing survival / early-exit** — BB/9 haircut plus short recent IP and high HR/xFIP+BB flags shrink projected BF/IP (`bf_risk_factor`, `survival_flags`).
 5. **Opposing lineup offense form** — lineup K% and AVG (prefer last ~10 games when PA sample is enough, else season) apply a mild ±7% overlay on matchup Ks (`offense_factor`, `lineup_k_pct`).
-6. **Recent form** — last 3 starts’ K/9 blended into `expected_ks` (~30% weight when available); `expected_ks_model` keeps the pre-form (post-offense) number.
-7. **Outing risk** — BB/9, HR/9, xFIP (FanGraphs, Stats API fallback) → `outing_risk` flags.
-8. **Ticket outlook (FILLER vs MATCHUP_OK)** — soft-contact / low-K **profile** (K9 / soft L3 / elev_xFIP) is gated by how the opposing lineup ranks vs that starter’s arsenal (`expected_k_pct` slate percentile → `arsenal_matchup_rank`, `matchup_grade`). Soft profile + weak/avg matchup = **FILLER**; soft profile + strong/elite arsenal matchup = **MATCHUP_OK** (disclose; O3.5 / thin O4.5 K only). When Ks are a poor fit, notes also flag **pitcher outs** as an alt ticket lane if outing length / risk supports it.
+6. **Plate discipline / pitch counts** — lineup BB% + K% shape → `discipline_grade` (`patient`, `three_true`, `free_swing`, …). Patient/walk-heavy nines trim projected BF/IP (`discipline_bf_factor`, `pitch_count_risk`) before the order walk and mildly soften `expected_ks` (`discipline_ks_factor`).
+7. **Recent form** — last 3 starts’ K/9 blended into `expected_ks` (~30% weight when available); `expected_ks_model` keeps the pre-form (post-offense/discipline) number.
+8. **Outing risk** — BB/9, HR/9, xFIP (FanGraphs, Stats API fallback) → `outing_risk` flags.
+9. **Ticket outlook (FILLER vs MATCHUP_OK)** — soft-contact / low-K **profile** (K9 / soft L3 / elev_xFIP) is gated by how the opposing lineup ranks vs that starter’s arsenal (`expected_k_pct` slate percentile → `arsenal_matchup_rank`, `matchup_grade`). Soft profile + weak/avg matchup = **FILLER**; soft profile + strong/elite arsenal matchup = **MATCHUP_OK** (disclose; O3.5 / thin O4.5 K only). When Ks are a poor fit, notes also flag **pitcher outs** as an alt ticket lane if outing length / risk supports it.
 
 **Hits props (separate board — does not affect `expected_ks`)**
 

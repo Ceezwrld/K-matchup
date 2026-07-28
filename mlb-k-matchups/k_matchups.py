@@ -18,6 +18,7 @@ from rankings_html import write_interactive_html  # noqa: E402
 from sharpen import (  # noqa: E402
     apply_lineup_offense_overlay,
     apply_recent_form_overlay,
+    apply_ticket_outlook,
     arsenal_from_mixes,
     build_hits_board,
     classify_outing_risk,
@@ -1160,6 +1161,9 @@ def format_table(df: pd.DataFrame) -> str:
             "xfip",
             "outing_risk",
             "outing_role",
+            "ticket_outlook",
+            "matchup_grade",
+            "arsenal_matchup_rank",
             "lineup_source",
             "lineup_coverage",
             "status",
@@ -1622,7 +1626,19 @@ def main(argv: list[str] | None = None) -> int:
             ranks.append(pd.NA)
     out.insert(0, "rank", ranks)
 
+    # Soft-contact FILLER gated by opposing lineup arsenal rank on this slate.
+    out = apply_ticket_outlook(out)
+
     print(format_table(out))
+    # Print ticket outlook for flagged soft-contact arms.
+    flagged = out[out["ticket_outlook"].astype(str).str.len() > 0]
+    if not flagged.empty:
+        print("\nTicket outlook (soft-contact profile × opp arsenal rank)")
+        for _, r in flagged.iterrows():
+            print(
+                f"  {r.get('ticket_outlook'):<11} {r.get('pitcher')}: "
+                f"{r.get('ticket_note')}"
+            )
     if args.detail:
         print()
         for _, r in out.iterrows():

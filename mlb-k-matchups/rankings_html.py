@@ -256,6 +256,13 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "lineup_avg": _json_safe(r.get("lineup_avg")),
                 "offense_source": r.get("offense_source"),
                 "offense_factor": _json_safe(r.get("offense_factor")),
+                "soft_contact_profile": bool(r.get("soft_contact_profile")),
+                "profile_flags": r.get("profile_flags") or "",
+                "arsenal_matchup_rank": _json_safe(r.get("arsenal_matchup_rank")),
+                "arsenal_matchup_pctile": _json_safe(r.get("arsenal_matchup_pctile")),
+                "matchup_grade": r.get("matchup_grade") or "",
+                "ticket_outlook": r.get("ticket_outlook") or "",
+                "ticket_note": r.get("ticket_note") or "",
                 "arsenal": clean_arsenal,
                 "pitch_lineup_avg": clean_pitch_avg,
                 "batters": clean_detail,
@@ -449,6 +456,8 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             row.get("game_time_ct"),
             row.get("lineup_source"),
             status,
+            row.get("ticket_outlook"),
+            row.get("matchup_grade"),
         ]
         if x
     ).lower()
@@ -463,6 +472,13 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     ip_grade = _grade_class("projected_ip", row.get("projected_ip"))
     tto_grade = _grade_class("tto", row.get("times_through_order"))
     kpct_grade = _grade_class("expected_k_pct", row.get("expected_k_pct"))
+    outlook = (row.get("ticket_outlook") or "").strip()
+    badge_html = f"<span class='badge {kind}'>{_esc(label)}</span>"
+    if outlook:
+        badge_html += (
+            f" <span class='outlook outlook-{_esc(outlook.lower())}'>"
+            f"{_esc(outlook.replace('_', ' '))}</span>"
+        )
     summary = (
         "<div class='summary-grid'>"
         f"<div class='rank'>{_esc(row.get('rank') if row.get('rank') is not None else '—')}</div>"
@@ -477,7 +493,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"<div class='num{ip_grade}'>{_fmt(row.get('projected_ip'), 1)}</div>"
         f"<div class='num{tto_grade}'>{tto_s}</div>"
         f"<div class='num{kpct_grade}'>{_fmt(row.get('expected_k_pct'))}</div>"
-        f"<div><span class='badge {kind}'>{_esc(label)}</span></div>"
+        f"<div>{badge_html}</div>"
         "</div>"
     )
 
@@ -494,6 +510,12 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     if role and role != "starter":
         role_html = (
             f" <span class='role role-{_esc(role)}'>{_esc(role.replace('_', ' '))}</span>"
+        )
+    outlook_html = ""
+    if outlook:
+        outlook_html = (
+            f" <span class='outlook outlook-{_esc(outlook.lower())}'>"
+            f"{_esc(outlook.replace('_', ' '))}</span>"
         )
     form_bits = []
     if row.get("last3_ks") is not None:
@@ -534,7 +556,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"Projected outing {_fmt(row.get('projected_ip'), 1)} IP · "
         f"{tto_s} through order · "
         f"BF {row.get('projected_bf') if row.get('projected_bf') is not None else row.get('batters_faced_assumed') or '—'} "
-        f"({_esc(row.get('outing_source') or 'n/a')}){role_html} · "
+        f"({_esc(row.get('outing_source') or 'n/a')}){role_html}{outlook_html} · "
         f"lineup cover "
         f"{'—' if row.get('lineup_coverage') is None else str(int(round(100 * float(row['lineup_coverage'])))) + '%'}"
         f"{_esc(model_txt)}"
@@ -543,6 +565,21 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     )
     if offense_txt:
         head += f"<p class='detail-head sharpen'>{_esc(offense_txt)}</p>"
+    ticket_note = (row.get("ticket_note") or "").strip()
+    if outlook or ticket_note:
+        matchup_bits = []
+        if row.get("matchup_grade"):
+            matchup_bits.append(f"matchup {_esc(row.get('matchup_grade'))}")
+        if row.get("arsenal_matchup_rank") is not None:
+            matchup_bits.append(f"arsenal rank #{_esc(row.get('arsenal_matchup_rank'))}")
+        if row.get("expected_k_pct") is not None:
+            matchup_bits.append(f"arsenal K% {_fmt(row.get('expected_k_pct'), 1)}")
+        bit = " · ".join(matchup_bits)
+        note = _esc(ticket_note) if ticket_note else bit
+        head += (
+            f"<p class='detail-head ticket-outlook outlook-{_esc((outlook or 'note').lower())}'>"
+            f"{note}</p>"
+        )
 
     # CSS-only tabs via radio buttons (works with JS disabled).
     tabs = (
@@ -878,6 +915,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .role-opener_likely { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
   .role-swingman { background: rgba(154, 91, 18, 0.16); color: #8a4b0f; }
+  .outlook {
+    display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+    text-transform: none;
+  }
+  .outlook-filler { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
+  .outlook-matchup_ok { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
+  .detail-head.ticket-outlook { font-weight: 600; }
+  .detail-head.ticket-outlook.outlook-filler { color: #8c2828; }
+  .detail-head.ticket-outlook.outlook-matchup_ok { color: var(--ok); }
   .detail-head.sharpen { text-transform: none; letter-spacing: 0.01em; }
   .detail {
     padding: 0 1rem 1.1rem;

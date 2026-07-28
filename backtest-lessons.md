@@ -9,7 +9,10 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - **Fade unders on SPIKE arms (K9 ≥ ~10)** — they can jump a soft under even when proj is mid.
 - Fade **openers / uncertain swingmen** for full-outing K props.
 - **Medium/high** outing risk → need *more* edge for overs (or pass).
-- **Soft-contact / low-K volume arms (K9 ≲ ~7, soft L3 Ks, elev_xFIP):** even if proj clears O4.5 on lineup K% + IP, label them **FILLER — not ticket-benefiting**. Say that out loud before adding to any nuke/longshot. Prefer **O3.5** or **pass** on multis; never treat as an anchor next to Wheeler-tier legs. (7/27 Montero: proj ~5.2 O4.5 → **1 K / 4.1 IP / 9 H**.)
+- **Soft-contact / low-K volume arms (K9 ≲ ~7, soft L3 Ks, elev_xFIP):** flag the **profile**, then check how the **opposing nine ranks vs that pitcher’s arsenal** (`expected_k_pct` / `arsenal_matchup_rank` on the slate) plus opp lineup K%.
+  - Soft profile + **avg/soft matchup** → **FILLER** — pass or O3.5; does not help a ticket.
+  - Soft profile + **strong/elite arsenal matchup** → **MATCHUP_OK** — disclose the soft profile; soft O3.5 / thin O4.5 only; still never a nuke anchor next to Wheeler-tier legs.
+  - (7/27 Montero: soft profile + weak matchup → FILLER confirmed **1 K / 4.1 IP / 9 H**.)
 - Exact-K MAE ~2 is normal; use model for **side selection**, not hammering exact totals.
 - **Card size: 2–3 legs only.** No 4/5/6-mans. Correlation and early hooks kill bigger tickets.
 - **Daily volume (when slate is full):** up to **6–7 tickets × 3 legs**. One chalk/nuke; rest mix **1P+2B** or **2P+1B**. Cap any single player at **~2 tickets**.
@@ -103,3 +106,5 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - Next: optional batter barrel/hard-hit layer for Hits props (not for pitcher K mean).
 
 - **Hits board (2026-07-27):** barrel% / hard-hit% / xwOBA + AVG vs hand → `hits_score` / `hr_rbi_score` only. Explicitly isolated from `expected_ks`.
+
+- **Ticket outlook (2026-07-28):** FILLER is no longer pitcher-only. Soft-contact profile is gated by opposing lineup **arsenal rank** (`expected_k_pct` percentile → `MATCHUP_OK` vs `FILLER`).

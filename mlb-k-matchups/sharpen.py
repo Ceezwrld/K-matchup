@@ -7,6 +7,8 @@
 5. Outing-risk flags from BB/9, HR/9, xFIP
 6. Outing survival / early-exit haircut (BB + short recent IP + HR/xFIP)
 7. Opposing lineup K% / contact form overlay on expected Ks
+8. Ticket outlook — soft-contact FILLER profile gated by opposing
+   lineup arsenal rank (expected_k_pct vs slate)
 
 Hits-prop helpers (barrel / hard-hit / xwOBA) live here too but are
 display-only — they never modify expected_ks.
@@ -1255,6 +1257,153 @@ def build_hits_board(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for i, r in enumerate(board, 1):
         r["rank"] = i
     return board
+
+
+# Soft-contact / low-K volume profile (Montero-style). Pitcher-side only;
+# final ticket_outlook also needs opposing arsenal matchup rank.
+FILLER_K9_MAX = 7.2
+FILLER_L3_SOFT = 4.5
+FILLER_XFIP_SOFT = 4.3
+# Arsenal matchup: percentile of expected_k_pct among scored slate arms.
+# Top ~35% = strong/elite matchup can rescue a soft profile to MATCHUP_OK.
+MATCHUP_STRONG_PCT = 0.65  # >= 65th pct of slate expected_k_pct
+MATCHUP_ELITE_PCT = 0.80
+MATCHUP_SOFT_PCT = 0.40  # below = soft matchup → hard FILLER
+
+
+def soft_contact_profile(row: dict[str, Any]) -> tuple[bool, str]:
+    """True when pitcher looks like a soft-contact / low-K volume arm.
+
+    Flags: K9 ≲ 7, soft last-3 Ks, and/or elevated xFIP. Does not look at
+    the opposing lineup — pair with arsenal matchup rank for outlook.
+    """
+    try:
+        k9 = float(row["k9"]) if row.get("k9") is not None and pd.notna(row.get("k9")) else None
+    except (TypeError, ValueError):
+        k9 = None
+    try:
+        l3 = (
+            float(row["last3_ks"])
+            if row.get("last3_ks") is not None and pd.notna(row.get("last3_ks"))
+            else None
+        )
+    except (TypeError, ValueError):
+        l3 = None
+    try:
+        xfip = (
+            float(row["xfip"])
+            if row.get("xfip") is not None and pd.notna(row.get("xfip"))
+            else None
+        )
+    except (TypeError, ValueError):
+        xfip = None
+    flags = str(row.get("risk_flags") or "")
+    elev_xfip = ("elev_xfip" in flags) or (
+        xfip is not None and xfip >= FILLER_XFIP_SOFT
+    )
+    soft_l3 = l3 is not None and l3 <= FILLER_L3_SOFT
+    low_k9 = k9 is not None and k9 <= FILLER_K9_MAX
+    if not low_k9:
+        return False, ""
+    bits: list[str] = [f"K9 {k9:.1f}"]
+    if soft_l3:
+        bits.append(f"soft L3 {l3:.1f}")
+    if elev_xfip and xfip is not None:
+        bits.append(f"elev_xFIP {xfip:.2f}")
+    # Need soft recent Ks and/or elev xFIP — pure mid-K9 with hot L3 is not FILLER.
+    if soft_l3 or elev_xfip:
+        return True, ", ".join(bits)
+    if k9 <= 7.0 and (l3 is None or l3 <= 5.5):
+        return True, ", ".join(bits + ["low-K volume"])
+    return False, ""
+
+
+def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
+    """Label FILLER vs MATCHUP_OK using pitcher profile + opp arsenal rank.
+
+    Uses slate percentile of arsenal-weighted `expected_k_pct` (how the
+    opposing nine ranks vs this starter's mix) plus raw opp lineup K%.
+
+    - FILLER: soft-contact profile AND matchup not strong → pass / O3.5 max
+    - MATCHUP_OK: soft-contact profile BUT lineup ranks strong/elite vs
+      arsenal → disclose profile; soft O3.5 / thin O4.5 only, never nuke
+    - (blank): normal process arm
+    """
+    out = df.copy()
+    for col, default in (
+        ("soft_contact_profile", False),
+        ("profile_flags", ""),
+        ("arsenal_matchup_rank", pd.NA),
+        ("arsenal_matchup_pctile", pd.NA),
+        ("matchup_grade", ""),
+        ("ticket_outlook", ""),
+        ("ticket_note", ""),
+    ):
+        if col not in out.columns:
+            out[col] = default
+
+    scored = out["status"].eq("ok") & out["expected_k_pct"].notna()
+    n = int(scored.sum())
+    if n == 0:
+        return out
+
+    # Rank 1 = highest arsenal K% vs opposing lineup on this slate.
+    ranks = out.loc[scored, "expected_k_pct"].rank(ascending=False, method="min")
+    out.loc[scored, "arsenal_matchup_rank"] = ranks.astype(int)
+    # Percentile 1.0 = best matchup on slate.
+    pctile = out.loc[scored, "expected_k_pct"].rank(pct=True, method="average")
+    out.loc[scored, "arsenal_matchup_pctile"] = pctile
+
+    for idx in out.index[scored]:
+        row = out.loc[idx]
+        soft, profile_flags = soft_contact_profile(row.to_dict())
+        out.at[idx, "soft_contact_profile"] = soft
+        out.at[idx, "profile_flags"] = profile_flags
+        p = float(row["arsenal_matchup_pctile"])
+        if p >= MATCHUP_ELITE_PCT:
+            grade = "elite"
+        elif p >= MATCHUP_STRONG_PCT:
+            grade = "strong"
+        elif p >= MATCHUP_SOFT_PCT:
+            grade = "avg"
+        else:
+            grade = "soft"
+        out.at[idx, "matchup_grade"] = grade
+        ark = int(row["arsenal_matchup_rank"]) if pd.notna(row["arsenal_matchup_rank"]) else "?"
+        kpct = float(row["expected_k_pct"])
+        opp_k = row.get("lineup_k_pct")
+        opp_bit = (
+            ""
+            if opp_k is None or (isinstance(opp_k, float) and pd.isna(opp_k))
+            else f", opp K% {float(opp_k):.1f}"
+        )
+        matchup_bit = f"arsenal K% {kpct:.1f} (#{ark}/{n}, {grade}{opp_bit})"
+
+        if not soft:
+            out.at[idx, "ticket_outlook"] = ""
+            out.at[idx, "ticket_note"] = matchup_bit
+            continue
+
+        role = str(row.get("outing_role") or "starter")
+        role_caveat = ""
+        if role in ("swingman", "opener_likely", "opener"):
+            role_caveat = f"; also {role} — fade full-outing chalk"
+
+        if grade in ("elite", "strong"):
+            out.at[idx, "ticket_outlook"] = "MATCHUP_OK"
+            out.at[idx, "ticket_note"] = (
+                f"soft-contact profile ({profile_flags}) but {matchup_bit} "
+                f"— O3.5 / thin O4.5 only; disclose, not a nuke anchor"
+                f"{role_caveat}"
+            )
+        else:
+            out.at[idx, "ticket_outlook"] = "FILLER"
+            out.at[idx, "ticket_note"] = (
+                f"soft-contact ({profile_flags}) + {matchup_bit} "
+                f"— FILLER: pass or O3.5; does not help ticket"
+                f"{role_caveat}"
+            )
+    return out
 
 
 def strip_html_name(value: Any) -> str:

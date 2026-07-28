@@ -1393,14 +1393,16 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
             out.at[idx, "ticket_outlook"] = "MATCHUP_OK"
             out.at[idx, "ticket_note"] = (
                 f"soft-contact profile ({profile_flags}) but {matchup_bit} "
-                f"— O3.5 / thin O4.5 only; disclose, not a nuke anchor"
+                f"— O3.5 / thin O4.5 K only; disclose, not a nuke anchor; "
+                f"if skipping Ks, consider pitcher outs when IP/risk holds"
                 f"{role_caveat}"
             )
         else:
             out.at[idx, "ticket_outlook"] = "FILLER"
             out.at[idx, "ticket_note"] = (
                 f"soft-contact ({profile_flags}) + {matchup_bit} "
-                f"— FILLER: pass or O3.5; does not help ticket"
+                f"— FILLER on Ks: pass or O3.5; does not help a K ticket; "
+                f"consider pitcher outs if clear/low risk and projected IP holds"
                 f"{role_caveat}"
             )
     return out

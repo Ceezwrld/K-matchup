@@ -10,9 +10,10 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - Fade **openers / uncertain swingmen** for full-outing K props.
 - **Medium/high** outing risk → need *more* edge for overs (or pass).
 - **Soft-contact / low-K volume arms (K9 ≲ ~7, soft L3 Ks, elev_xFIP):** flag the **profile**, then check how the **opposing nine ranks vs that pitcher’s arsenal** (`expected_k_pct` / `arsenal_matchup_rank` on the slate) plus opp lineup K%.
-  - Soft profile + **avg/soft matchup** → **FILLER** — pass or O3.5; does not help a ticket.
-  - Soft profile + **strong/elite arsenal matchup** → **MATCHUP_OK** — disclose the soft profile; soft O3.5 / thin O4.5 only; still never a nuke anchor next to Wheeler-tier legs.
-  - (7/27 Montero: soft profile + weak matchup → FILLER confirmed **1 K / 4.1 IP / 9 H**.)
+  - Soft profile + **avg/soft matchup** → **FILLER** — pass or O3.5 on Ks; does not help a K ticket.
+  - Soft profile + **strong/elite arsenal matchup** → **MATCHUP_OK** — disclose the soft profile; soft O3.5 / thin O4.5 K only; still never a nuke anchor next to Wheeler-tier legs.
+  - **Alt lane — pitcher outs:** when Ks are a poor fit (FILLER, or MATCHUP_OK but you don’t want the K over), consider **pitcher outs** instead if outing length / risk is clear-low and projected IP holds. Soft-contact arms often pile outs via BIP; outs props track survival + efficiency better than K volume. Still fade openers/swingmen and early-exit flags.
+  - (7/27 Montero: soft profile + weak matchup → FILLER confirmed **1 K / 4.1 IP / 9 H** — K over dead; outs only if IP/risk still supported.)
 - Exact-K MAE ~2 is normal; use model for **side selection**, not hammering exact totals.
 - **Card size: 2–3 legs only.** No 4/5/6-mans. Correlation and early hooks kill bigger tickets.
 - **Daily volume (when slate is full):** up to **6–7 tickets × 3 legs**. One chalk/nuke; rest mix **1P+2B** or **2P+1B**. Cap any single player at **~2 tickets**.

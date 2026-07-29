@@ -514,6 +514,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"{'' if status in ('', 'ok') else ' · ' + _esc(status)}</div>"
         "</div>"
         f"{game_html}"
+        "<div class='stat-row'>"
         f"{_stat(f'ks{ks_grade}', _fmt(row.get('expected_ks')), 'Exp K', 'Expected strikeouts')}"
         f"{_stat(f'ip{ip_grade}', _fmt(row.get('projected_ip'), 1), 'IP', 'Projected innings pitched')}"
         f"{_stat(f'tto{tto_grade}', tto_s, 'TTO', 'Times through the order')}"
@@ -523,6 +524,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"{ark_html}</span>"
         f"<span class='nlab'>K%</span>"
         f"</div>"
+        "</div>"
         f"<div class='badges'>{badge_html}</div>"
         "</div>"
     )
@@ -833,31 +835,37 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     padding: 0 0.95rem;
     font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted);
   }
+  /* Desktop: children flow into the parent 8-col grid. Mobile: own equal row. */
+  .stat-row { display: contents; }
   @media (max-width: 900px) {
     .colhead { display: none; }
     .summary-grid {
-      grid-template-columns: 2.2rem 1fr auto;
-      column-gap: 0.85rem;
-      row-gap: 0.7rem;
+      grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+      column-gap: 0.75rem;
+      row-gap: 0.8rem;
       grid-template-areas:
         "rank who badges"
         "rank game game"
-        "ks ip tto"
-        "kpct kpct kpct";
+        "stats stats stats";
     }
     .summary-grid .rank { grid-area: rank; }
     .summary-grid .who { grid-area: who; }
     .summary-grid .badges { grid-area: badges; justify-self: end; }
     .summary-grid .game { grid-area: game; }
-    .summary-grid .ks { grid-area: ks; }
-    .summary-grid .ip { grid-area: ip; }
-    .summary-grid .tto { grid-area: tto; }
-    .summary-grid .kpct { grid-area: kpct; }
-    .summary-grid .ks,
-    .summary-grid .ip,
-    .summary-grid .tto {
-      min-width: 4.25rem;
-      padding-right: 0.35rem;
+    .summary-grid .stat-row {
+      display: grid;
+      grid-area: stats;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.7rem 1rem;
+      width: 100%;
+      min-width: 0;
+      align-items: start;
+    }
+    .summary-grid .stat-row .num {
+      min-width: 0;
+      width: 100%;
+      padding-right: 0.15rem;
+      box-sizing: border-box;
     }
   }
   details.matchup {

@@ -485,16 +485,27 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"<span class='outlook outlook-{_esc(outlook.lower())}'>"
             f"{_esc(outlook.replace('_', ' '))}</span>"
         )
-    # Arsenal matchup rank chip — slate rank of pitcher-vs-lineup K%.
+    # Arsenal matchup rank = pitcher-vs-lineup K% slate rank (starting-pitcher matchup #).
+    # Opp lineup K% rank = how K-prone the opposing batting team is on today's slate.
     ark = row.get("arsenal_matchup_rank")
-    ark_html = ""
+    opp_rank = row.get("opp_lineup_k_rank")
+    chips: list[str] = []
+    if opp_rank is not None and scored:
+        chips.append(
+            f"<span class='ark ark-opp' "
+            f"title='Opposing batting-team K% rank on slate "
+            f"(#1 = highest opp lineup K%)'>#{_esc(opp_rank)}</span>"
+        )
     if ark is not None and scored:
         grade = (row.get("matchup_grade") or "").strip()
-        ark_html = (
+        chips.append(
             f"<span class='ark ark-{_esc(grade or 'avg')}' "
-            f"title='Slate rank of this pitcher vs opposing lineup arsenal K%'>"
-            f"#{_esc(ark)}</span>"
+            f"title='Starting-pitcher arsenal matchup rank "
+            f"(slate rank of pitcher K% vs this lineup)'>#{_esc(ark)}</span>"
         )
+    chips_html = (
+        f"<span class='rank-chips'>{''.join(chips)}</span>" if chips else ""
+    )
 
     def _stat(classes: str, value_html: str, lab: str, title: str) -> str:
         return (
@@ -519,9 +530,10 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"{_stat(f'ip{ip_grade}', _fmt(row.get('projected_ip'), 1), 'IP', 'Projected innings pitched')}"
         f"{_stat(f'tto{tto_grade}', tto_s, 'TTO', 'Times through the order')}"
         f"<div class='num kpct{kpct_grade}' title='Arsenal K% vs opposing lineup'>"
+        f"{chips_html}"
         f"<span class='nval'>"
         f"<span class='kpct-val'>{_fmt(row.get('expected_k_pct'))}</span>"
-        f"{ark_html}</span>"
+        f"</span>"
         f"<span class='nlab'>K%</span>"
         f"</div>"
         "</div>"
@@ -661,6 +673,16 @@ def write_interactive_html(
     hits_board: list[dict[str, Any]] | None = None,
 ) -> None:
     rows = rows_for_html(df)
+    # Opposing batting-team K% rank on this slate (#1 = highest lineup K%).
+    opp_scored = [
+        (i, float(r["lineup_k_pct"]))
+        for i, r in enumerate(rows)
+        if r.get("status") == "ok" and r.get("lineup_k_pct") is not None
+    ]
+    opp_scored.sort(key=lambda x: -x[1])
+    for opp_rank, (i, _) in enumerate(opp_scored, start=1):
+        rows[i]["opp_lineup_k_rank"] = opp_rank
+
     scored = [r for r in rows if r.get("status") == "ok" and r.get("expected_ks") is not None]
     official = sum(1 for r in scored if r.get("lineup_source") == "official")
     avg_ip = (
@@ -938,9 +960,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     white-space: nowrap;
   }
   .ks .nval { font-size: 1.05rem; }
-  .kpct {
-    min-width: 5.5rem;
-  }
   .grade-low { color: #6a7a72; }
   .grade-mid { color: var(--ink); }
   .grade-high { color: #0f6a4d; }
@@ -988,6 +1007,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .kpct {
     min-width: 5.5rem;
+  }
+  .rank-chips {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    margin-bottom: 0.12rem;
+  }
+  .ark-opp {
+    background: rgba(20, 32, 26, 0.10);
+    color: var(--ink);
   }
   .kpct-val { font-variant-numeric: tabular-nums; font-weight: 700; }
   .ark {

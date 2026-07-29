@@ -825,18 +825,20 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .colhead, .summary-grid {
     display: grid;
-    grid-template-columns: 3rem minmax(9rem, 1.4fr) minmax(5rem, 0.8fr) repeat(4, minmax(3.4rem, 0.7fr)) minmax(5.5rem, 0.9fr);
-    gap: 0.55rem;
+    grid-template-columns: 3rem minmax(9rem, 1.35fr) minmax(5.5rem, 0.85fr) repeat(4, minmax(4.6rem, 0.85fr)) minmax(5.5rem, 0.9fr);
+    gap: 0.75rem 0.9rem;
     align-items: center;
   }
   .colhead {
-    padding: 0 0.85rem;
+    padding: 0 0.95rem;
     font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted);
   }
   @media (max-width: 900px) {
     .colhead { display: none; }
     .summary-grid {
       grid-template-columns: 2.2rem 1fr auto;
+      column-gap: 0.85rem;
+      row-gap: 0.7rem;
       grid-template-areas:
         "rank who badges"
         "rank game game"
@@ -851,6 +853,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     .summary-grid .ip { grid-area: ip; }
     .summary-grid .tto { grid-area: tto; }
     .summary-grid .kpct { grid-area: kpct; }
+    .summary-grid .ks,
+    .summary-grid .ip,
+    .summary-grid .tto {
+      min-width: 4.25rem;
+      padding-right: 0.35rem;
+    }
   }
   details.matchup {
     background: var(--panel);
@@ -899,16 +907,19 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .num {
     display: grid;
     justify-items: start;
-    gap: 0.08rem;
+    gap: 0.18rem;
+    min-width: 3.75rem;
+    padding-right: 0.25rem;
     font-variant-numeric: tabular-nums;
     font-weight: 700;
-    line-height: 1.15;
+    line-height: 1.2;
   }
   .nval {
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.35rem;
+    white-space: nowrap;
   }
   .nlab {
     font-size: 0.62rem;
@@ -916,8 +927,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--muted);
+    white-space: nowrap;
   }
   .ks .nval { font-size: 1.05rem; }
+  .kpct {
+    min-width: 5.5rem;
+  }
   .grade-low { color: #6a7a72; }
   .grade-mid { color: var(--ink); }
   .grade-high { color: #0f6a4d; }
@@ -925,7 +940,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: #064832;
     background: rgba(15, 106, 77, 0.14);
     border-radius: 8px;
-    padding: 0.18rem 0.5rem 0.22rem;
+    padding: 0.22rem 0.55rem 0.28rem;
     justify-self: start;
   }
   .grade-elite .nlab { color: rgba(6, 72, 50, 0.72); }
@@ -964,7 +979,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     align-items: center;
   }
   .kpct {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+    min-width: 5.5rem;
   }
   .kpct-val { font-variant-numeric: tabular-nums; font-weight: 700; }
   .ark {

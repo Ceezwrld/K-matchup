@@ -496,6 +496,14 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"#{_esc(ark)}</span>"
         )
 
+    def _stat(classes: str, value_html: str, lab: str, title: str) -> str:
+        return (
+            f"<div class='num {classes}' title='{_esc(title)}'>"
+            f"<span class='nval'>{value_html}</span>"
+            f"<span class='nlab'>{_esc(lab)}</span>"
+            f"</div>"
+        )
+
     summary = (
         "<div class='summary-grid'>"
         f"<div class='rank'>{_esc(row.get('rank') if row.get('rank') is not None else '—')}</div>"
@@ -506,12 +514,15 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"{'' if status in ('', 'ok') else ' · ' + _esc(status)}</div>"
         "</div>"
         f"{game_html}"
-        f"<div class='num ks{ks_grade}'>{_fmt(row.get('expected_ks'))}</div>"
-        f"<div class='num{ip_grade}'>{_fmt(row.get('projected_ip'), 1)}</div>"
-        f"<div class='num{tto_grade}'>{tto_s}</div>"
-        f"<div class='num kpct{kpct_grade}'>"
+        f"{_stat(f'ks{ks_grade}', _fmt(row.get('expected_ks')), 'Exp K', 'Expected strikeouts')}"
+        f"{_stat(f'ip{ip_grade}', _fmt(row.get('projected_ip'), 1), 'IP', 'Projected innings pitched')}"
+        f"{_stat(f'tto{tto_grade}', tto_s, 'TTO', 'Times through the order')}"
+        f"<div class='num kpct{kpct_grade}' title='Arsenal K% vs opposing lineup'>"
+        f"<span class='nval'>"
         f"<span class='kpct-val'>{_fmt(row.get('expected_k_pct'))}</span>"
-        f"{ark_html}</div>"
+        f"{ark_html}</span>"
+        f"<span class='nlab'>K%</span>"
+        f"</div>"
         f"<div class='badges'>{badge_html}</div>"
         "</div>"
     )
@@ -837,8 +848,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     .summary-grid .badges { grid-area: badges; justify-self: end; }
     .summary-grid .game { grid-area: game; }
     .summary-grid .ks { grid-area: ks; }
-    .summary-grid .num:nth-of-type(2) { grid-area: ip; }
-    .summary-grid .num:nth-of-type(3) { grid-area: tto; }
+    .summary-grid .ip { grid-area: ip; }
+    .summary-grid .tto { grid-area: tto; }
     .summary-grid .kpct { grid-area: kpct; }
   }
   details.matchup {
@@ -885,8 +896,28 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-weight: 600;
     letter-spacing: 0.02em;
   }
-  .num { font-variant-numeric: tabular-nums; font-weight: 700; }
-  .ks { font-size: 1.05rem; }
+  .num {
+    display: grid;
+    justify-items: start;
+    gap: 0.08rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: 1.15;
+  }
+  .nval {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .nlab {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .ks .nval { font-size: 1.05rem; }
   .grade-low { color: #6a7a72; }
   .grade-mid { color: var(--ink); }
   .grade-high { color: #0f6a4d; }
@@ -894,9 +925,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: #064832;
     background: rgba(15, 106, 77, 0.14);
     border-radius: 8px;
-    padding: 0.12rem 0.45rem;
+    padding: 0.18rem 0.5rem 0.22rem;
     justify-self: start;
   }
+  .grade-elite .nlab { color: rgba(6, 72, 50, 0.72); }
   .grade-legend {
     display: flex;
     flex-wrap: wrap;
@@ -1309,8 +1341,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     __HITS_BOARD__
 
     <div class="colhead">
-      <div>#</div><div>Pitcher</div><div>Game</div><div>Exp. Ks</div>
-      <div>Proj IP</div><div>TTO</div><div>Arsenal K%</div><div>Flags</div>
+      <div>#</div><div>Pitcher</div><div>Game</div><div>Exp K</div>
+      <div>IP</div><div>TTO</div><div>K%</div><div>Flags</div>
     </div>
 
     <div class="board" id="board">

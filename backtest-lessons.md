@@ -6,9 +6,12 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 
 - Prefer **soft O3.5 / O4.5** with edge and **clear/low** outing risk.
 - Prefer **soft U6.5 / U7.5** with wide edge; **U5.5** OK if non-SPIKE and edge holds.
-- **Fade unders on SPIKE arms (K9 ≥ ~10)** — they can jump a soft under even when proj is mid.
+- **Fade unders on SPIKE arms (K9 ≥ ~10)** — they can jump a soft under even when proj is mid. **Card rules hard-block this:** `ticket_outlook=SPIKE` + `under_ban=True` so Sale-style U7.5 never shows as a process under.
 - Fade **openers / uncertain swingmen** for full-outing K props.
 - **Medium/high** outing risk → need *more* edge for overs (or pass).
+- **Hook / early-exit** (`hook_risk`): medium/high → caution on K overs; floor of Exp K band is pulled down. Patient opposing nines + short recent IP stack here.
+- **Exp K band** (`expected_ks_p25` / `expected_ks_p75`): use floor for overs confidence and ceiling for under / SPIKE upside — not exact totals.
+- **Whiff / chase:** arsenal whiff + lineup chase (Savant `oz_swing`) mildly nudge Exp K; surface in matchup meta.
 - **Soft-contact / low-K volume arms (K9 ≲ ~7, soft L3 Ks, elev_xFIP):** flag the **profile**, then check how the **opposing nine ranks vs that pitcher’s arsenal** (`expected_k_pct` / `arsenal_matchup_rank` on the slate) plus opp lineup K%.
   - Soft profile + **avg/soft matchup** → **FILLER** — pass or O3.5 on Ks; does not help a K ticket.
   - Soft profile + **strong/elite arsenal matchup** → **MATCHUP_OK** — disclose the soft profile; soft O3.5 / thin O4.5 K only; still never a nuke anchor next to Wheeler-tier legs.
@@ -110,3 +113,10 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 
 - **Ticket outlook (2026-07-28):** FILLER is no longer pitcher-only. Soft-contact profile is gated by opposing lineup **arsenal rank** (`expected_k_pct` percentile → `MATCHUP_OK` vs `FILLER`).
 - **Plate discipline (2026-07-28):** opposing lineup **BB%** + K% shape → `discipline_grade` / `pitch_count_risk`. Patient/walk-heavy nines trim BF/IP and soften K projections (beyond raw batter K%).
+
+## Model upgrades (2026-07-30)
+
+- **SPIKE soft-under ban:** K9 ≥ ~10 (or L3 K9 ≥ ~11) → `ticket_outlook=SPIKE`, `under_ban=True`. Soft U6.5/U7.5 are blocked in the ticket layer (Sale U7.5 class of miss).
+- **Hook risk:** `hook_risk` / `hook_flags` / `hook_bf_factor` stack survival + patient lineup; extra BF/IP haircut on medium/high.
+- **Exp K floor/ceiling:** `expected_ks_p25` / `expected_ks_p75` from binomial BF×K% variance (SPIKE widens ceiling; hook pulls floor).
+- **Whiff / chase overlay:** Savant `oz_swing_percent` (chase) + arsenal `expected_whiff_pct` → mild ±5% `whiff_chase_factor` before form blend.

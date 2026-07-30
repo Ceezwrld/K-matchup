@@ -20,11 +20,15 @@ from sharpen import (  # noqa: E402
     apply_lineup_offense_overlay,
     apply_recent_form_overlay,
     apply_ticket_outlook,
+    apply_whiff_chase_overlay,
     arsenal_from_mixes,
     build_hits_board,
+    classify_hook_risk,
     classify_outing_risk,
     effective_bat_side,
     enrich_lineup_hits_props,
+    expected_ks_band,
+    fetch_batter_chase_whiff,
     fetch_batter_contact_quality,
     fetch_batter_hand_k_rates,
     fetch_batter_offense_profiles,
@@ -35,6 +39,8 @@ from sharpen import (  # noqa: E402
     fetch_pitcher_recent_form,
     merge_risk_metrics,
     platoon_adjust_k_pct,
+    spike_arm_profile,
+    summarize_lineup_chase_whiff,
     summarize_lineup_offense,
     usage_for_batter_side,
 )
@@ -1150,18 +1156,24 @@ def format_table(df: pd.DataFrame) -> str:
             "game",
             "game_time_ct",
             "expected_ks",
+            "expected_ks_p25",
+            "expected_ks_p75",
             "projected_ip",
             "times_through_order",
             "projected_bf",
             "expected_k_pct",
+            "expected_whiff_pct",
             "lineup_k_pct",
             "lineup_bb_pct",
+            "lineup_chase_pct",
             "offense_factor",
+            "whiff_chase_factor",
             "last3_ks",
             "bb9",
             "hr9",
             "xfip",
             "outing_risk",
+            "hook_risk",
             "outing_role",
             "ticket_outlook",
             "matchup_grade",
@@ -1437,6 +1449,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     # Hits-prop contact quality (barrel/hard-hit/xwOBA). Display-only vs K model.
     batter_contact = fetch_batter_contact_quality(year, args.verbose, log)
+    batter_chase_whiff = fetch_batter_chase_whiff(year, args.verbose, log)
 
     results: list[dict[str, Any]] = []
     for item in resolved:
@@ -1474,6 +1487,9 @@ def main(argv: list[str] | None = None) -> int:
         offense_summary = summarize_lineup_offense(
             item.get("lineup") or [], batter_offense
         )
+        chase_summary = summarize_lineup_chase_whiff(
+            item.get("lineup") or [], batter_chase_whiff
+        )
         # Patient / walk-heavy lineups trim BF/IP before walking the order.
         if args.ip is None and args.batters_faced is None:
             _, projected_bf, projected_ip, discipline_meta = (
@@ -1485,6 +1501,21 @@ def main(argv: list[str] | None = None) -> int:
             _, _, _, discipline_meta = apply_lineup_discipline_overlay(
                 0.0, projected_bf, projected_ip, offense_summary
             )
+        # Hook / early-exit score (ticket lane + extra BF/IP haircut).
+        hook = classify_hook_risk(
+            risk,
+            form,
+            projected_ip=projected_ip,
+            pitch_count_risk=discipline_meta.get("pitch_count_risk"),
+            discipline_grade=discipline_meta.get("discipline_grade"),
+        )
+        if (
+            args.ip is None
+            and args.batters_faced is None
+            and float(hook.get("hook_bf_factor") or 1.0) < 1.0
+        ):
+            projected_bf *= float(hook["hook_bf_factor"])
+            projected_ip *= float(hook["hook_bf_factor"])
         tto = projected_bf / 9.0 if projected_bf else float("nan")
 
         row: dict[str, Any] = {
@@ -1508,6 +1539,9 @@ def main(argv: list[str] | None = None) -> int:
             "expected_ks": float("nan"),
             "expected_ks_model": float("nan"),
             "expected_ks_1x": float("nan"),
+            "expected_ks_p25": float("nan"),
+            "expected_ks_p75": float("nan"),
+            "expected_ks_sigma": float("nan"),
             "lineup_batters": len(item.get("lineup") or []),
             "lineup_scored": 0,
             "lineup_coverage": float("nan"),
@@ -1522,6 +1556,10 @@ def main(argv: list[str] | None = None) -> int:
             "risk_flags": risk.get("risk_flags") or "",
             "bf_risk_factor": risk.get("bf_risk_factor"),
             "survival_flags": risk.get("survival_flags") or "",
+            "hook_risk": hook.get("hook_risk"),
+            "hook_flags": hook.get("hook_flags") or "",
+            "hook_score": hook.get("hook_score"),
+            "hook_bf_factor": hook.get("hook_bf_factor"),
             "last3_ks": None if not form else form.get("last3_ks"),
             "last3_k9": None if not form else form.get("last3_k9"),
             "last3_ip": None if not form else form.get("last3_ip"),
@@ -1530,8 +1568,11 @@ def main(argv: list[str] | None = None) -> int:
             "lineup_k_pct": offense_summary.get("lineup_k_pct"),
             "lineup_avg": offense_summary.get("lineup_avg"),
             "lineup_bb_pct": offense_summary.get("lineup_bb_pct"),
+            "lineup_chase_pct": chase_summary.get("lineup_chase_pct"),
+            "lineup_whiff_pct": chase_summary.get("lineup_whiff_pct"),
             "offense_source": offense_summary.get("offense_source"),
             "offense_factor": None,
+            "whiff_chase_factor": None,
             "discipline_grade": discipline_meta.get("discipline_grade"),
             "discipline_ks_factor": discipline_meta.get("discipline_ks_factor"),
             "discipline_bf_factor": discipline_meta.get("discipline_bf_factor"),
@@ -1623,14 +1664,37 @@ def main(argv: list[str] | None = None) -> int:
                     if ks_factor is None:
                         ks_factor = 1.0
                     disciplined_ks = float(offense_ks) * float(ks_factor)
-                    # expected_ks_model = matchup + offense + discipline, before form
-                    row["expected_ks_model"] = float(disciplined_ks)
+                    # Whiff / chase sharpening before form blend.
+                    whiffed_ks, whiff_factor, whiff_meta = apply_whiff_chase_overlay(
+                        float(disciplined_ks),
+                        expected_whiff_pct=row.get("expected_whiff_pct"),
+                        lineup_chase_pct=chase_summary.get("lineup_chase_pct"),
+                        lineup_whiff_pct=chase_summary.get("lineup_whiff_pct"),
+                    )
+                    row["whiff_chase_factor"] = whiff_factor
+                    if whiff_meta.get("lineup_chase_pct") is not None:
+                        row["lineup_chase_pct"] = whiff_meta["lineup_chase_pct"]
+                    if whiff_meta.get("lineup_whiff_pct") is not None:
+                        row["lineup_whiff_pct"] = whiff_meta["lineup_whiff_pct"]
+                    # expected_ks_model = matchup + offense + discipline + whiff/chase, before form
+                    row["expected_ks_model"] = float(whiffed_ks)
                     blended, form_ks, form_w = apply_recent_form_overlay(
-                        float(disciplined_ks), projected_ip, form
+                        float(whiffed_ks), projected_ip, form
                     )
                     row["expected_ks"] = blended
                     row["form_ks"] = form_ks
                     row["form_weight"] = form_w
+                    spike, _ = spike_arm_profile(row)
+                    band = expected_ks_band(
+                        float(blended),
+                        row.get("projected_bf"),
+                        row.get("expected_k_pct"),
+                        spike=spike,
+                        hook_risk=row.get("hook_risk"),
+                    )
+                    row["expected_ks_p25"] = band["expected_ks_p25"]
+                    row["expected_ks_p75"] = band["expected_ks_p75"]
+                    row["expected_ks_sigma"] = band["expected_ks_sigma"]
                     if used_statcast_mix:
                         row["arsenal_source"] = "statcast_fallback"
         elif status == "ok":
@@ -1657,18 +1721,33 @@ def main(argv: list[str] | None = None) -> int:
     out.insert(0, "rank", ranks)
 
     # Soft-contact FILLER gated by opposing lineup arsenal rank on this slate.
+    # SPIKE arms get ticket_outlook=SPIKE with soft-under hard ban.
     out = apply_ticket_outlook(out)
 
     print(format_table(out))
-    # Print ticket outlook for flagged soft-contact arms.
+    # Print ticket outlook for flagged soft-contact / SPIKE arms.
     flagged = out[out["ticket_outlook"].astype(str).str.len() > 0]
     if not flagged.empty:
-        print("\nTicket outlook (soft-contact profile × opp arsenal rank)")
+        print("\nTicket outlook (FILLER / MATCHUP_OK / SPIKE)")
         for _, r in flagged.iterrows():
             print(
                 f"  {r.get('ticket_outlook'):<11} {r.get('pitcher')}: "
                 f"{r.get('ticket_note')}"
             )
+    # Hook-risk watch list (early-exit overs caution).
+    if "hook_risk" in out.columns:
+        hooks = out[
+            out["status"].eq("ok") & out["hook_risk"].isin(["medium", "high"])
+        ]
+        if not hooks.empty:
+            print("\nHook / early-exit watch")
+            for _, r in hooks.iterrows():
+                print(
+                    f"  {r.get('hook_risk'):<7} {r.get('pitcher')}: "
+                    f"flags {r.get('hook_flags') or '—'} · "
+                    f"band {r.get('expected_ks_p25')}–{r.get('expected_ks_p75')} · "
+                    f"Exp K {r.get('expected_ks')}"
+                )
     # Discipline / pitch-count watch list.
     if "discipline_grade" in out.columns:
         watch = out[

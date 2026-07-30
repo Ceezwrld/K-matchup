@@ -6,16 +6,21 @@
 4. Recent-form overlay from last 3 starts
 5. Outing-risk flags from BB/9, HR/9, xFIP
 6. Outing survival / early-exit haircut (BB + short recent IP + HR/xFIP)
-7. Opposing lineup K% / contact form overlay on expected Ks
-8. Ticket outlook — soft-contact FILLER profile gated by opposing
-   lineup arsenal rank (expected_k_pct vs slate)
+7. Hook / early-exit risk score (ticket lane + extra BF haircut)
+8. Opposing lineup K% / contact form overlay on expected Ks
+9. Savant whiff / chase (oz_swing) overlay on expected Ks
+10. Exp K floor/ceiling (P25/P75 band) for side selection
+11. Ticket outlook — soft-contact FILLER gated by arsenal rank;
+    SPIKE arms hard-block soft unders
 
 Hits-prop helpers (barrel / hard-hit / xwOBA) live here too but are
-display-only — they never modify expected_ks.
+display-only — they never modify expected_ks (except chase/whiff
+overlay which is a mild K sharpening layer).
 """
 
 from __future__ import annotations
 
+import math
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import StringIO
@@ -81,6 +86,13 @@ SAVANT_EXPECTED_URL = (
     "?type=batter&year={year}&position=&team=&filterType=pa&min=1&csv=true"
 )
 
+# Chase = out-of-zone swing% (Savant oz_swing_percent). o_swing_percent is empty.
+SAVANT_CHASE_WHIFF_URL = (
+    "https://baseballsavant.mlb.com/leaderboard/custom"
+    "?year={year}&type=batter&filter=&sort=1&sortDir=desc&min=1"
+    "&selections=oz_swing_percent%2Cwhiff_percent&csv=true"
+)
+
 # Ignore non-pitch / rare codes when building mixes.
 SKIP_PITCH_TYPES = {"PO", "IN", "AB", "UN", "FA", ""}
 
@@ -100,6 +112,11 @@ XFIP_HIGH = 4.80
 SURVIVAL_FLOOR = 0.82
 SHORT_RECENT_IP_HARD = 4.0
 SHORT_RECENT_IP_SOFT = 4.75
+HOOK_BF_FLOOR = 0.88  # extra hook haircut floor (stacked after survival)
+
+# SPIKE arms: high K/9 — soft unders are hard-blocked in ticket outlook.
+SPIKE_K9_MIN = 10.0
+SPIKE_L3_K9_MIN = 11.0  # hot recent form also counts as SPIKE
 
 # Opposing lineup offense overlay (mild ± on matchup expected_ks).
 LEAGUE_K_PCT = 22.5
@@ -114,6 +131,11 @@ DISCIPLINE_KS_FACTOR_MAX = 0.05  # mild ± on expected_ks
 DISCIPLINE_BF_FLOOR = 0.90  # patient lineups can trim up to ~10% BF/IP
 PATIENT_BB_PCT = 9.5
 FREE_SWING_BB_PCT = 7.0
+
+# Savant whiff / chase overlay (mild ± on expected_ks after discipline).
+LEAGUE_WHIFF_PCT = 24.5  # Savant whiff% (whiffs / swings)
+LEAGUE_CHASE_PCT = 28.5  # Savant oz_swing_percent
+WHIFF_CHASE_FACTOR_MAX = 0.05
 
 # Hits-prop contact baselines (display-only; not used in expected_ks).
 LEAGUE_BARREL_PCT = 8.0
@@ -815,6 +837,178 @@ def classify_outing_risk(
     }
 
 
+def classify_hook_risk(
+    risk: dict[str, Any] | None,
+    form: dict[str, Any] | None = None,
+    *,
+    projected_ip: float | None = None,
+    pitch_count_risk: str | None = None,
+    discipline_grade: str | None = None,
+) -> dict[str, Any]:
+    """Early-exit / hook score for overs (and soft-line confidence).
+
+    Stacks pitcher survival flags with patient/walk-heavy opposing nines.
+    Returns hook_risk tier, flags, and an extra BF/IP haircut factor.
+    """
+    risk = risk or {}
+    flags: list[str] = []
+    score = 0
+
+    surv = str(risk.get("survival_flags") or "")
+    for token, pts in (
+        ("short_recent_ip", 2),
+        ("exit_hr", 1),
+        ("exit_xfip_bb", 1),
+    ):
+        if token in surv:
+            flags.append(token)
+            score += pts
+
+    outing = str(risk.get("outing_risk") or "clear")
+    if outing == "high":
+        score += 2
+        flags.append("outing_high")
+    elif outing == "medium":
+        score += 1
+        flags.append("outing_medium")
+
+    try:
+        last3_ip = None if not form else form.get("last3_ip")
+        last3_ip_f = float(last3_ip) if last3_ip is not None else None
+    except (TypeError, ValueError):
+        last3_ip_f = None
+    try:
+        proj_ip_f = float(projected_ip) if projected_ip is not None else None
+    except (TypeError, ValueError):
+        proj_ip_f = None
+
+    if (
+        last3_ip_f is not None
+        and proj_ip_f is not None
+        and last3_ip_f < proj_ip_f * 0.75
+        and "short_recent_ip" not in flags
+    ):
+        flags.append("ip_vs_proj_gap")
+        score += 1
+
+    pc = (pitch_count_risk or "").strip().lower()
+    grade = (discipline_grade or "").strip().lower()
+    if pc in ("high", "elevated") or grade == "patient":
+        flags.append("patient_lineup")
+        score += 2
+    elif grade == "three_true" or pc == "medium":
+        flags.append("pitch_count_watch")
+        score += 1
+
+    if score >= 5:
+        level = "high"
+        bf_extra = 0.92
+    elif score >= 3:
+        level = "medium"
+        bf_extra = 0.95
+    elif score >= 1:
+        level = "low"
+        bf_extra = 0.98
+    else:
+        level = "clear"
+        bf_extra = 1.0
+
+    bf_extra = max(HOOK_BF_FLOOR, min(1.0, bf_extra))
+    return {
+        "hook_risk": level,
+        "hook_flags": ",".join(flags),
+        "hook_score": score,
+        "hook_bf_factor": bf_extra,
+    }
+
+
+def spike_arm_profile(row: dict[str, Any]) -> tuple[bool, str]:
+    """True when K/9 (season or hot L3) marks a SPIKE arm — soft unders banned."""
+    try:
+        k9 = float(row["k9"]) if row.get("k9") is not None and pd.notna(row.get("k9")) else None
+    except (TypeError, ValueError):
+        k9 = None
+    try:
+        l3_k9 = (
+            float(row["last3_k9"])
+            if row.get("last3_k9") is not None and pd.notna(row.get("last3_k9"))
+            else None
+        )
+    except (TypeError, ValueError):
+        l3_k9 = None
+
+    bits: list[str] = []
+    spike = False
+    if k9 is not None and k9 >= SPIKE_K9_MIN:
+        spike = True
+        bits.append(f"K9 {k9:.1f}")
+    if l3_k9 is not None and l3_k9 >= SPIKE_L3_K9_MIN:
+        spike = True
+        bits.append(f"L3 K9 {l3_k9:.1f}")
+    return spike, ", ".join(bits)
+
+
+def expected_ks_band(
+    expected_ks: float,
+    projected_bf: float | None,
+    expected_k_pct: float | None,
+    *,
+    spike: bool = False,
+    hook_risk: str | None = None,
+) -> dict[str, float | None]:
+    """Approximate P25/P75 Exp K band from binomial (BF × K%) variance.
+
+    Used for side selection (floor for overs, ceiling for unders / SPIKE
+    upside) — not a full simulation.
+    """
+    if expected_ks is None or (isinstance(expected_ks, float) and pd.isna(expected_ks)):
+        return {
+            "expected_ks_p25": None,
+            "expected_ks_p75": None,
+            "expected_ks_sigma": None,
+        }
+    mean = float(expected_ks)
+    try:
+        bf = float(projected_bf) if projected_bf is not None else None
+    except (TypeError, ValueError):
+        bf = None
+    try:
+        p = (
+            float(expected_k_pct) / 100.0
+            if expected_k_pct is not None and pd.notna(expected_k_pct)
+            else None
+        )
+    except (TypeError, ValueError):
+        p = None
+
+    if bf is not None and bf > 0 and p is not None and 0.0 < p < 1.0:
+        var = bf * p * (1.0 - p)
+    else:
+        var = max(mean, 0.5)  # Poisson-ish fallback
+    sigma = math.sqrt(max(var, 0.25))
+
+    # Normal approx: ±0.6745σ ≈ interquartile edges.
+    z = 0.6745
+    floor = max(0.0, mean - z * sigma)
+    ceil = mean + z * sigma
+
+    hook = (hook_risk or "clear").lower()
+    if hook == "high":
+        floor = max(0.0, mean - 1.05 * sigma)
+    elif hook == "medium":
+        floor = max(0.0, mean - 0.90 * sigma)
+
+    if spike:
+        # Asymmetric upside — SPIKE arms jump soft unders (Sale / Wheeler / Misio).
+        ceil = mean + 1.15 * sigma
+
+    return {
+        "expected_ks_p25": round(floor, 2),
+        "expected_ks_p75": round(ceil, 2),
+        "expected_ks_sigma": round(sigma, 2),
+    }
+
+
 def fetch_batter_offense_profiles(
     batter_ids: list[int],
     year: int,
@@ -1144,6 +1338,126 @@ def apply_lineup_discipline_overlay(
     return new_ks, new_bf, new_ip, meta
 
 
+def fetch_batter_chase_whiff(
+    year: int,
+    verbose: bool,
+    log: Callable[[bool, str], None],
+) -> dict[int, dict[str, float]]:
+    """Savant chase (oz_swing%) + whiff% keyed by batter id."""
+    url = SAVANT_CHASE_WHIFF_URL.format(year=year)
+    out: dict[int, dict[str, float]] = {}
+    try:
+        resp = _get(url, verbose, log)
+        text = resp.content.decode("utf-8-sig")
+        if not text.strip():
+            return out
+        df = pd.read_csv(StringIO(text))
+    except Exception as exc:  # noqa: BLE001
+        log(verbose, f"chase/whiff fetch failed: {exc}")
+        return out
+    if df.empty or "player_id" not in df.columns:
+        return out
+    for _, row in df.iterrows():
+        try:
+            pid = int(row["player_id"])
+        except (TypeError, ValueError):
+            continue
+        entry: dict[str, float] = {}
+        for src, dst in (
+            ("oz_swing_percent", "chase_pct"),
+            ("whiff_percent", "whiff_pct"),
+        ):
+            if src not in row.index or pd.isna(row.get(src)):
+                continue
+            try:
+                entry[dst] = float(row[src])
+            except (TypeError, ValueError):
+                continue
+        if entry:
+            out[pid] = entry
+    return out
+
+
+def summarize_lineup_chase_whiff(
+    lineup: list[dict[str, Any]],
+    chase_whiff: dict[int, dict[str, float]] | None,
+) -> dict[str, Any]:
+    """Simple mean chase%/whiff% across the posted nine with Savant rates."""
+    chase_whiff = chase_whiff or {}
+    chases: list[float] = []
+    whiffs: list[float] = []
+    for b in lineup or []:
+        bid = b.get("id") or b.get("batter_id")
+        if bid is None:
+            continue
+        try:
+            rates = chase_whiff.get(int(bid)) or {}
+        except (TypeError, ValueError):
+            continue
+        if rates.get("chase_pct") is not None:
+            chases.append(float(rates["chase_pct"]))
+        if rates.get("whiff_pct") is not None:
+            whiffs.append(float(rates["whiff_pct"]))
+    return {
+        "lineup_chase_pct": (sum(chases) / len(chases)) if chases else None,
+        "lineup_whiff_pct": (sum(whiffs) / len(whiffs)) if whiffs else None,
+        "chase_n": len(chases),
+        "whiff_n": len(whiffs),
+    }
+
+
+def apply_whiff_chase_overlay(
+    expected_ks: float,
+    *,
+    expected_whiff_pct: float | None = None,
+    lineup_chase_pct: float | None = None,
+    lineup_whiff_pct: float | None = None,
+) -> tuple[float, float | None, dict[str, Any]]:
+    """Mild ± on Ks from arsenal whiff and opposing chase rates.
+
+    High arsenal-weighted whiff and high lineup chase → more Ks.
+    Capped at ±WHIFF_CHASE_FACTOR_MAX.
+    """
+    meta: dict[str, Any] = {
+        "whiff_chase_factor": None,
+        "lineup_chase_pct": None
+        if lineup_chase_pct is None
+        else float(lineup_chase_pct),
+        "lineup_whiff_pct": None
+        if lineup_whiff_pct is None
+        else float(lineup_whiff_pct),
+        "arsenal_whiff_pct": None
+        if expected_whiff_pct is None
+        or (isinstance(expected_whiff_pct, float) and pd.isna(expected_whiff_pct))
+        else float(expected_whiff_pct),
+    }
+    if expected_ks is None or (
+        isinstance(expected_ks, float) and pd.isna(expected_ks)
+    ):
+        return expected_ks, None, meta
+
+    raw = 0.0
+    used = False
+    # Prefer arsenal-weighted expected_whiff_pct (pitcher mix × batter rates).
+    wh = meta["arsenal_whiff_pct"]
+    if wh is None and lineup_whiff_pct is not None:
+        wh = float(lineup_whiff_pct)
+    if wh is not None:
+        raw += ((float(wh) - LEAGUE_WHIFF_PCT) / 100.0) * 0.90
+        used = True
+    if lineup_chase_pct is not None:
+        # Chase above league → more free-swing Ks; below → slightly fewer.
+        raw += ((float(lineup_chase_pct) - LEAGUE_CHASE_PCT) / 100.0) * 0.70
+        used = True
+    if not used:
+        return float(expected_ks), None, meta
+
+    delta = max(-WHIFF_CHASE_FACTOR_MAX, min(WHIFF_CHASE_FACTOR_MAX, raw))
+    factor = 1.0 + delta
+    meta["whiff_chase_factor"] = factor
+    return float(expected_ks) * factor, factor, meta
+
+
 def fetch_batter_contact_quality(
     year: int,
     verbose: bool,
@@ -1462,7 +1776,7 @@ def soft_contact_profile(row: dict[str, Any]) -> tuple[bool, str]:
 
 
 def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
-    """Label FILLER vs MATCHUP_OK using pitcher profile + opp arsenal rank.
+    """Label FILLER / MATCHUP_OK / SPIKE using profile + arsenal + K9.
 
     Uses slate percentile of arsenal-weighted `expected_k_pct` (how the
     opposing nine ranks vs this starter's mix) plus raw opp lineup K%.
@@ -1470,12 +1784,17 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
     - FILLER: soft-contact profile AND matchup not strong → pass / O3.5 max
     - MATCHUP_OK: soft-contact profile BUT lineup ranks strong/elite vs
       arsenal → disclose profile; soft O3.5 / thin O4.5 only, never nuke
+    - SPIKE: K9 ≥ ~10 (or hot L3 K9) → soft unders HARD-BLOCKED in card rules
+      (no U6.5/U7.5 recommendations). Overs still process with edge.
     - (blank): normal process arm
     """
     out = df.copy()
     for col, default in (
         ("soft_contact_profile", False),
         ("profile_flags", ""),
+        ("spike_arm", False),
+        ("spike_flags", ""),
+        ("under_ban", False),
         ("arsenal_matchup_rank", pd.NA),
         ("arsenal_matchup_pctile", pd.NA),
         ("matchup_grade", ""),
@@ -1500,8 +1819,13 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
     for idx in out.index[scored]:
         row = out.loc[idx]
         soft, profile_flags = soft_contact_profile(row.to_dict())
+        spike, spike_flags = spike_arm_profile(row.to_dict())
         out.at[idx, "soft_contact_profile"] = soft
         out.at[idx, "profile_flags"] = profile_flags
+        out.at[idx, "spike_arm"] = spike
+        out.at[idx, "spike_flags"] = spike_flags
+        # Soft unders on SPIKE arms are never process — card rules block them.
+        out.at[idx, "under_ban"] = bool(spike)
         p = float(row["arsenal_matchup_pctile"])
         if p >= MATCHUP_ELITE_PCT:
             grade = "elite"
@@ -1521,34 +1845,55 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
             else f", opp K% {float(opp_k):.1f}"
         )
         matchup_bit = f"arsenal K% {kpct:.1f} (#{ark}/{n}, {grade}{opp_bit})"
-
-        if not soft:
-            out.at[idx, "ticket_outlook"] = ""
-            out.at[idx, "ticket_note"] = matchup_bit
-            continue
+        hook = str(row.get("hook_risk") or "")
+        hook_bit = f"; hook {hook}" if hook and hook not in ("", "clear") else ""
+        floor = row.get("expected_ks_p25")
+        ceil = row.get("expected_ks_p75")
+        band_bit = ""
+        if floor is not None and ceil is not None and pd.notna(floor) and pd.notna(ceil):
+            band_bit = f"; band {float(floor):.1f}–{float(ceil):.1f}"
 
         role = str(row.get("outing_role") or "starter")
         role_caveat = ""
         if role in ("swingman", "opener_likely", "opener"):
             role_caveat = f"; also {role} — fade full-outing chalk"
 
-        if grade in ("elite", "strong"):
-            out.at[idx, "ticket_outlook"] = "MATCHUP_OK"
+        under_block = (
+            f"SOFT UNDERS BLOCKED ({spike_flags}) — no U6.5/U7.5; "
+            f"overs only with edge / clear-low risk{band_bit}{hook_bit}"
+        )
+
+        if soft:
+            if grade in ("elite", "strong"):
+                out.at[idx, "ticket_outlook"] = "MATCHUP_OK"
+                out.at[idx, "ticket_note"] = (
+                    f"soft-contact profile ({profile_flags}) but {matchup_bit} "
+                    f"— O3.5 / thin O4.5 K only; disclose, not a nuke anchor; "
+                    f"if skipping Ks, consider pitcher outs when IP/risk holds"
+                    f"{role_caveat}"
+                )
+            else:
+                out.at[idx, "ticket_outlook"] = "FILLER"
+                out.at[idx, "ticket_note"] = (
+                    f"soft-contact ({profile_flags}) + {matchup_bit} "
+                    f"— FILLER on Ks: pass or O3.5; does not help a K ticket; "
+                    f"consider pitcher outs if clear/low risk and projected IP holds"
+                    f"{role_caveat}"
+                )
+            continue
+
+        if spike:
+            out.at[idx, "ticket_outlook"] = "SPIKE"
             out.at[idx, "ticket_note"] = (
-                f"soft-contact profile ({profile_flags}) but {matchup_bit} "
-                f"— O3.5 / thin O4.5 K only; disclose, not a nuke anchor; "
-                f"if skipping Ks, consider pitcher outs when IP/risk holds"
+                f"SPIKE arm ({spike_flags}) · {matchup_bit} — {under_block}"
                 f"{role_caveat}"
             )
-        else:
-            out.at[idx, "ticket_outlook"] = "FILLER"
-            out.at[idx, "ticket_note"] = (
-                f"soft-contact ({profile_flags}) + {matchup_bit} "
-                f"— FILLER on Ks: pass or O3.5; does not help a K ticket; "
-                f"consider pitcher outs if clear/low risk and projected IP holds"
-                f"{role_caveat}"
-            )
+            continue
+
+        out.at[idx, "ticket_outlook"] = ""
+        out.at[idx, "ticket_note"] = f"{matchup_bit}{band_bit}{hook_bit}"
     return out
+
 
 
 def strip_html_name(value: Any) -> str:

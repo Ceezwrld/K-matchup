@@ -226,6 +226,9 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "lineup_source": r.get("lineup_source"),
                 "expected_ks": _json_safe(r.get("expected_ks")),
                 "expected_ks_model": _json_safe(r.get("expected_ks_model")),
+                "expected_ks_p25": _json_safe(r.get("expected_ks_p25")),
+                "expected_ks_p75": _json_safe(r.get("expected_ks_p75")),
+                "expected_ks_sigma": _json_safe(r.get("expected_ks_sigma")),
                 "expected_k_pct": _json_safe(r.get("expected_k_pct")),
                 "expected_ks_1x": _json_safe(r.get("expected_ks_1x")),
                 "expected_whiff_pct": _json_safe(r.get("expected_whiff_pct")),
@@ -248,6 +251,9 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "risk_flags": r.get("risk_flags") or "",
                 "bf_risk_factor": _json_safe(r.get("bf_risk_factor")),
                 "survival_flags": r.get("survival_flags") or "",
+                "hook_risk": r.get("hook_risk") or "",
+                "hook_flags": r.get("hook_flags") or "",
+                "hook_score": _json_safe(r.get("hook_score")),
                 "last3_ks": _json_safe(r.get("last3_ks")),
                 "last3_k9": _json_safe(r.get("last3_k9")),
                 "form_ks": _json_safe(r.get("form_ks")),
@@ -255,14 +261,20 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "lineup_k_pct": _json_safe(r.get("lineup_k_pct")),
                 "lineup_avg": _json_safe(r.get("lineup_avg")),
                 "lineup_bb_pct": _json_safe(r.get("lineup_bb_pct")),
+                "lineup_chase_pct": _json_safe(r.get("lineup_chase_pct")),
+                "lineup_whiff_pct": _json_safe(r.get("lineup_whiff_pct")),
                 "offense_source": r.get("offense_source"),
                 "offense_factor": _json_safe(r.get("offense_factor")),
+                "whiff_chase_factor": _json_safe(r.get("whiff_chase_factor")),
                 "discipline_grade": r.get("discipline_grade") or "",
                 "discipline_ks_factor": _json_safe(r.get("discipline_ks_factor")),
                 "discipline_bf_factor": _json_safe(r.get("discipline_bf_factor")),
                 "pitch_count_risk": r.get("pitch_count_risk") or "",
                 "soft_contact_profile": bool(r.get("soft_contact_profile")),
                 "profile_flags": r.get("profile_flags") or "",
+                "spike_arm": bool(r.get("spike_arm")),
+                "spike_flags": r.get("spike_flags") or "",
+                "under_ban": bool(r.get("under_ban")),
                 "arsenal_matchup_rank": _json_safe(r.get("arsenal_matchup_rank")),
                 "arsenal_matchup_pctile": _json_safe(r.get("arsenal_matchup_pctile")),
                 "matchup_grade": r.get("matchup_grade") or "",
@@ -464,6 +476,9 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             status,
             outlook,
             row.get("matchup_grade"),
+            "spike" if row.get("spike_arm") or outlook == "SPIKE" else "",
+            "under_ban" if row.get("under_ban") else "",
+            row.get("hook_risk"),
         ]
         if x
     ).lower()
@@ -484,6 +499,17 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         badge_html += (
             f"<span class='outlook outlook-{_esc(outlook.lower())}'>"
             f"{_esc(outlook.replace('_', ' '))}</span>"
+        )
+    elif row.get("under_ban"):
+        badge_html += (
+            "<span class='outlook outlook-spike' title='Soft unders blocked'>"
+            "NO SOFT UNDER</span>"
+        )
+    hook = (row.get("hook_risk") or "").strip()
+    if hook in ("medium", "high"):
+        badge_html += (
+            f"<span class='outlook outlook-hook-{_esc(hook)}'>"
+            f"HOOK {_esc(hook.upper())}</span>"
         )
     # Arsenal matchup rank = pitcher-vs-lineup K% slate rank (starting-pitcher matchup #).
     # Opp lineup K% rank = how K-prone the opposing batting team is on today's slate.
@@ -515,6 +541,20 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"</div>"
         )
 
+    p25 = row.get("expected_ks_p25")
+    p75 = row.get("expected_ks_p75")
+    band_title = "Expected strikeouts"
+    if p25 is not None and p75 is not None:
+        band_title = (
+            f"Expected strikeouts · P25–P75 band {_fmt(p25, 1)}–{_fmt(p75, 1)}"
+        )
+    ks_value = _fmt(row.get("expected_ks"))
+    if p25 is not None and p75 is not None and scored:
+        ks_value = (
+            f"{_fmt(row.get('expected_ks'))}"
+            f"<span class='band'>{_fmt(p25, 1)}–{_fmt(p75, 1)}</span>"
+        )
+
     summary = (
         "<div class='summary-grid'>"
         f"<div class='rank'>{_esc(row.get('rank') if row.get('rank') is not None else '—')}</div>"
@@ -526,7 +566,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
         f"{game_html}"
         "<div class='stat-row'>"
-        f"{_stat(f'ks{ks_grade}', _fmt(row.get('expected_ks')), 'Exp K', 'Expected strikeouts')}"
+        f"{_stat(f'ks{ks_grade}', ks_value, 'Exp K', band_title)}"
         f"{_stat(f'ip{ip_grade}', _fmt(row.get('projected_ip'), 1), 'IP', 'Projected innings pitched')}"
         f"{_stat(f'tto{tto_grade}', tto_s, 'TTO', 'Times through the order')}"
         f"<div class='num kpct{kpct_grade}' title='Arsenal K% vs opposing lineup'>"
@@ -590,6 +630,10 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         )
     if row.get("lineup_bb_pct") is not None:
         matchup_bits.append(f"opp BB% {_fmt(row.get('lineup_bb_pct'), 1)}")
+    if row.get("lineup_chase_pct") is not None:
+        matchup_bits.append(f"chase {_fmt(row.get('lineup_chase_pct'), 1)}%")
+    if row.get("expected_whiff_pct") is not None:
+        matchup_bits.append(f"whiff {_fmt(row.get('expected_whiff_pct'), 1)}%")
     grade = (row.get("discipline_grade") or "").strip()
     if grade:
         matchup_bits.append(_esc(grade.replace("_", " ")))
@@ -602,6 +646,12 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"<span class='risk risk-{_esc(risk)}'>risk {_esc(risk)}"
         f"{'' if not risk_flags else ' · ' + _esc(risk_flags)}</span>"
     )
+    hook_flags = row.get("hook_flags") or ""
+    if hook in ("low", "medium", "high"):
+        risk_chip += (
+            f" <span class='risk risk-hook-{_esc(hook)}'>hook {_esc(hook)}"
+            f"{'' if not hook_flags else ' · ' + _esc(hook_flags)}</span>"
+        )
 
     head = (
         "<div class='meta-strip'>"
@@ -620,7 +670,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
     )
     ticket_note = (row.get("ticket_note") or "").strip()
-    # Banner only for flagged soft-contact outlooks (FILLER / MATCHUP_OK).
+    # Banner for FILLER / MATCHUP_OK / SPIKE (soft-under ban).
     if outlook:
         note = _esc(ticket_note) if ticket_note else matchup_val
         head += (
@@ -1050,6 +1100,20 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .outlook-filler { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
   .outlook-matchup_ok { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
+  .outlook-spike { background: rgba(154, 91, 18, 0.18); color: #8a4b0f; }
+  .outlook-hook-medium { background: rgba(154, 91, 18, 0.14); color: #8a4b0f; }
+  .outlook-hook-high { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
+  .risk-hook-low { background: rgba(15, 106, 77, 0.10); color: var(--ok); }
+  .risk-hook-medium { background: rgba(154, 91, 18, 0.14); color: #8a4b0f; }
+  .risk-hook-high { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
+  .num .band {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+    margin-top: 0.1rem;
+  }
   .detail {
     padding: 0 1rem 1.15rem;
     border-top: 1px solid var(--line);
@@ -1111,6 +1175,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .outlook-banner.outlook-matchup_ok {
     background: rgba(15, 106, 77, 0.08); border-color: rgba(15, 106, 77, 0.22);
     color: #0a4a36;
+  }
+  .outlook-banner.outlook-spike {
+    background: rgba(154, 91, 18, 0.10); border-color: rgba(154, 91, 18, 0.28);
+    color: #6e3a0c;
   }
   @media (max-width: 560px) {
     .outlook-banner { grid-template-columns: 1fr; gap: 0.25rem; }
@@ -1410,7 +1478,8 @@ __MATCHUP_CARDS__
       Expand a pitcher → <strong>Arsenal vs lineup</strong> for pitch-by-pitch K%,
       or <strong>Batting order</strong> for the nine. Arsenal <strong>#</strong> ranks
       this pitcher-vs-lineup matchup on today’s slate. FILLER / MATCHUP OK flag soft-contact
-      arms. If this opened as plain text from GitHub raw, download and open locally.
+      arms; <strong>SPIKE</strong> hard-blocks soft unders. Exp K shows a P25–P75 band.
+      If this opened as plain text from GitHub raw, download and open locally.
       Pre-lineup days are all <strong>Prior</strong> — use Lineup <strong>All sources</strong>.
     </p>
   </div>

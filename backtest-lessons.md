@@ -19,6 +19,32 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - **Daily volume (when slate is full):** several **2-leg** tickets over fewer 3-mans. One chalk/nuke pair max; rest mix pitcher+bat or bat+bat. Cap any single player at **~2 tickets**.
 - **Accuracy lock (before firing):** refresh with **official lineups**; only lock a leg if (1) batter is in the posted nine, (2) pitcher role is starter not opener/swingman, (3) soft line edge holds on the *current* proj, (4) no same-game opposing K-over stack. Prior-lineup tickets are provisional only.
 - **Disclose weak links:** if a recommended leg is filler/thin-sample/prior-lineup/SPIKE-capped, state that in the ticket writeup — don’t bury it.
+- **Length ≠ Ks:** a full outing with strong matchup can still miss soft O4.5 when K/BF is soft (Weathers 7/30). Don’t treat IP alone as an over lock — need K% conversion too.
+- **FILLER can spike:** Assad (FILLER) 4.23→6. Pass on tickets still correct; never soft-under FILLER either.
+
+## 2026-07-30 partial (MAE ~1.89, n=8 Final early slate; evening games not started)
+
+Graded: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Still live/preview: MIA@NYM, PIT@CIN, WSH@ATL, SF@SD, BOS@ATH, SEA@LAD.
+
+| What happened | Lesson |
+|---------------|--------|
+| **Burke** 7.45→**10** (6 IP / 23 BF, clear) | Volume clear top-board cashed hard — O4.5/O5.5/O6.5 all hit; Burke-tier O5.5+ juice OK when proj ≥ ~7 and clear |
+| **Weathers** 5.55→**4** (7 IP / 26 BF, low risk, strong matchup) | Full length + strong arsenal still **missed O4.5** — contact outing (4 K). Soft O3.5 HIT; don’t stretch O4.5 just because IP projects |
+| **McClanahan** 5.03→**3** (3 IP / 12 BF, clear, elite matchup) | Early hook again — elite K% matchup dead without outs. Outing survival > matchup grade for overs |
+| **Cameron** 4.62→**7** (8 IP / 26 BF, clear, soft matchup) | Soft mid-board spiked with length — O3.5/O4.5 cashed; **don’t skinny-under** clear soft-grade arms when IP holds |
+| **Ober** FILLER 5.04→**3** (6 IP) | FILLER correctly avoided O4.5; pass/O3.5 lane right |
+| **Pallante** FILLER 4.71→**3** (6.1 IP / 7 H) | FILLER + outs alt still the read — K over miss; long outing via BIP |
+| **Assad** FILLER 4.23→**6** (4.1 IP) | FILLER can still clear O4.5 — never a ticket *anchor*, but also **never soft-under** FILLER |
+| **Winn** opener 1.06→**0** (1 IP) | Opener fade correct again |
+| Soft **O3.5** clear/low e≥0.75 → **3/5 (60%)** | Weathers HIT floor; McClanahan + Pallante leaks (hook / FILLER) |
+| Soft **O4.5** clear/low e≥0.75 → **1/2 (50%)** | Only Burke; Weathers the length-without-Ks miss |
+
+### Reinforced from early 7/30
+
+1. **Burke-tier volume** (proj ≥ ~7, clear) is the rare O5.5+ green light.
+2. **O4.5** still needs edge *and* K conversion — long IP alone is not enough (Weathers).
+3. **FILLER:** Ober/Pallante validated pass; Assad spike warns against soft unders on the same tag.
+4. Re-grade evening slate when Final.
 
 ## 2026-07-27 lessons (MAE ~1.34, n=20 Final; HOU@LAA still live — excluded; CLE@CIN rain postponement)
 

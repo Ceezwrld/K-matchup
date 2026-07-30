@@ -1,0 +1,31 @@
+rank,pitcher,pitcher_id,team,opponent,game,expected_ks,expected_ks_model,actual_ks,actual_ip,actual_bf,err,abs_err,outing_role,outing_risk,lineup_source,status
+1,Jacob Misiorowski,694819,MIL,COL,COL@MIL,6.696189,4.905270524544074,12,5.0,17,5.303811,5.303811,starter,clear,official,Final
+2,Braxton Ashcraft,677952,PIT,CHC,CHC@PIT,6.244379,6.6022711212197,5,6.0,26,-1.244379,1.244379,starter,low,official,Final
+3,Logan Gilbert,669302,SEA,TEX,SEA@TEX,5.979782,5.884660031539557,4,5.2,24,-1.979782,1.979782,starter,clear,official,Final
+4,Jacob deGrom,594798,TEX,SEA,SEA@TEX,5.807035,5.55534268584502,4,5.0,22,-1.807035,1.807035,starter,low,official,Final
+5,Erick Fedde,607200,CWS,HOU,HOU@CWS,5.744844,5.731919684871892,2,4.1,18,-3.744844,3.744844,starter,high,official,Final
+6,Cristopher Sánchez,650911,PHI,NYY,NYY@PHI,5.744124,5.6136209359205305,6,6.0,28,0.255876,0.255876,starter,clear,official,Final (starter complete)
+7,Reynaldo López,625643,ATL,BAL,ATL@BAL,5.719575,5.9993928394681975,6,5.2,23,0.280425,0.280425,swingman,medium,official,Final
+8,Jameson Taillon,592791,CHC,PIT,CHC@PIT,5.645943,5.506449713626463,3,4.0,19,-2.645943,2.645943,starter,medium,official,Final
+9,Kevin Gausman,592332,TOR,BOS,TOR@BOS,5.569788,5.63823419054644,6,6.0,24,0.430212,0.430212,starter,clear,official,Final
+10,Janson Junk,676083,MIA,SD,SD@MIA,5.560798,5.633893266357732,6,4.2,21,0.439202,0.439202,starter,medium,official,Final
+11,Connor Prielipp,687570,MIN,ATH,ATH@MIN,5.355968,4.861383059578226,5,5.2,18,-0.355968,0.355968,starter,clear,official,Final
+12,Kyle Leahy,681517,STL,CIN,CIN@STL,5.320179,5.428826852317863,9,6.0,24,3.679821,3.679821,starter,clear,official,Final
+13,Shane Baz,669358,BAL,ATL,ATL@BAL,5.131014,4.508251905126236,2,4.1,19,-3.131014,3.131014,starter,low,official,Final
+14,Carson Whisenhunt,687931,SF,LAA,LAA@SF,5.125518,5.615177051982891,7,5.0,21,1.874482,1.874482,starter,high,official,Final
+15,Ranger Suarez,624133,BOS,TOR,TOR@BOS,5.086989,3.862365779451757,6,4.0,15,0.913011,0.913011,starter,clear,official,Final
+16,Will Warren,701542,NYY,PHI,NYY@PHI,4.959370,5.23414161682467,5,3.0,17,0.040630,0.040630,starter,low,official,Final (starter complete)
+17,Emmet Sheehan,686218,LAD,NYM,LAD@NYM,4.869848,4.555389577970393,5,5.0,21,0.130152,0.130152,starter,medium,official,Final
+18,Miles Mikolas,571945,WSH,AZ,AZ@WSH,4.839656,5.6785004806339066,1,4.0,18,-3.839656,3.839656,swingman,medium,official,Final
+19,Ronel Blanco,669854,HOU,CWS,HOU@CWS,4.777643,4.541054074404818,4,5.1,22,-0.777643,0.777643,starter,high,official,Final
+20,Kohl Drake,684442,AZ,WSH,AZ@WSH,4.771840,5.157300215661492,1,4.0,19,-3.771840,3.771840,starter,medium,official,Final
+21,Framber Valdez,664285,DET,KC,KC@DET,4.633587,4.063019418989829,4,5.0,24,-0.633587,0.633587,starter,low,official,Final
+22,Andrew Abbott,671096,CIN,STL,CIN@STL,4.593495,4.895456214806378,4,6.0,24,-0.593495,0.593495,starter,high,official,Final
+23,Drew Rasmussen,656876,TB,CLE,CLE@TB,4.531488,3.8104320460933554,9,7.0,24,4.468512,4.468512,starter,clear,official,Final
+24,Freddy Peralta,642547,NYM,LAD,LAD@NYM,4.515050,4.1412730467894425,3,4.0,20,-1.515050,1.515050,starter,medium,official,Final
+25,José Soriano,667755,LAA,SF,LAA@SF,4.511886,4.9233209725316005,5,5.0,20,0.488114,0.488114,starter,medium,official,Final
+26,Luinder Avila,679883,KC,DET,KC@DET,4.502412,4.865285450443149,2,4.1,21,-2.502412,2.502412,starter,medium,official,Final
+27,Jeffrey Springs,605488,ATH,MIN,ATH@MIN,4.198141,4.803466695160402,0,1.1,9,-4.198141,4.198141,starter,high,official,Final
+28,Kyle Freeland,607536,COL,MIL,COL@MIL,4.063228,3.8656289313096632,2,5.1,23,-2.063228,2.063228,starter,medium,official,Final
+29,Parker Messick,800048,CLE,TB,CLE@TB,4.040984,4.052918822859787,6,7.2,29,1.959016,1.959016,starter,clear,official,Final
+30,Walker Buehler,621111,SD,MIA,SD@MIA,3.666920,3.597954254481142,7,5.1,22,3.333080,3.333080,starter,medium,official,Final

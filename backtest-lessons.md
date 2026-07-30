@@ -23,6 +23,32 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - **Accuracy lock (before firing):** refresh with **official lineups**; only lock a leg if (1) batter is in the posted nine, (2) pitcher role is starter not opener/swingman, (3) soft line edge holds on the *current* proj, (4) no same-game opposing K-over stack. Prior-lineup tickets are provisional only.
 - **Disclose weak links:** if a recommended leg is filler/thin-sample/prior-lineup/SPIKE-capped, state that in the ticket writeup — don’t bury it.
 
+## 2026-07-29 lessons (MAE ~1.72, n=29 Final; Smith-Shawver / Pannone / Wesneski unscored)
+
+| What happened | Lesson |
+|---------------|--------|
+| Soft **O3.5** clear/low e≥0.75 → **10/13 (77%)** | Floor lane still the steadiest over |
+| Soft **O4.5** clear/low e≥0.75 → **5/8 (62%)**; e≥1.0 → **4/4** | Demand ~1.0 edge on O4.5 when possible |
+| **Sale** 5.83→**9** (6 IP) | Soft **U7.5 MISS** — SPIKE (K9 10.9) jumped the under; new card ban would have blocked it |
+| **Gore** 4.94→**9** (7 IP) | Soft-arsenal mid-board fade night — low-mid proj ≠ locked under; length + K spike |
+| **Cantillo** 6.43→**8** in only **4 IP** | Dual-nuke O5.5 cashed on rate; early exit still cleared chalk |
+| **Skubal** 5.80→**6** | Soft O5.5 HIT; SPIKE + clear volume |
+| **Martin** 5.37→**6** / **Sandoval** 5.24→**7** | Clear O4.5 pair cashed |
+| **Manaea** 6.51→**4** (6 IP, swingman) | Board #1 swingman fade correct for nuke / full-outing chalk |
+| **E. Rodriguez** 5.30→**2** (8 IP) MATCHUP_OK | Soft-contact + length without Ks — outs lane, not K over |
+| **Littell** 5.11→**2** FILLER | FILLER flag correct; high-risk soft-contact over dead |
+| **Lopez** 4.23→**8** (high risk) | High-risk unders / skinny chalk still explode |
+| **Schlittler** 5.59→**8** | SPIKE upside real — never soft-under |
+| **May** 5.37→**3** | Clear mid-board O4.5 leak |
+| **Webb** FILLER 4.77→**4** | Soft-contact mid board stayed soft — O3.5 max |
+
+### 7/29 card scorecard (discussed tickets)
+
+- **Skubal O5.5 + Cantillo O5.5** — both **HIT** (6 / 8).
+- **Martin O4.5 + Sandoval O4.5** — both **HIT** (6 / 7).
+- **Sale U7.5** — **MISS** (9). SPIKE soft-under ban is the fix.
+- **Manaea** top-board — correctly faded as swingman (4 K).
+
 ## 2026-07-27 lessons (MAE ~1.34, n=20 Final; HOU@LAA still live — excluded; CLE@CIN rain postponement)
 
 | What happened | Lesson |

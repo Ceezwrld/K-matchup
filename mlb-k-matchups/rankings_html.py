@@ -110,9 +110,12 @@ def _lineup_label(src: Any) -> tuple[str, str]:
         return "miss", "none"
     s = str(src)
     if s == "official":
-        return "official", "official"
+        return "official", "OFF lineup"
     if s.startswith("prior:"):
-        return "prior", f"prior {s[6:]}"
+        # Badge = opposing batting nine source, NOT the slate date.
+        prior_day = s[6:]
+        short = prior_day[5:] if prior_day.startswith("2026-") else prior_day
+        return "prior", f"opp lineup prior {short}"
     return "miss", s
 
 
@@ -759,13 +762,15 @@ def write_interactive_html(
     hits_html = _render_hits_board(hits_board)
 
     meta_bits = [
-        ("Date", game_date),
+        ("Slate", game_date),
         ("Generated", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")),
         ("Avg proj IP", _fmt(avg_ip, 1) if avg_ip is not None else "—"),
         ("Avg TTO", f"{_fmt(avg_tto)}×" if avg_tto is not None else "—"),
         ("Scored", str(len(scored))),
-        ("Official lineups", f"{official}/{len(scored)}"),
+        ("OFF lineups", f"{official}/{len(scored)}"),
     ]
+    if scored and official == 0:
+        meta_bits.append(("Lineups", "all prior — not yesterday’s pitchers"))
     meta_html = "".join(
         f"<span class='chip'>{_esc(k)}: <strong>{_esc(v)}</strong></span>"
         for k, v in meta_bits

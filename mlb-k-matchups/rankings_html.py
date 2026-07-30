@@ -500,10 +500,12 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"<span class='outlook outlook-{_esc(outlook.lower())}'>"
             f"{_esc(outlook.replace('_', ' '))}</span>"
         )
-    elif row.get("under_ban"):
+    # Soft-under ban: always surface next to SPIKE (visible without expanding).
+    if outlook == "SPIKE" or row.get("under_ban") or row.get("spike_arm"):
         badge_html += (
-            "<span class='outlook outlook-spike' title='Soft unders blocked'>"
-            "NO SOFT UNDER</span>"
+            "<span class='outlook outlook-spike' "
+            "title='Soft unders blocked — no U6.5/U7.5 on this arm'>"
+            "NO UNDER</span>"
         )
     hook = (row.get("hook_risk") or "").strip()
     if hook in ("medium", "high"):

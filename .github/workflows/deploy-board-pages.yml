@@ -1,0 +1,56 @@
+name: Deploy board to GitHub Pages
+
+# Keeps https://ceezwrld.github.io/K-matchup/ on the latest index.html / rankings.html.
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - rankings.html
+      - .github/workflows/deploy-board-pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages-board
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build site folder
+        run: |
+          mkdir -p _site
+          if [ -f index.html ]; then
+            cp index.html _site/index.html
+          elif [ -f rankings.html ]; then
+            cp rankings.html _site/index.html
+          else
+            echo "No board HTML found" >&2
+            exit 1
+          fi
+          cp rankings.html _site/rankings.html 2>/dev/null || cp _site/index.html _site/rankings.html
+          printf '%s\n' 'Bookmark https://ceezwrld.github.io/K-matchup/ — always current.' > _site/README.txt
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

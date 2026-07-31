@@ -10,9 +10,13 @@ from __future__ import annotations
 import html as html_lib
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
+# Canonical public board URL (GitHub Pages). Bookmark this — never commit-SHA previews.
+STABLE_BOARD_URL = "https://ceezwrld.github.io/K-matchup/"
 
 
 def _json_safe(value: Any) -> Any:
@@ -871,9 +875,10 @@ def write_interactive_html(
     cards = "\n".join(_render_matchup_card(r, i) for i, r in enumerate(rows))
     hits_html = _render_hits_board(hits_board)
 
+    generated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     meta_bits = [
         ("Date", game_date),
-        ("Generated", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")),
+        ("Generated", generated),
         ("Avg proj IP", _fmt(avg_ip, 1) if avg_ip is not None else "—"),
         ("Avg TTO", f"{_fmt(avg_tto)}×" if avg_tto is not None else "—"),
         ("Scored", str(len(scored))),
@@ -883,24 +888,39 @@ def write_interactive_html(
         f"<span class='chip'>{_esc(k)}: <strong>{_esc(v)}</strong></span>"
         for k, v in meta_bits
     )
+    freshness = (
+        f"<div class='freshness' role='status'>"
+        f"<strong>Bookmark:</strong> <a href='{STABLE_BOARD_URL}'>{_esc(STABLE_BOARD_URL)}</a>"
+        f" — always the latest board. "
+        f"Slate <strong>{_esc(game_date)}</strong> · built <strong>{_esc(generated)}</strong> · "
+        f"official lineups <strong>{official}/{len(scored)}</strong>. "
+        f"Hard-refresh before tickets; ignore old commit / htmlpreview links."
+        f"</div>"
+    )
 
     payload = {
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        "generated_at": generated,
         "game_date": game_date,
+        "stable_board_url": STABLE_BOARD_URL,
         "batters_faced_override": batters_faced,
         "avg_projected_ip": avg_ip,
         "avg_times_through": avg_tto,
         "row_count": len(rows),
+        "official_lineups": official,
         "hits_board_count": len(hits_board or []),
     }
 
     html = HTML_TEMPLATE
     html = html.replace("__META_CHIPS__", meta_html)
+    html = html.replace("__FRESHNESS__", freshness)
     html = html.replace("__HITS_BOARD__", hits_html)
     html = html.replace("__MATCHUP_CARDS__", cards)
     html = html.replace("__DATA_JSON__", json.dumps(payload, ensure_ascii=False))
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(html)
+    out = Path(path)
+    out.write_text(html, encoding="utf-8")
+    # Keep index.html in sync so the stable GitHub Pages root URL never goes stale.
+    if out.name != "index.html":
+        out.with_name("index.html").write_text(html, encoding="utf-8")
 
 
 HTML_TEMPLATE = r"""<!DOCTYPE html>
@@ -909,6 +929,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>K-Matchup — lineup strikeout projections</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -981,6 +1004,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 0.82rem; color: var(--muted);
   }
   .chip strong { color: var(--ink); }
+  .freshness {
+    margin: 0;
+    padding: 0.7rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 106, 77, 0.28);
+    background: rgba(15, 106, 77, 0.08);
+    color: var(--ink);
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+  .freshness a { color: var(--accent); font-weight: 700; word-break: break-all; }
   .controls {
     display: grid;
     grid-template-columns: 1.4fr repeat(3, auto);
@@ -1580,6 +1614,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         the <strong>#</strong> next to it is that matchup’s slate rank (not the opponent alone).
       </p>
       <div class="meta">__META_CHIPS__</div>
+      __FRESHNESS__
       <div class="grade-legend" aria-label="Number color scale">
         Scale
         <span class="swatch grade-low">low</span>

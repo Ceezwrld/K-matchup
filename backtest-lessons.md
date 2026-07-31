@@ -14,7 +14,9 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
      --html rankings.html \
      --hits-output hits-YYYY-MM-DD.csv
    ```
-2. **Publish** CSV + `rankings.html` + hits CSV; note lineup status (`prior` vs `official`).
+2. **Publish** CSV + `rankings.html` / `index.html` + hits CSV to `main` (GitHub Pages updates the **same** bookmark URL). Note lineup status (`prior` vs `official`).
+   - **Bookmark only:** https://ceezwrld.github.io/K-matchup/  
+   - Never share commit-SHA htmlpreview links — they freeze stale lineups.
 3. **Deliver the morning outlook** in this exact shape (arsenal-first):
 
    **Over leans** — arsenal ~#1–#3 / elite–strong (starter, not opener)  

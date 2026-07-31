@@ -38,6 +38,10 @@ from sharpen import (  # noqa: E402
     summarize_lineup_offense,
     usage_for_batter_side,
 )
+from vs_team_history import (  # noqa: E402
+    enrich_dataframe_vs_team_history,
+    format_vs_team_console,
+)
 
 SAVANT_URL = (
     "https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats"
@@ -1659,6 +1663,12 @@ def main(argv: list[str] | None = None) -> int:
     # Soft-contact FILLER gated by opposing lineup arsenal rank on this slate.
     out = apply_ticket_outlook(out)
 
+    # Career + recent pitcher-vs-opposing-team history (home/away in game logs).
+    try:
+        out = enrich_dataframe_vs_team_history(out)
+    except Exception as exc:  # pragma: no cover - network / API soft-fail
+        log(True, f"vs-team history skipped: {exc}")
+
     print(format_table(out))
     # Print ticket outlook for flagged soft-contact arms.
     flagged = out[out["ticket_outlook"].astype(str).str.len() > 0]
@@ -1694,6 +1704,9 @@ def main(argv: list[str] | None = None) -> int:
             block = format_batter_detail(r.to_dict())
             if block:
                 print(block)
+            hist = format_vs_team_console(r.to_dict())
+            if hist:
+                print(hist)
 
     hits_rows = build_hits_board(out.to_dict(orient="records"))
     if hits_rows:
@@ -1730,7 +1743,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.output:
         # Drop nested objects from CSV (kept in HTML JSON payload).
         csv_out = out.drop(
-            columns=["batter_detail", "arsenal", "pitch_lineup_avg"],
+            columns=[
+                "batter_detail",
+                "arsenal",
+                "pitch_lineup_avg",
+                "vs_team_games_detail",
+            ],
             errors="ignore",
         )
         csv_out.to_csv(args.output, index=False)

@@ -45,6 +45,9 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          # Create/enable the Pages site on first run when the token allows it.
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

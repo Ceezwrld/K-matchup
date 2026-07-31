@@ -15,8 +15,12 @@ from typing import Any
 
 import pandas as pd
 
-# Canonical public board URL (GitHub Pages). Bookmark this — never commit-SHA previews.
+# Canonical public board URL. Bookmark this — never commit-SHA previews.
+# Primary: GitHub Pages (after one-time enable). Fallback stays current on main.
 STABLE_BOARD_URL = "https://ceezwrld.github.io/K-matchup/"
+STABLE_BOARD_FALLBACK_URL = (
+    "https://raw.githack.com/Ceezwrld/K-matchup/main/index.html"
+)
 
 
 def _json_safe(value: Any) -> Any:
@@ -891,10 +895,12 @@ def write_interactive_html(
     freshness = (
         f"<div class='freshness' role='status'>"
         f"<strong>Bookmark:</strong> <a href='{STABLE_BOARD_URL}'>{_esc(STABLE_BOARD_URL)}</a>"
-        f" — always the latest board. "
+        f" — same link every day (updates in place). "
+        f"Fallback while Pages is off: "
+        f"<a href='{STABLE_BOARD_FALLBACK_URL}'>raw.githack main/index.html</a>. "
         f"Slate <strong>{_esc(game_date)}</strong> · built <strong>{_esc(generated)}</strong> · "
         f"official lineups <strong>{official}/{len(scored)}</strong>. "
-        f"Hard-refresh before tickets; ignore old commit / htmlpreview links."
+        f"Hard-refresh before tickets; never use old commit / htmlpreview links."
         f"</div>"
     )
 

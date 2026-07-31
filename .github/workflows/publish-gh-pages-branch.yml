@@ -1,0 +1,53 @@
+name: Publish gh-pages branch
+
+# Fallback publisher: pushes index.html to the gh-pages branch.
+# One-time owner step if Actions Pages deploy is blocked:
+#   Settings → Pages → Deploy from branch → gh-pages / root
+# Then https://ceezwrld.github.io/K-matchup/ stays on one bookmark forever.
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - rankings.html
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages-branch
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish board to gh-pages
+        run: |
+          set -euo pipefail
+          BOARD=index.html
+          if [ ! -f "$BOARD" ]; then BOARD=rankings.html; fi
+          test -f "$BOARD"
+
+          WORK=$(mktemp -d)
+          cp "$BOARD" "$WORK/index.html"
+          cp rankings.html "$WORK/rankings.html" 2>/dev/null || cp "$WORK/index.html" "$WORK/rankings.html"
+          # Discourage CDN/browser caching of a stale slate.
+          printf '%s\n' '/*' '  Cache-Control: no-cache, no-store, must-revalidate' '*/' > "$WORK/_headers" || true
+          touch "$WORK/.nojekyll"
+          printf '%s\n' 'Stable board root — always refresh before tickets.' > "$WORK/README.txt"
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          cd "$WORK"
+          git init
+          git checkout -b gh-pages
+          git add -A
+          git commit -m "Publish live board $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

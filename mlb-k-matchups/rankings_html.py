@@ -732,10 +732,26 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         ag = int(row.get("vs_team_away_g") or 0)
         if hg or ag:
             vs_bits.append(
-                f"H {hg}G/{int(row.get('vs_team_home_ks') or 0)}K · "
-                f"A {ag}G/{int(row.get('vs_team_away_ks') or 0)}K"
+                f"HOME {hg}G/{int(row.get('vs_team_home_ks') or 0)}K · "
+                f"AWAY {ag}G/{int(row.get('vs_team_away_ks') or 0)}K"
             )
+    # Always surface a couple recent H/A lines in the meta strip (not tab-only).
+    recent_preview = ""
+    detail = row.get("vs_team_games_detail") or []
+    if detail:
+        bits = []
+        for g in detail[:3]:
+            site = g.get("site") or ("H" if g.get("is_home") else "A")
+            site_word = "HOME" if site == "H" else "AWAY"
+            bits.append(f"{g.get('date')} {site_word} {g.get('ks')}K")
+        recent_preview = " · ".join(bits)
+    elif row.get("vs_team_recent"):
+        # CSV reload path: recent is already a "; "-joined string with H/A codes.
+        parts = [p.strip() for p in str(row.get("vs_team_recent")).split(";") if p.strip()]
+        recent_preview = " · ".join(parts[:3]).replace(" H:", " HOME:").replace(" A:", " AWAY:")
     vs_val = " · ".join(vs_bits) if vs_bits else "no prior history"
+    if recent_preview:
+        vs_val = f"{vs_val}<br><span class='vs-recent'>{_esc(recent_preview)}</span>" if vs_bits else _esc(recent_preview)
 
     risk_chip = (
         f"<span class='risk risk-{_esc(risk)}'>risk {_esc(risk)}"
@@ -756,8 +772,8 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "<span class='meta-label'>Arsenal matchup</span>"
         f"<span class='meta-value'>{matchup_val}</span>"
         "</div>"
-        "<div class='meta-cell'>"
-        f"<span class='meta-label'>vs {_esc(opp)} history</span>"
+        "<div class='meta-cell meta-history'>"
+        f"<span class='meta-label'>vs {_esc(opp)} history (HOME/AWAY)</span>"
         f"<span class='meta-value'>{vs_val}</span>"
         "</div>"
         "</div>"
@@ -1212,7 +1228,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .meta-strip {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.55rem;
     margin: 0.85rem 0 0.75rem;
   }
@@ -1229,6 +1245,18 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .meta-matchup {
     border-color: rgba(15, 106, 77, 0.28);
     background: rgba(15, 106, 77, 0.06);
+  }
+  .meta-history {
+    border-color: rgba(30, 90, 160, 0.28);
+    background: rgba(30, 90, 160, 0.06);
+    grid-column: 1 / -1;
+  }
+  .meta-history .vs-recent {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--ink);
+    font-size: 0.84rem;
+    font-weight: 600;
   }
   .meta-label {
     display: block;
@@ -1266,7 +1294,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .tabs {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 0;
     align-items: stretch;
     width: 100%;

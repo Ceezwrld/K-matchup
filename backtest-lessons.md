@@ -20,12 +20,13 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
    - Never use jsDelivr (plain text) or commit-SHA htmlpreview links.
 3. **Deliver the morning outlook** in this exact shape (arsenal-first):
 
-   **Over leans** — arsenal ~#1–#3 / elite–strong (starter, not opener)  
-   **Under leans** — soft / bottom-tier arsenal  
+   **Over leans** — solo arsenal grade **ELITE / STRONG** (starter, not opener)  
+   **Under leans** — solo arsenal grade **SOFT**  
    **Fade / thin** — FILLER, openers, MATCHUP_OK (thin O3.5 only), high-risk watch list  
 
-   For each arm include: **ark #**, **opp K% #**, Exp K, outing risk, game/time.  
-   Also check **vs Team history** on each card (career K% vs that batting team + recent games with **HOME/AWAY** for the pitcher). Use history to confirm or caution the model side — not to override a clear arsenal gate.  
+   For each arm include: **solo grade**, arsenal K%, vs league / vs opp K%, Exp K, outing risk, game/time.  
+   Slate `#` and opp K% `#` are optional context only.  
+   Also check **vs Team history** on each card (career K% vs that batting team + recent games with **HOME/AWAY** for the pitcher). Use history to confirm or caution the model side — not to override a clear absolute arsenal gate.  
    Mark the whole board **provisional** until official lineups post.
 4. **Re-refresh when lineups confirm** — same report shape, flip prior→official, re-check leans before locking tickets.
 5. **Accuracy lock before firing** — official nine in, starter not opener, side matches arsenal vulnerability, line edge still holds.
@@ -34,13 +35,25 @@ This morning pack is the daily starting point — not optional.
 
 ## Core thesis — pitcher vs batter vulnerability first
 
-**Primary edge = arsenal matchup** (how this starter’s pitch mix stacks vs *this* opposing nine: matchup # / `expected_k_pct` / elite–soft grade).  
-Exp K, projected IP, and raw opp lineup K% are **secondary**. Side selection (over vs under) starts from vulnerability, not the mean projection.
+**Primary edge = solo arsenal vs this nine** — absolute `expected_k_pct` and **`arsenal_abs_grade`** (ELITE / STRONG / AVG / SOFT).  
+That grade is banded on the pitcher’s arsenal-weighted K% vs *this* lineup and **does not move** when other starters are added/removed from the slate.
 
-| Arsenal vs opposing nine | Lean | Why |
-|--------------------------|------|-----|
-| **Elite / strong (~#1–#3)** | **OVER** bias | Pitcher can beat a soft Exp K / hit O/U lines when bats are vulnerable to *his* mix |
-| **Soft / poor (~bottom third, soft grade)** | **UNDER** bias | Even vs a high-K lineup, weak pitcher-vs-batter fit caps conversion — soft U6.5+ is live |
+| Absolute arsenal K% vs lineup | Solo grade | Lean |
+|------------------------------|------------|------|
+| **≥ 24.0%** | **ELITE** | **OVER** bias |
+| **≥ 22.5%** (league K%) | **STRONG** | **OVER** lean |
+| **≥ 20.0%** | **AVG** | Neutral / need more |
+| **&lt; 20.0%** | **SOFT** | **UNDER** bias |
+
+Also check edges on the card: **vs league** (`expected_k_pct − 22.5`) and **vs opp K%** (mix beats/lags the lineup’s raw K tendency).
+
+**Secondary only:** slate `#` / slate `matchup_grade` / opp lineup K% `#` — “who’s best *today*,” not solo quality.  
+Exp K and projected IP size the outing; they do not define the side.
+
+| Solo grade (absolute) | Lean | Why |
+|-----------------------|------|-----|
+| **ELITE / STRONG** | **OVER** bias | Bats are vulnerable to *this* mix even if Exp K looks soft |
+| **SOFT** | **UNDER** bias | Weak pitcher-vs-batter fit caps conversion — soft U6.5+ is live |
 | **Mid-pack** | Pass / thin only | No clear vulnerability edge |
 
 ### Paired lesson (7/30) — opposite sides, same rule
@@ -66,8 +79,8 @@ Other cards: **Barnett** (#2 elite / low Exp K) = matchup > mean projection, but
 ## Core filters (kept working)
 
 - Prefer **soft O3.5 / O4.5** with edge and **clear/low** outing risk — **only after** arsenal clears the over gate.
-- **OVER gate — arsenal must rank well:** fire pitcher K overs when arsenal matchup vs that nine is **elite/strong (~slate #1–#3)**. Thesis: good pitcher-vs-batter fit can push a pitcher **over his projection / O/U line** even when Exp K looks modest. Mid-pack arsenal (#4+) → no ticket over (O3.5 floor max). Exp K and IP are secondary.
-- **UNDER gate — soft arsenal is the edge:** when arsenal is **soft / bottom-tier** vs that nine, lean **unders** (esp. soft **U6.5 / U7.5**) even if opp lineup K% ranks high or Exp K sits near 5–6. McLean proved opp K% #5 ≠ over juice when arsenal is #17. Still: **no soft unders on SPIKE arms (K9 ≥ ~10)**; prefer wide edge under the line.
+- **OVER gate — solo arsenal must be ELITE/STRONG:** fire pitcher K overs when absolute arsenal vs that nine is **ELITE (≥24% K) or STRONG (≥22.5%)**. Thesis: good pitcher-vs-batter fit can push a pitcher **over his projection / O/U line** even when Exp K looks modest. AVG solo grade → no ticket over (O3.5 floor max). Exp K, IP, and slate `#` are secondary.
+- **UNDER gate — SOFT solo arsenal is the edge:** when absolute arsenal vs that nine is **SOFT (&lt;20% K)**, lean **unders** (esp. soft **U6.5 / U7.5**) even if opp lineup K% ranks high or Exp K sits near 5–6. McLean proved high opp K% ≠ over juice when the mix is soft vs that nine. Still: **no soft unders on SPIKE arms (K9 ≥ ~10)**; prefer wide edge under the line.
 - Prefer **soft U6.5 / U7.5** with wide edge when arsenal is soft; **U5.5** OK if non-SPIKE and edge holds.
 - **Fade unders on SPIKE arms (K9 ≥ ~10)** — they can jump a soft under even when proj is mid / arsenal looks soft.
 - Fade **openers / uncertain swingmen** for *full-outing* K props (Barnett-style elite arsenal still isn’t a starter O4.5).

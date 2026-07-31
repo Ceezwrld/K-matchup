@@ -1407,11 +1407,31 @@ def build_hits_board(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 FILLER_K9_MAX = 7.2
 FILLER_L3_SOFT = 4.5
 FILLER_XFIP_SOFT = 4.3
-# Arsenal matchup: percentile of expected_k_pct among scored slate arms.
-# Top ~35% = strong/elite matchup can rescue a soft profile to MATCHUP_OK.
+# Arsenal matchup (slate-relative): percentile of expected_k_pct among today's arms.
+# Useful for "who's best on the slate" — NOT the solo pitcher-vs-lineup read.
 MATCHUP_STRONG_PCT = 0.65  # >= 65th pct of slate expected_k_pct
 MATCHUP_ELITE_PCT = 0.80
 MATCHUP_SOFT_PCT = 0.40  # below = soft matchup → hard FILLER
+
+# Absolute arsenal-vs-THIS-lineup bands on expected_k_pct (does not depend on slate size).
+# This is the solo quality read: how vulnerable is this nine to this pitcher's mix.
+ABS_MATCHUP_ELITE = 24.0   # clear plus vs this nine
+ABS_MATCHUP_STRONG = 22.5  # at/above league K% (LEAGUE_K_PCT)
+ABS_MATCHUP_AVG = 20.0     # playable mid; below = soft
+
+
+def absolute_matchup_grade(expected_k_pct: float | None) -> str:
+    """Solo arsenal-vs-lineup grade from absolute expected_k_pct bands."""
+    if expected_k_pct is None or (isinstance(expected_k_pct, float) and pd.isna(expected_k_pct)):
+        return ""
+    k = float(expected_k_pct)
+    if k >= ABS_MATCHUP_ELITE:
+        return "elite"
+    if k >= ABS_MATCHUP_STRONG:
+        return "strong"
+    if k >= ABS_MATCHUP_AVG:
+        return "avg"
+    return "soft"
 
 
 def soft_contact_profile(row: dict[str, Any]) -> tuple[bool, str]:
@@ -1462,14 +1482,16 @@ def soft_contact_profile(row: dict[str, Any]) -> tuple[bool, str]:
 
 
 def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
-    """Label FILLER vs MATCHUP_OK using pitcher profile + opp arsenal rank.
+    """Label FILLER vs MATCHUP_OK using pitcher profile + arsenal-vs-lineup quality.
 
-    Uses slate percentile of arsenal-weighted `expected_k_pct` (how the
-    opposing nine ranks vs this starter's mix) plus raw opp lineup K%.
+    Primary matchup read is **absolute** `expected_k_pct` vs this nine
+    (`arsenal_abs_grade`) — elite/strong/avg/soft bands that do not depend on
+    who else is starting today. Slate rank/percentile (`arsenal_matchup_rank`,
+    `matchup_grade`) stay as secondary "today's relative" context.
 
-    - FILLER: soft-contact profile AND matchup not strong → pass / O3.5 max
-    - MATCHUP_OK: soft-contact profile BUT lineup ranks strong/elite vs
-      arsenal → disclose profile; soft O3.5 / thin O4.5 only, never nuke
+    - FILLER: soft-contact profile AND absolute matchup not strong → pass / O3.5
+    - MATCHUP_OK: soft-contact profile BUT absolute arsenal vs lineup is
+      strong/elite → disclose; soft O3.5 / thin O4.5 only, never nuke
     - (blank): normal process arm
     """
     out = df.copy()
@@ -1479,6 +1501,9 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
         ("arsenal_matchup_rank", pd.NA),
         ("arsenal_matchup_pctile", pd.NA),
         ("matchup_grade", ""),
+        ("arsenal_abs_grade", ""),
+        ("arsenal_vs_league", pd.NA),
+        ("arsenal_vs_opp", pd.NA),
         ("ticket_outlook", ""),
         ("ticket_note", ""),
     ):
@@ -1490,7 +1515,7 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
     if n == 0:
         return out
 
-    # Rank 1 = highest arsenal K% vs opposing lineup on this slate.
+    # Rank 1 = highest arsenal K% vs opposing lineup on this slate (relative only).
     ranks = out.loc[scored, "expected_k_pct"].rank(ascending=False, method="min")
     out.loc[scored, "arsenal_matchup_rank"] = ranks.astype(int)
     # Percentile 1.0 = best matchup on slate.
@@ -1504,23 +1529,36 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
         out.at[idx, "profile_flags"] = profile_flags
         p = float(row["arsenal_matchup_pctile"])
         if p >= MATCHUP_ELITE_PCT:
-            grade = "elite"
+            slate_grade = "elite"
         elif p >= MATCHUP_STRONG_PCT:
-            grade = "strong"
+            slate_grade = "strong"
         elif p >= MATCHUP_SOFT_PCT:
-            grade = "avg"
+            slate_grade = "avg"
         else:
-            grade = "soft"
-        out.at[idx, "matchup_grade"] = grade
-        ark = int(row["arsenal_matchup_rank"]) if pd.notna(row["arsenal_matchup_rank"]) else "?"
+            slate_grade = "soft"
+        out.at[idx, "matchup_grade"] = slate_grade
+
         kpct = float(row["expected_k_pct"])
+        abs_grade = absolute_matchup_grade(kpct)
+        out.at[idx, "arsenal_abs_grade"] = abs_grade
+        vs_league = kpct - LEAGUE_K_PCT
+        out.at[idx, "arsenal_vs_league"] = vs_league
         opp_k = row.get("lineup_k_pct")
-        opp_bit = (
-            ""
-            if opp_k is None or (isinstance(opp_k, float) and pd.isna(opp_k))
-            else f", opp K% {float(opp_k):.1f}"
+        vs_opp: float | None = None
+        opp_bit = ""
+        if opp_k is not None and not (isinstance(opp_k, float) and pd.isna(opp_k)):
+            vs_opp = kpct - float(opp_k)
+            out.at[idx, "arsenal_vs_opp"] = vs_opp
+            opp_bit = f", opp K% {float(opp_k):.1f}"
+        ark = int(row["arsenal_matchup_rank"]) if pd.notna(row["arsenal_matchup_rank"]) else "?"
+        edge_bit = f", {vs_league:+.1f} vs lg"
+        if vs_opp is not None:
+            edge_bit += f", {vs_opp:+.1f} vs opp K%"
+        # Primary = absolute solo grade; slate #/grade is secondary context.
+        matchup_bit = (
+            f"arsenal K% {kpct:.1f} ({abs_grade} solo{edge_bit}{opp_bit}; "
+            f"slate #{ark}/{n} {slate_grade})"
         )
-        matchup_bit = f"arsenal K% {kpct:.1f} (#{ark}/{n}, {grade}{opp_bit})"
 
         if not soft:
             out.at[idx, "ticket_outlook"] = ""
@@ -1532,7 +1570,8 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
         if role in ("swingman", "opener_likely", "opener"):
             role_caveat = f"; also {role} — fade full-outing chalk"
 
-        if grade in ("elite", "strong"):
+        # Gate on absolute solo grade — not slate percentile.
+        if abs_grade in ("elite", "strong"):
             out.at[idx, "ticket_outlook"] = "MATCHUP_OK"
             out.at[idx, "ticket_note"] = (
                 f"soft-contact profile ({profile_flags}) but {matchup_bit} "

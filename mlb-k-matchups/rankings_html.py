@@ -56,12 +56,13 @@ def _esc(value: Any) -> str:
     return html_lib.escape(str(value), quote=True)
 
 
-def _fmt(value: Any, digits: int = 2) -> str:
+def _fmt(value: Any, digits: int = 2, *, signed: bool = False) -> str:
     v = _json_safe(value)
     if v is None:
         return "—"
     try:
-        return f"{float(v):.{digits}f}"
+        x = float(v)
+        return f"{x:+.{digits}f}" if signed else f"{x:.{digits}f}"
     except (TypeError, ValueError):
         return "—"
 
@@ -275,6 +276,9 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "arsenal_matchup_rank": _json_safe(r.get("arsenal_matchup_rank")),
                 "arsenal_matchup_pctile": _json_safe(r.get("arsenal_matchup_pctile")),
                 "matchup_grade": r.get("matchup_grade") or "",
+                "arsenal_abs_grade": r.get("arsenal_abs_grade") or "",
+                "arsenal_vs_league": _json_safe(r.get("arsenal_vs_league")),
+                "arsenal_vs_opp": _json_safe(r.get("arsenal_vs_opp")),
                 "ticket_outlook": r.get("ticket_outlook") or "",
                 "ticket_note": r.get("ticket_note") or "",
                 "vs_team_games": _json_safe(r.get("vs_team_games")),
@@ -616,23 +620,33 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"<span class='outlook outlook-{_esc(outlook.lower())}'>"
             f"{_esc(outlook.replace('_', ' '))}</span>"
         )
-    # Arsenal matchup rank = pitcher-vs-lineup K% slate rank (starting-pitcher matchup #).
-    # Opp lineup K% rank = how K-prone the opposing batting team is on today's slate.
+    # Primary: absolute solo arsenal-vs-THIS-lineup grade (not slate-relative).
+    # Secondary chips: slate arsenal # and opp lineup K% # (today's relative only).
     ark = row.get("arsenal_matchup_rank")
     opp_rank = row.get("opp_lineup_k_rank")
+    abs_grade = (row.get("arsenal_abs_grade") or "").strip()
     chips: list[str] = []
+    if abs_grade and scored:
+        chips.append(
+            f"<span class='ark ark-abs ark-{_esc(abs_grade)}' "
+            f"title='Solo arsenal vs this batting team "
+            f"(absolute expected K% bands: elite≥24, strong≥22.5, avg≥20, soft&lt;20). "
+            f"Does not depend on other pitchers today.'>"
+            f"{_esc(abs_grade.upper())}</span>"
+        )
     if opp_rank is not None and scored:
         chips.append(
             f"<span class='ark ark-opp' "
             f"title='Opposing batting-team K% rank on slate "
-            f"(#1 = highest opp lineup K%)'>#{_esc(opp_rank)}</span>"
+            f"(#1 = highest opp lineup K%) — relative only'>#{_esc(opp_rank)}</span>"
         )
     if ark is not None and scored:
-        grade = (row.get("matchup_grade") or "").strip()
+        slate_grade = (row.get("matchup_grade") or "").strip()
         chips.append(
-            f"<span class='ark ark-{_esc(grade or 'avg')}' "
-            f"title='Starting-pitcher arsenal matchup rank "
-            f"(slate rank of pitcher K% vs this lineup)'>#{_esc(ark)}</span>"
+            f"<span class='ark ark-slate ark-{_esc(slate_grade or 'avg')}' "
+            f"title='Slate rank of arsenal K% vs lineup "
+            f"(#1 = best matchup among today\\'s starters) — relative only'>"
+            f"#{_esc(ark)}</span>"
         )
     chips_html = (
         f"<span class='rank-chips'>{''.join(chips)}</span>" if chips else ""
@@ -707,12 +721,20 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
 
     opp = row.get("opponent") or "opp"
     matchup_bits = []
-    if ark is not None:
-        matchup_bits.append(f"#{_esc(ark)} vs {_esc(opp)} on slate")
-    if row.get("matchup_grade"):
-        matchup_bits.append(_esc(row.get("matchup_grade")))
+    if abs_grade:
+        matchup_bits.append(f"<strong>{_esc(abs_grade.upper())}</strong> solo vs {_esc(opp)}")
     if row.get("expected_k_pct") is not None:
         matchup_bits.append(f"arsenal K% {_fmt(row.get('expected_k_pct'), 1)}")
+    if row.get("arsenal_vs_league") is not None:
+        matchup_bits.append(f"{_fmt(row.get('arsenal_vs_league'), 1, signed=True)} vs league")
+    if row.get("arsenal_vs_opp") is not None:
+        matchup_bits.append(f"{_fmt(row.get('arsenal_vs_opp'), 1, signed=True)} vs opp K%")
+    if ark is not None:
+        slate_g = (row.get("matchup_grade") or "").strip()
+        matchup_bits.append(
+            f"slate #{_esc(ark)}"
+            f"{'' if not slate_g else ' ' + _esc(slate_g)}"
+        )
     if row.get("lineup_k_pct") is not None:
         src = row.get("offense_source") or ""
         matchup_bits.append(
@@ -1236,6 +1258,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .ark-strong { background: rgba(15, 106, 77, 0.10); color: var(--ok); }
   .ark-avg { background: rgba(154, 91, 18, 0.12); color: var(--warn); }
   .ark-soft { background: rgba(140, 40, 40, 0.12); color: #8c2828; }
+  .ark-abs {
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    min-width: 3.4rem;
+    justify-content: center;
+  }
+  .ark-slate { opacity: 0.85; }
   .risk {
     display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 999px;
     font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
@@ -1617,8 +1646,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <h1 class="brand">K-<span>Matchup</span></h1>
       <p class="lede">
         Full-outing K projections from each starter’s arsenal against the opposing
-        order. <strong>Arsenal K%</strong> is pitcher-vs-lineup whiff rate;
-        the <strong>#</strong> next to it is that matchup’s slate rank (not the opponent alone).
+        order. <strong>Arsenal K%</strong> is this pitcher’s mix vs <em>this</em> nine.
+        The word chip (<strong>ELITE / STRONG / AVG / SOFT</strong>) is the solo grade
+        from absolute K% bands — it does not depend on other pitchers today.
+        The numeric <strong>#</strong> is only today’s slate rank (relative).
       </p>
       <div class="meta">__META_CHIPS__</div>
       __FRESHNESS__
@@ -1688,8 +1719,8 @@ __MATCHUP_CARDS__
     <p class="footnote">
       Expand a pitcher → <strong>Arsenal vs lineup</strong> for pitch-by-pitch K%,
       or <strong>Batting order</strong> for the nine. Arsenal <strong>#</strong> ranks
-      this pitcher-vs-lineup matchup on today’s slate. FILLER / MATCHUP OK flag soft-contact
-      arms. If this opened as plain text from GitHub raw, download and open locally.
+      this pitcher vs <em>this</em> lineup (absolute bands). The numeric <strong>#</strong> is
+      only today’s slate rank. FILLER / MATCHUP OK flag soft-contact arms.
       Pre-lineup days are all <strong>Prior</strong> — use Lineup <strong>All sources</strong>.
     </p>
   </div>

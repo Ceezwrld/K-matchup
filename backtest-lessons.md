@@ -2,6 +2,32 @@
 
 Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless noted.
 
+## Every morning routine (do this first)
+
+Run this **every morning** before tickets. Goal: one clear outlook for **every** probable starter.
+
+1. **Refresh the board** (probable starters; usually all prior early):
+   ```bash
+   TZ=America/Chicago python3 mlb-k-matchups/k_matchups.py \
+     --date YYYY-MM-DD \
+     -o rankings-YYYY-MM-DD.csv \
+     --html rankings.html \
+     --hits-output hits-YYYY-MM-DD.csv
+   ```
+2. **Publish** CSV + `rankings.html` + hits CSV; note lineup status (`prior` vs `official`).
+3. **Deliver the morning outlook** in this exact shape (arsenal-first):
+
+   **Over leans** — arsenal ~#1–#3 / elite–strong (starter, not opener)  
+   **Under leans** — soft / bottom-tier arsenal  
+   **Fade / thin** — FILLER, openers, MATCHUP_OK (thin O3.5 only), high-risk watch list  
+
+   For each arm include: **ark #**, **opp K% #**, Exp K, outing risk, game/time.  
+   Mark the whole board **provisional** until official lineups post.
+4. **Re-refresh when lineups confirm** — same report shape, flip prior→official, re-check leans before locking tickets.
+5. **Accuracy lock before firing** — official nine in, starter not opener, side matches arsenal vulnerability, line edge still holds.
+
+This morning pack is the daily starting point — not optional.
+
 ## Core thesis — pitcher vs batter vulnerability first
 
 **Primary edge = arsenal matchup** (how this starter’s pitch mix stacks vs *this* opposing nine: matchup # / `expected_k_pct` / elite–soft grade).  

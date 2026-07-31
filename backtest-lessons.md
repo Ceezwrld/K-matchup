@@ -5,6 +5,7 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 ## Core filters (kept working)
 
 - Prefer **soft O3.5 / O4.5** with edge and **clear/low** outing risk.
+- **OVER gate — arsenal must rank well:** do not fire a pitcher K over unless the starter’s **arsenal matchup rank vs that opposing nine is elite/strong** (roughly slate **#1–#3**, or clearly top-tier / elite–strong grade). Mid-pack arsenal (#4+) → pass or O3.5 floor only; not a ticket over. Exp K and projected IP are secondary to this gate.
 - Prefer **soft U6.5 / U7.5** with wide edge; **U5.5** OK if non-SPIKE and edge holds.
 - **Fade unders on SPIKE arms (K9 ≥ ~10)** — they can jump a soft under even when proj is mid.
 - Fade **openers / uncertain swingmen** for full-outing K props.
@@ -17,16 +18,17 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 - Exact-K MAE ~2 is normal; use model for **side selection**, not hammering exact totals.
 - **Card size: 2 legs.** Prefer straight 2-mans. 3-legs only when all legs are clear process (no filler/thin/prior). No 4/5/6-mans — correlation and early hooks kill bigger tickets.
 - **Daily volume (when slate is full):** several **2-leg** tickets over fewer 3-mans. One chalk/nuke pair max; rest mix pitcher+bat or bat+bat. Cap any single player at **~2 tickets**.
-- **Accuracy lock (before firing):** refresh with **official lineups**; only lock a leg if (1) batter is in the posted nine, (2) pitcher role is starter not opener/swingman, (3) soft line edge holds on the *current* proj, (4) no same-game opposing K-over stack. Prior-lineup tickets are provisional only.
+- **Accuracy lock (before firing):** refresh with **official lineups**; only lock a leg if (1) batter is in the posted nine, (2) pitcher role is starter not opener/swingman, (3) for pitcher K **overs**: arsenal matchup ranks very well vs that nine (~#1–#3 / elite–strong), (4) soft line edge holds on the *current* proj, (5) no same-game opposing K-over stack. Prior-lineup tickets are provisional only.
 - **Disclose weak links:** if a recommended leg is filler/thin-sample/prior-lineup/SPIKE-capped, state that in the ticket writeup — don’t bury it.
-- **Dual-rank edge check (pitcher × lineup):** Exp K alone is not the edge. Before stretching O4.5+, read **both** board ranks plus discipline:
-  1. **Arsenal matchup rank** — how this starter’s pitch mix stacks vs *this* nine (`expected_k_pct` / matchup # / strong–elite).
-  2. **Opp lineup K% rank** — how strikeout-prone that nine is on the slate (the chip above matchup #).
-  3. **Plate discipline** — `discipline_grade` / opp BB% / `pitch_count_risk` (patient / three-true / free-swing). Walk-heavy nines eat pitches and can suppress K conversion even when arsenal looks fine.
-  - Prefer O4.5+ when **arsenal is strong/elite *and* opp lineup K% is top-tier** (roughly top ~25–30% of slate) with discipline that doesn’t scream patient/walk-heavy.
-  - Mid-pack opp K% (even with a top arsenal rank) → treat as **O3.5 floor**, not automatic O4.5 chalk. That’s where false “edge” hides.
-  - (7/30 Weathers: arsenal **#5/19** but CWS lineup K% only **#7/19**, discipline neutral/mild BB% — 7 IP / **4 K**. Pitcher-side rank looked good; lineup vulnerability wasn’t elite enough to stretch.)
-- **Length ≠ Ks:** a full outing can still miss soft O4.5 when K/BF is soft. Don’t treat projected IP alone as an over lock — need the dual-rank + discipline edge above.
+- **Dual-rank edge check (pitcher × lineup):** Exp K alone is not the edge. Decision order for overs:
+  1. **Arsenal matchup rank (required gate)** — starter’s pitch mix vs *this* nine must rank **very well** (elite/strong, ~**#1–#3** on slate). If not → no over ticket.
+  2. **Opp lineup K% rank (stretch check)** — how strikeout-prone that nine is (chip above matchup #). Top-tier opp K% supports O4.5+; mid-pack → keep O3.5 even if arsenal is good.
+  3. **Plate discipline** — `discipline_grade` / opp BB% / `pitch_count_risk`. Patient / walk-heavy nines can suppress K conversion; don’t stretch those.
+  - **O4.5+ chalk:** arsenal ~#1–#3 *and* opp lineup K% top-tier *and* clear/low risk *and* discipline not patient/walk-heavy.
+  - **O3.5 floor only:** arsenal good but opp K% mid-pack, or discipline softens the spot.
+  - **Pass:** arsenal mid-pack (#4+) regardless of Exp K / IP.
+  - (7/30 Weathers: arsenal **#5/19** — fails the over gate. Also CWS lineup K% only **#7**. 7 IP / **4 K**. Would need true top arsenal vs that nine before stretching.)
+- **Length ≠ Ks:** a full outing can still miss soft O4.5 when K/BF is soft. Don’t treat projected IP alone as an over lock — clear the arsenal gate + dual-rank first.
 - **FILLER can spike:** Assad (FILLER) 4.23→6. Pass on tickets still correct; never soft-under FILLER either.
 
 ## 2026-07-30 partial (MAE ~1.89, n=8 Final early slate; evening games not started)
@@ -36,7 +38,7 @@ Graded: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Still live/preview: MIA@NYM, PIT@CIN, 
 | What happened | Lesson |
 |---------------|--------|
 | **Burke** 7.45→**10** (6 IP / 23 BF, clear) | Volume clear top-board cashed hard — O4.5/O5.5/O6.5 all hit; Burke-tier O5.5+ juice OK when proj ≥ ~7 and clear |
-| **Weathers** 5.55→**4** (7 IP / 26 BF; arsenal **#5**, CWS lineup K% **#7**, disc neutral) | Pitcher-side rank looked strong, but opp vulnerability was only mid-pack — contact outing, O4.5 miss / O3.5 HIT. **Dual-rank + discipline = the real edge** |
+| **Weathers** 5.55→**4** (7 IP / 26 BF; arsenal **#5**, CWS lineup K% **#7**, disc neutral) | Arsenal **#5 fails the over gate** — contact outing, O4.5 miss / O3.5 HIT. Need top arsenal (#1–#3) vs the nine before firing overs |
 | **McClanahan** 5.03→**3** (3 IP / 12 BF, clear, elite matchup) | Early hook again — elite K% matchup dead without outs. Outing survival > matchup grade for overs |
 | **Cameron** 4.62→**7** (8 IP / 26 BF, clear, soft matchup) | Soft mid-board spiked with length — O3.5/O4.5 cashed; **don’t skinny-under** clear soft-grade arms when IP holds |
 | **Ober** FILLER 5.04→**3** (6 IP) | FILLER correctly avoided O4.5; pass/O3.5 lane right |
@@ -48,8 +50,8 @@ Graded: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Still live/preview: MIA@NYM, PIT@CIN, 
 
 ### Reinforced from early 7/30
 
-1. **Burke-tier volume** (proj ≥ ~7, clear) is the rare O5.5+ green light — also faced a top-tier K nine (NYY lineup K% #4).
-2. **O4.5 edge = arsenal rank × opp lineup K% rank × discipline**, not Exp K or IP alone (Weathers #5 arsenal / #7 CWS → pass on stretch).
+1. **OVER decision:** arsenal must rank **very well** vs the opposing nine (~#1–#3 / elite–strong) or we don’t take the over.
+2. **O4.5 stretch** still needs opp lineup K% top-tier + discipline + clear/low (Burke had volume *and* NYY K% #4). Weathers #5 arsenal → no over.
 3. **FILLER:** Ober/Pallante validated pass; Assad spike warns against soft unders on the same tag.
 4. Re-grade evening slate when Final.
 

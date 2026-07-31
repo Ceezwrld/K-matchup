@@ -16,8 +16,10 @@ from typing import Any
 import pandas as pd
 
 # Canonical public board URL. Bookmark this — never commit-SHA previews.
-# Tracks main/index.html so refreshes pick up lineup updates without a new link.
-STABLE_BOARD_URL = "https://raw.githack.com/Ceezwrld/K-matchup/main/index.html"
+# Tracks main/index.html; publish workflow purges the CDN after each refresh.
+STABLE_BOARD_URL = (
+    "https://cdn.jsdelivr.net/gh/Ceezwrld/K-matchup@main/index.html"
+)
 STABLE_BOARD_PAGES_URL = "https://ceezwrld.github.io/K-matchup/"
 
 
@@ -893,7 +895,7 @@ def write_interactive_html(
     freshness = (
         f"<div class='freshness' role='status'>"
         f"<strong>Bookmark:</strong> <a href='{STABLE_BOARD_URL}'>{_esc(STABLE_BOARD_URL)}</a>"
-        f" — same link every day; it tracks <code>main</code> and updates in place. "
+        f" — same link every day; tracks <code>main</code> and updates in place. "
         f"Optional Pages URL after one Settings enable: "
         f"<a href='{STABLE_BOARD_PAGES_URL}'>{_esc(STABLE_BOARD_PAGES_URL)}</a>. "
         f"Slate <strong>{_esc(game_date)}</strong> · built <strong>{_esc(generated)}</strong> · "

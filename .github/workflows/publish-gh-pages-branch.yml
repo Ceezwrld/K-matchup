@@ -51,3 +51,11 @@ jobs:
           git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" gh-pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Purge jsDelivr cache for stable bookmark
+        continue-on-error: true
+        run: |
+          # Keep https://cdn.jsdelivr.net/gh/Ceezwrld/K-matchup@main/index.html fresh
+          curl -fsS "https://purge.jsdelivr.net/gh/Ceezwrld/K-matchup@main/index.html" || true
+          curl -fsS "https://purge.jsdelivr.net/gh/Ceezwrld/K-matchup@main/rankings.html" || true
+

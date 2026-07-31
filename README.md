@@ -4,7 +4,7 @@ MLB starter strikeout matchup board — arsenal-weighted K projections vs the op
 
 ## Live board (bookmark this)
 
-https://raw.githack.com/Ceezwrld/K-matchup/main/index.html
+https://cdn.jsdelivr.net/gh/Ceezwrld/K-matchup@main/index.html
 
 Same URL every day. Refresh after lineup updates — do **not** use old commit / htmlpreview links.
 

@@ -1,23 +1,21 @@
 # Live board — one bookmark
 
-**Bookmark this (works now, updates in place):**
+**Bookmark this (same link every day):**
 
-https://raw.githack.com/Ceezwrld/K-matchup/main/index.html
+https://cdn.jsdelivr.net/gh/Ceezwrld/K-matchup@main/index.html
 
-Same URL every day. When we refresh lineups on `main`, this link shows the new board — no new link to create.
-
-Hard-refresh before tickets. Check the green **Generated** / **Official lineups** line at the top.
+When we refresh lineups on `main`, this URL updates in place (CDN is purged on publish). Hard-refresh before tickets and check the green **Generated** / **Official lineups** line.
 
 ## Optional cleaner URL (one-time owner click)
 
 https://ceezwrld.github.io/K-matchup/
 
 1. GitHub → **K-matchup** → **Settings** → **Pages**
-2. Deploy from branch → **`gh-pages`** / **`/`** → Save
+2. Deploy from branch → **`gh-pages`** / **`/`** → Save  
 
-We already publish `gh-pages` on every board refresh.
+(`gh-pages` is already published on each refresh.)
 
 ## Do not use
 
-- Commit-SHA `htmlpreview` links (`…/K-matchup/<sha>/rankings.html`) — those froze Suzuki / Carson Kelly for you
+- Commit-SHA `htmlpreview` links (`…/K-matchup/<sha>/rankings.html`) — those froze Suzuki / Carson Kelly
 - Any old preview URL from earlier in the day

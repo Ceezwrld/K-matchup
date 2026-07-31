@@ -4,11 +4,9 @@ MLB starter strikeout matchup board — arsenal-weighted K projections vs the op
 
 ## Live board (bookmark this)
 
-https://cdn.jsdelivr.net/gh/Ceezwrld/K-matchup@main/index.html
+https://cdn.statically.io/gh/Ceezwrld/K-matchup/main/index.html
 
-Same URL every day. Refresh after lineup updates — do **not** use old commit / htmlpreview links.
-
-Optional Pages URL (after one Settings enable): https://ceezwrld.github.io/K-matchup/
+Interactive HTML with tabs. Same URL every day — do **not** use jsDelivr or old commit / htmlpreview links.
 
 See [BOARD.md](BOARD.md) and [backtest-lessons.md](backtest-lessons.md).
 
@@ -21,5 +19,3 @@ python3 mlb-k-matchups/k_matchups.py \
   --html rankings.html \
   --hits-output hits-YYYY-MM-DD.csv
 ```
-
-Writes `rankings.html` and `index.html` (stable entrypoint on `main` / `gh-pages`).

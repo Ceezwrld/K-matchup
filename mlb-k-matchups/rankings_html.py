@@ -16,9 +16,9 @@ from typing import Any
 import pandas as pd
 
 # Canonical public board URL. Bookmark this — never commit-SHA previews.
-# Tracks main/index.html; publish workflow purges the CDN after each refresh.
+# Must be served as text/html (interactive tabs). jsDelivr serves text/plain — do not use.
 STABLE_BOARD_URL = (
-    "https://cdn.jsdelivr.net/gh/Ceezwrld/K-matchup@main/index.html"
+    "https://cdn.statically.io/gh/Ceezwrld/K-matchup/main/index.html"
 )
 STABLE_BOARD_PAGES_URL = "https://ceezwrld.github.io/K-matchup/"
 

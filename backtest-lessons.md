@@ -22,6 +22,7 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
    **Fade / thin** — FILLER, openers, MATCHUP_OK (thin O3.5 only), high-risk watch list  
 
    For each arm include: **ark #**, **opp K% #**, Exp K, outing risk, game/time.  
+   Also check **vs Team history** on each card (career K% vs that batting team + recent games with **HOME/AWAY** for the pitcher). Use history to confirm or caution the model side — not to override a clear arsenal gate.  
    Mark the whole board **provisional** until official lineups post.
 4. **Re-refresh when lineups confirm** — same report shape, flip prior→official, re-check leans before locking tickets.
 5. **Accuracy lock before firing** — official nine in, starter not opener, side matches arsenal vulnerability, line edge still holds.

@@ -268,12 +268,134 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "matchup_grade": r.get("matchup_grade") or "",
                 "ticket_outlook": r.get("ticket_outlook") or "",
                 "ticket_note": r.get("ticket_note") or "",
+                "vs_team_games": _json_safe(r.get("vs_team_games")),
+                "vs_team_ks": _json_safe(r.get("vs_team_ks")),
+                "vs_team_pa": _json_safe(r.get("vs_team_pa")),
+                "vs_team_k_pct": _json_safe(r.get("vs_team_k_pct")),
+                "vs_team_avg": r.get("vs_team_avg") or "",
+                "vs_team_ops": r.get("vs_team_ops") or "",
+                "vs_team_bb": _json_safe(r.get("vs_team_bb")),
+                "vs_team_hr": _json_safe(r.get("vs_team_hr")),
+                "vs_team_home_g": _json_safe(r.get("vs_team_home_g")),
+                "vs_team_home_ks": _json_safe(r.get("vs_team_home_ks")),
+                "vs_team_home_avg_ks": _json_safe(r.get("vs_team_home_avg_ks")),
+                "vs_team_away_g": _json_safe(r.get("vs_team_away_g")),
+                "vs_team_away_ks": _json_safe(r.get("vs_team_away_ks")),
+                "vs_team_away_avg_ks": _json_safe(r.get("vs_team_away_avg_ks")),
+                "vs_team_recent": r.get("vs_team_recent") or "",
+                "vs_team_games_detail": _clean_vs_team_games(
+                    r.get("vs_team_games_detail")
+                ),
                 "arsenal": clean_arsenal,
                 "pitch_lineup_avg": clean_pitch_avg,
                 "batters": clean_detail,
             }
         )
     return rows
+
+
+def _clean_vs_team_games(raw: Any) -> list[dict[str, Any]]:
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return []
+    if isinstance(raw, str):
+        return []
+    out: list[dict[str, Any]] = []
+    for g in list(raw or []):
+        if not isinstance(g, dict):
+            continue
+        out.append(
+            {
+                "date": g.get("date") or "",
+                "site": g.get("site") or ("H" if g.get("is_home") else "A"),
+                "is_home": bool(g.get("is_home")),
+                "ip": g.get("ip") or "",
+                "ks": _json_safe(g.get("ks")),
+                "bb": _json_safe(g.get("bb")),
+                "hits": _json_safe(g.get("hits")),
+                "er": _json_safe(g.get("er")),
+                "hr": _json_safe(g.get("hr")),
+                "bf": _json_safe(g.get("bf")),
+                "games_started": _json_safe(g.get("games_started")),
+            }
+        )
+    return out
+
+
+def _render_vs_team_panel(row: dict[str, Any]) -> str:
+    """Career + recent H/A game log for pitcher vs opposing batting team."""
+    opp = row.get("opponent") or "opp"
+    games = int(row.get("vs_team_games") or 0) if row.get("vs_team_games") is not None else 0
+    detail = row.get("vs_team_games_detail") or []
+    if games <= 0 and not detail:
+        return (
+            f"<p class='hint'>No prior pitcher-vs-{_esc(opp)} history in MLB "
+            "career totals / recent game logs.</p>"
+        )
+
+    k_pct = row.get("vs_team_k_pct")
+    summary = (
+        f"<div class='vs-summary'>"
+        f"<div><span class='meta-label'>Career vs {_esc(opp)}</span>"
+        f"<span class='meta-value'>{games} G · "
+        f"{_esc(row.get('vs_team_ks'))} K / {_esc(row.get('vs_team_pa'))} PA"
+        f"{'' if k_pct is None else ' · K% ' + _fmt(k_pct, 1)}"
+        f" · AVG {_esc(row.get('vs_team_avg') or '—')}"
+        f" · OPS {_esc(row.get('vs_team_ops') or '—')}"
+        f" · BB {_esc(row.get('vs_team_bb'))} · HR {_esc(row.get('vs_team_hr'))}"
+        f"</span></div>"
+    )
+    hg = row.get("vs_team_home_g")
+    ag = row.get("vs_team_away_g")
+    if (hg or 0) or (ag or 0):
+        summary += (
+            "<div><span class='meta-label'>Site split (game logs)</span>"
+            f"<span class='meta-value'>"
+            f"HOME {_esc(hg)} G · {_esc(row.get('vs_team_home_ks'))} K"
+            f"{'' if row.get('vs_team_home_avg_ks') is None else ' (' + _fmt(row.get('vs_team_home_avg_ks'), 1) + ' K/G)'}"
+            f" · AWAY {_esc(ag)} G · {_esc(row.get('vs_team_away_ks'))} K"
+            f"{'' if row.get('vs_team_away_avg_ks') is None else ' (' + _fmt(row.get('vs_team_away_avg_ks'), 1) + ' K/G)'}"
+            f"</span></div>"
+        )
+    summary += "</div>"
+
+    if not detail:
+        return (
+            summary
+            + "<p class='hint'>Career totals only — no recent game-log rows "
+            "in the pulled seasons.</p>"
+        )
+
+    rows_html = [
+        "<div class='vs-table'>"
+        "<div class='vs-head'>"
+        "<div>Date</div><div>Site</div><div>IP</div><div>K</div>"
+        "<div>BB</div><div>H</div><div>ER</div><div>HR</div><div>BF</div>"
+        "</div>"
+    ]
+    for g in detail:
+        site = g.get("site") or "A"
+        site_word = "HOME" if site == "H" else "AWAY"
+        site_cls = "home" if site == "H" else "away"
+        rows_html.append(
+            f"<div class='vs-row'>"
+            f"<div>{_esc(g.get('date'))}</div>"
+            f"<div><span class='site site-{site_cls}'>{site_word}</span></div>"
+            f"<div>{_esc(g.get('ip'))}</div>"
+            f"<div>{_esc(g.get('ks'))}</div>"
+            f"<div>{_esc(g.get('bb'))}</div>"
+            f"<div>{_esc(g.get('hits'))}</div>"
+            f"<div>{_esc(g.get('er'))}</div>"
+            f"<div>{_esc(g.get('hr'))}</div>"
+            f"<div>{_esc(g.get('bf'))}</div>"
+            f"</div>"
+        )
+    rows_html.append("</div>")
+    rows_html.append(
+        "<p class='hint'>Site is the <strong>pitcher’s</strong> home/away "
+        "(HOME = pitched at home vs this batting team). Use with arsenal rank — "
+        "history confirms or cautions the model side.</p>"
+    )
+    return summary + "".join(rows_html)
 
 
 def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
@@ -598,6 +720,23 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         matchup_bits.append(f"pitch-count {_esc(pc)}")
     matchup_val = " · ".join(matchup_bits) if matchup_bits else "—"
 
+    vs_g = row.get("vs_team_games")
+    vs_bits: list[str] = []
+    if vs_g is not None and int(vs_g or 0) > 0:
+        vs_bits.append(f"{int(vs_g)} G")
+        if row.get("vs_team_k_pct") is not None:
+            vs_bits.append(f"K% {_fmt(row.get('vs_team_k_pct'), 1)}")
+        if row.get("vs_team_ops"):
+            vs_bits.append(f"OPS {_esc(row.get('vs_team_ops'))}")
+        hg = int(row.get("vs_team_home_g") or 0)
+        ag = int(row.get("vs_team_away_g") or 0)
+        if hg or ag:
+            vs_bits.append(
+                f"H {hg}G/{int(row.get('vs_team_home_ks') or 0)}K · "
+                f"A {ag}G/{int(row.get('vs_team_away_ks') or 0)}K"
+            )
+    vs_val = " · ".join(vs_bits) if vs_bits else "no prior history"
+
     risk_chip = (
         f"<span class='risk risk-{_esc(risk)}'>risk {_esc(risk)}"
         f"{'' if not risk_flags else ' · ' + _esc(risk_flags)}</span>"
@@ -616,6 +755,10 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "<div class='meta-cell meta-matchup'>"
         "<span class='meta-label'>Arsenal matchup</span>"
         f"<span class='meta-value'>{matchup_val}</span>"
+        "</div>"
+        "<div class='meta-cell'>"
+        f"<span class='meta-label'>vs {_esc(opp)} history</span>"
+        f"<span class='meta-value'>{vs_val}</span>"
         "</div>"
         "</div>"
     )
@@ -643,8 +786,14 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"<span class='tab-full'>Batting order</span>"
         f"<span class='tab-short'>Order</span>"
         f"</label>"
+        f"<input type='radio' name='tab-{uid}' id='tab-{uid}-history' />"
+        f"<label class='tab' for='tab-{uid}-history'>"
+        f"<span class='tab-full'>vs Team history</span>"
+        f"<span class='tab-short'>History</span>"
+        f"</label>"
         f"<div class='tab-panel panel-pitches'>{_render_pitch_matrix(row, uid)}</div>"
         f"<div class='tab-panel panel-lineup'>{_render_lineup_panel(row)}</div>"
+        f"<div class='tab-panel panel-history'>{_render_vs_team_panel(row)}</div>"
         f"</div>"
     )
 
@@ -1161,6 +1310,66 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .tabs > input[id$="-pitches"]:checked ~ .panel-pitches { display: block; }
   .tabs > input[id$="-lineup"]:checked ~ .panel-lineup { display: block; }
+  .tabs > input[id$="-history"]:checked ~ .panel-history { display: block; }
+  .vs-summary {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0 0 0.85rem;
+    padding: 0.75rem 0.85rem;
+    background: rgba(15, 106, 77, 0.06);
+    border-radius: 10px;
+  }
+  .vs-summary .meta-label {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.15rem;
+  }
+  .vs-summary .meta-value {
+    font-size: 0.92rem;
+    line-height: 1.35;
+  }
+  .vs-table {
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.86rem;
+  }
+  .vs-head, .vs-row {
+    display: grid;
+    grid-template-columns: 6.2rem 3.6rem repeat(7, minmax(2rem, 1fr));
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .vs-head {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    padding: 0.2rem 0;
+  }
+  .vs-row {
+    padding: 0.35rem 0;
+    border-top: 1px solid rgba(20, 30, 25, 0.08);
+  }
+  .site {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+  }
+  .site-home { background: rgba(15, 106, 77, 0.14); color: var(--ok); }
+  .site-away { background: rgba(154, 91, 18, 0.16); color: var(--warn); }
+  @media (max-width: 640px) {
+    .vs-head, .vs-row {
+      grid-template-columns: 5.4rem 3.2rem repeat(4, minmax(1.6rem, 1fr));
+    }
+    .vs-head div:nth-child(n+6),
+    .vs-row div:nth-child(n+6) { display: none; }
+  }
 
   .batter-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

@@ -13,10 +13,25 @@ Exp K, projected IP, and raw opp lineup K% are **secondary**. Side selection (ov
 | **Soft / poor (~bottom third, soft grade)** | **UNDER** bias | Even vs a high-K lineup, weak pitcher-vs-batter fit caps conversion — soft U6.5+ is live |
 | **Mid-pack** | Pass / thin only | No clear vulnerability edge |
 
-Teaching cards (7/30):
-- **McLean U6.5 HIT (6 K):** arsenal **#17 / soft** vs MIA despite Marlins opp K% **#5**. Juicy lineup rank did **not** save the over — pitcher-vs-batter vulnerability was the real signal.
-- **Barnett thesis:** arsenal **#2 / elite** with low Exp K (~1.3) — vulnerability says he can outperform a tiny projection *if* he gets a real outing. Still respect **opener** role (don’t treat as full-start O4.5); the point is matchup quality > mean Exp K.
-- **Weathers:** arsenal **#5** — not elite enough for over chalk; 7 IP / 4 K.
+### Paired lesson (7/30) — opposite sides, same rule
+
+Use these two together when deciding overs vs unders. **Arsenal matchup decides the side; opp team K% rank is secondary.**
+
+| | **McLean vs MIA** | **Sasaki vs SEA** |
+|--|-------------------|-------------------|
+| Arsenal matchup | **#17 / soft** | **#3 / elite** |
+| Opp lineup K% rank | **#5** (looks juicy) | **~#14** (looks soft) |
+| Market line (example) | U6.5 | O5.5 |
+| Result | **6 K — under HIT** | **7 K** (through ~5.1 IP, live) — **over cashed** |
+| Read | Soft pitcher-vs-batter fit → under, even vs a high-K lineup on paper | Elite pitcher-vs-batter fit → over, even vs a weak team K% rank |
+
+**Decision rule to keep:**  
+1. Look at **pitcher arsenal vs that batting nine** first.  
+2. If arsenal is soft/bottom → lean **under** (McLean). Don’t let a shiny opp K% rank talk you into the over.  
+3. If arsenal is elite/strong (~#1–#3) → lean **over** (Sasaki). A middling/weak opp team K% rank matters less and should not fade a real dominance matchup.  
+4. Then size the line (soft vs juice) with risk, IP, discipline, opener tags.
+
+Other cards: **Barnett** (#2 elite / low Exp K) = matchup > mean projection, but opener ≠ full-start over. **Weathers** (#5) = not elite enough for over chalk (7 IP / 4 K).
 
 ## Core filters (kept working)
 
@@ -41,7 +56,7 @@ Teaching cards (7/30):
   1. **Arsenal matchup rank (primary — decides over vs under)** — pitcher vs *these* batters.
   2. **Opp lineup K% rank (secondary)** — supports stretching an over or warns that a soft-arsenal under is fighting a K-prone nine (still take the under if arsenal is dead soft + line is soft U6.5+).
   3. **Plate discipline** — patient / walk-heavy can suppress K conversion on overs; free-swing helps overs.
-  - **Over chalk:** arsenal ~#1–#3 *and* starter *and* clear/low; opp K% top-tier upgrades O4.5+; weak opp K% → thinner over / pass (Barnett-style: elite arsenal + dead opp K% + opener = not a full-outing over).
+  - **Over chalk:** arsenal ~#1–#3 *and* starter (Sasaki). Opp K% top-tier upgrades juice (O5.5+); **weak opp K% does not cancel** an elite arsenal over on a normal line (Sasaki O5.5 vs SEA #14). Still fade opener tags (Barnett).
   - **Under chalk:** arsenal soft/bottom-tier (McLean #17) + non-SPIKE + soft U6.5+; **ignore shiny opp K% rank** as an over reason.
   - **Pass:** mid arsenal, or opener, or SPIKE soft-under.
 - **Length ≠ Ks:** full IP without elite arsenal isn’t an over lock (Weathers).
@@ -57,7 +72,8 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 | **Weathers** 5.55→**4** (7 IP / 26 BF; arsenal **#5**, CWS lineup K% **#7**, disc neutral) | Arsenal **#5 fails the over gate** — contact outing, O4.5 miss / O3.5 HIT. Need top arsenal (#1–#3) vs the nine before firing overs |
 | **McClanahan** 5.03→**3** (3 IP / 12 BF, clear, elite matchup) | Early hook again — elite K% matchup dead without outs. Outing survival > matchup grade for overs |
 | **Cameron** 4.62→**7** (8 IP / 26 BF, clear, soft matchup) | Soft mid-board spiked with length — O3.5/O4.5 cashed; **don’t skinny-under** clear soft-grade arms when IP holds |
-| **McLean** 5.47→**6** (6.1 IP; arsenal **#17 / soft**, MIA opp K% **#5**) | **U6.5 HIT.** Soft pitcher-vs-batter vulnerability beat the shiny opp K% rank — primary under edge validated |
+| **McLean** 5.47→**6** (6.1 IP; arsenal **#17 / soft**, MIA opp K% **#5**) | **U6.5 HIT.** Soft pitcher-vs-batter vulnerability beat the shiny opp K% rank — primary **under** edge validated |
+| **Sasaki** ~5.3–5.6→**7+** (~5.1 IP live; arsenal **#3 / elite**, SEA opp K% **~#14**) | **O5.5 HIT** (user line). Opposite of McLean — elite arsenal cleared a soft/mid line even with weak team K% rank; opp K% mattered less |
 | **Pérez** 5.19→**6** (6 IP; arsenal #8, NYM opp K% #2) | Mid arsenal vs elite K nine — cleared soft O4.5/O5.5 but not an arsenal-gate over chalk going in |
 | **Ober** FILLER 5.04→**3** (6 IP) | FILLER correctly avoided O4.5; pass/O3.5 lane right |
 | **Pallante** FILLER 4.71→**3** (6.1 IP / 7 H) | FILLER + outs alt still the read — K over miss; long outing via BIP |
@@ -68,11 +84,11 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 
 ### Reinforced from 7/30
 
-1. **Side from vulnerability:** elite/strong arsenal → over lean; soft/bottom arsenal → under lean (McLean U6.5).
-2. **Opp lineup K% is secondary** — MIA #5 did not make McLean an over; BOS ~#17 still blocks Barnett-style full-outing over chalk even at arsenal #2.
+1. **Paired confidence rule:** McLean (soft arsenal → **under**) and Sasaki (elite arsenal → **over**) are opposite proofs of the same edge — side from pitcher-vs-batter vulnerability first.
+2. **Opp lineup K% is secondary** — MIA #5 did not force a McLean over; SEA #14 did not fade a Sasaki over.
 3. **Barnett thesis kept:** elite arsenal can beat a tiny Exp K *if* he works as a real starter; opener tag still kills full-outing overs.
 4. **FILLER:** Ober/Pallante validated pass; Assad spike warns against soft unders on the same tag.
-5. Finish grading live games when Final.
+5. Re-finalize Sasaki/Woo when SEA@LAD is Final; keep using this pair for future O/U decisions.
 
 ## 2026-07-27 lessons (MAE ~1.34, n=20 Final; HOU@LAA still live — excluded; CLE@CIN rain postponement)
 

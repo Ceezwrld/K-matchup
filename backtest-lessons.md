@@ -27,7 +27,8 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
   - **O4.5+ chalk:** arsenal ~#1–#3 *and* opp lineup K% top-tier *and* clear/low risk *and* discipline not patient/walk-heavy.
   - **O3.5 floor only:** arsenal good but opp K% mid-pack, or discipline softens the spot.
   - **Pass:** arsenal mid-pack (#4+) regardless of Exp K / IP.
-  - (7/30 Weathers: arsenal **#5/19** — fails the over gate. Also CWS lineup K% only **#7**. 7 IP / **4 K**. Would need true top arsenal vs that nine before stretching.)
+  - (7/30 **Weathers:** arsenal **#5/19** — fails the over gate. Also CWS lineup K% only **#7**. 7 IP / **4 K**.)
+  - (7/30 **Barnett:** arsenal **#2 / elite** — clears the pitcher gate, but BOS lineup K% ~**#16–#17** on slate. Top arsenal vs a *dead* opp K% nine is **not** an over. Also opener_likely (~1.3 IP / Exp K ~1.3) → full fade anyway. Good dual-rank teaching card: #2 pitcher ≠ bet when opp rank is bottom-tier.)
 - **Length ≠ Ks:** a full outing can still miss soft O4.5 when K/BF is soft. Don’t treat projected IP alone as an over lock — clear the arsenal gate + dual-rank first.
 - **FILLER can spike:** Assad (FILLER) 4.23→6. Pass on tickets still correct; never soft-under FILLER either.
 

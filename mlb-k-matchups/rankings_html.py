@@ -16,9 +16,10 @@ from typing import Any
 import pandas as pd
 
 # Canonical public board URL. Bookmark this — never commit-SHA previews.
-# Must be served as text/html (interactive tabs). jsDelivr serves text/plain — do not use.
+# htmlpreview renders interactive tabs; always point at main (not a commit SHA).
 STABLE_BOARD_URL = (
-    "https://cdn.statically.io/gh/Ceezwrld/K-matchup/main/index.html"
+    "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
+    "Ceezwrld/K-matchup/main/index.html"
 )
 STABLE_BOARD_PAGES_URL = "https://ceezwrld.github.io/K-matchup/"
 

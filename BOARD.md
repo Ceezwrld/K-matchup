@@ -1,15 +1,15 @@
 # Live board — one bookmark
 
-**Interactive board (tabs work):**
+**Interactive board (tabs / History / Arsenal):**
 
-https://cdn.statically.io/gh/Ceezwrld/K-matchup/main/index.html
+https://htmlpreview.github.io/?https://raw.githubusercontent.com/Ceezwrld/K-matchup/main/index.html
 
 Same URL every day. Hard-refresh before tickets. Check **Generated** / **Official lineups** at the top.
 
 ## Do not use
 
-- `cdn.jsdelivr.net/...` — served as plain text (no tabs)
-- Commit-SHA `htmlpreview` links — freeze old lineups
+- Links with a commit SHA in them (`…/K-matchup/ff06fd8/…`) — freeze old lineups
+- `cdn.jsdelivr.net/...` — plain text, no tabs
 
 ## Optional Pages URL (one Settings click)
 

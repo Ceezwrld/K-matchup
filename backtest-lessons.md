@@ -207,6 +207,37 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 4. **Same-game:** pitcher K over ↔ opposing bats for hits is fine; never pitcher K over + that team’s bats for hits vs him.
 5. Log misses into this file after each `backtest-YYYY-MM-DD.csv`.
 
+## 2026-07-31 lessons (MAE ~1.40, n=27 starters)
+
+Solo absolute grade (`arsenal_abs_grade`) first full graded night.
+
+| Solo grade | n | mean expK → act | vs U/O 6 |
+|------------|---|-----------------|----------|
+| **ELITE** | 7 | 5.19 → 4.71 | only 1/7 cleared O6; short outings (Skenes 7 K / 4 IP) |
+| **STRONG** | 7 | 4.98 → 3.86 | 1/7 cleared O6 — strong ≠ automatic O6 |
+| **AVG** | 6 | 4.87 → **6.17** | upside bucket (Warren 7, Cease 7, Wacha 7, Matthews **10**) |
+| **SOFT** | 7 | 3.89 → 3.43 | **0/7 cleared O6**; 6/7 ≤5 K — best under lane |
+
+### User ticket (Brown U6 / Eovaldi O6 / Sugano O3.5 / Drohan O6) → **2/4**
+
+| Leg | Actual | Result | Lesson |
+|-----|--------|--------|--------|
+| **Brown U6** | 5 K / 5.2 IP | **HIT** | SOLO SOFT under with room under 6 — on-model |
+| **Eovaldi O6** | 5 K / 5.0 IP | **MISS** | SOLO STRONG but Exp K ~6.1 → O6 is **zero-edge**; need O5.5 or more cushion |
+| **Sugano O3.5** | 2 K / 6.2 IP | **MISS** | MATCHUP_OK / soft-contact floor over failed — disclose is not a cash |
+| **Drohan O6** | 7 K / 6.0 IP | **HIT** | Cashed, but Friday lock was solo **AVG** (process pass) — result ≠ process proof |
+
+Also: **same-game** Brown U + Eovaldi O (TEX@HOU) — both finished 5 K; correlated script risk.
+
+### Reinforced
+
+1. **SOFT solo = under lane** (esp. U6): 0/7 soft arms reached 6 K.
+2. **ELITE/STRONG solo ≠ O6 chalk** — prefer O4.5/O5.5 unless Exp K ≥ ~6.8–7 + length.
+3. **MATCHUP_OK O3.5** still fails (Sugano 2) — thin floor, not a 4-leg anchor.
+4. **AVG solo overs** can spike (Matthews 10, Warren 7) — don’t treat AVG as under chalk either.
+5. **Suarez 2 K** — sheet-green / solo-SOFT under thesis cashed; mix > season form.
+6. **Fedde 6 K** — SOFT FILLER still spiked to 6; U6 on soft arms needs the cushion (prefer when Exp K ≤ ~4.5 or line U6.5+).
+
 ## Prior days (short)
 
 - **7/26:** MAE ~2.09; O3.5 strong / O4.5 mixed; Ashcraft O5.5 miss; Misio 12; Sánchez early hook; Gausman fade wrong.

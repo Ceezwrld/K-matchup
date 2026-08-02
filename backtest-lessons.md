@@ -207,6 +207,36 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 4. **Same-game:** pitcher K over ↔ opposing bats for hits is fine; never pitcher K over + that team’s bats for hits vs him.
 5. Log misses into this file after each `backtest-YYYY-MM-DD.csv`.
 
+## 2026-08-01 lessons (MAE ~2.21, n=23 starters)
+
+Tough night for absolute SOFT unders — several soft-mix arms spiked Ks. Elite overs mostly short-outing misses.
+
+| Solo grade | n | mean expK → act | vs O6 |
+|------------|---|-----------------|-------|
+| **ELITE** | 6 | 5.64 → 4.33 | 1/6 cleared O6 (Peterson 8); deGrom 3 / 3.1 IP, Abbott 1 |
+| **STRONG** | 4 | 4.62 → 3.75 | 0/4 cleared O6 |
+| **AVG** | 8 | 4.73 → **5.88** | Sánchez **11**, Mahle **9**, upside again |
+| **SOFT** | 5 | 4.46 → **6.20** | **Failed under lane** — Rasmussen 10, Fried 7, Tolle 7, Messick 6; only Buehler 1 |
+
+### Early outlook report card
+
+| Lean | Result | Note |
+|------|--------|------|
+| **O Peterson** | **8 K** HIT path | Elite + length — only elite O6-style cash |
+| **O Ashcraft / Prielipp** | 5 / 5 | Mix OK, no O6 |
+| **O deGrom** | 3 K / 3.1 IP | Early hook — SPIKE/elite still needs IP |
+| **O Gausman / Abbott** | 4 / 1 | Misses; Abbott high-risk flagged |
+| **U Buehler** | **1 K** HIT | Clean soft under |
+| **U Tolle / Fried / Messick / Rasmussen** | 7 / 7 / 6 / **10** | Soft solo **spiked** — do not treat soft as locked U6 |
+
+### Reinforced / adjusted
+
+1. **SOFT ≠ automatic under** after 8/1 — demand wider lines (U6.5+) or pass when Exp K ≥ ~5 or K9 is mid/high (Rasmussen/Fried/Tolle).
+2. **ELITE still needs outing length** — deGrom 3.1 IP killed the over; prefer clear + IP ≥ ~5.5 for O5.5+.
+3. **AVG upside continues** (Sánchez 11, Mahle 9) — not under chalk.
+4. **Yamamoto / Baz → AVG fade** was correct vs forcing overs (3 K / 4 K).
+5. **Phillips swingman MATCHUP_OK** (3 K) — fade full-outing chalk still right.
+
 ## 2026-07-31 lessons (MAE ~1.40, n=27 starters)
 
 Solo absolute grade (`arsenal_abs_grade`) first full graded night.

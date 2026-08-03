@@ -207,6 +207,68 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 4. **Same-game:** pitcher K over ↔ opposing bats for hits is fine; never pitcher K over + that team’s bats for hits vs him.
 5. Log misses into this file after each `backtest-YYYY-MM-DD.csv`.
 
+## 2026-08-02 lessons (MAE ~1.94, n=28 starters)
+
+Stronger night for volume overs; soft unders mixed again (Williams 10 spike).
+
+| Solo grade | n | mean expK → act | Notes |
+|------------|---|-----------------|-------|
+| **ELITE** | 3 | 5.93 → 6.00 | **Burns 9**, Rea 7 (MATCHUP_OK cashed floor+); Keller 2 / 2 IP early hook |
+| **STRONG** | 6 | 5.67 → 6.33 | **Misio 10**, Lambert 8, Freeland 8; Wheeler 3 / 2 IP early exit |
+| **AVG** | 6 | 4.83 → 4.33 | Mostly quiet; Jax 8 upside |
+| **SOFT** | 13 | 4.31 → 4.92 | 9/13 under 6; **Williams 10** and Liberatore/Ureña/Roupp spiked |
+
+### Outlook report card
+
+| Lean | Actual | Result |
+|------|--------|--------|
+| **O Misiorowski** | 10 K / 7 IP | **HIT** — volume strong/elite path |
+| **O Burns** | 9 K / 6 IP | **HIT** — elite mix + length |
+| **O Lambert / Freeland** | 8 / 8 | **HIT** — strong solo cashed |
+| **O Wheeler** | 3 K / 2 IP | **MISS** — early exit (Completed Early) |
+| **O Jump** | 5 K / 3.2 IP | thin / short |
+| **U Bradish / Kay / Bennett** | 3 / 3 / 4 | **HIT** soft unders |
+| **U Williams** | **10 K** | **MISS** — soft flip spiked (like 8/1 Rasmussen) |
+| **U Rocker / Alcantara** | 5 / 5 | pushy vs U6 |
+
+### Reinforced
+
+1. **Volume + STRONG/ELITE + IP** is the over lane (Misio/Burns/Lambert).
+2. **Early exits kill overs** even on strong mix (Wheeler, Keller).
+3. **SOFT under still not locked** — Williams 10 after soft flip; prefer U6.5+ or low Exp K soft (Bennett/Kay/Bradish worked).
+4. **MATCHUP_OK Rea 7** — floor over can cash, still not a nuke anchor thesis.
+5. **Hart opener** 2 K / 3 IP — opener fade correct for full-outing overs.
+
+## 2026-08-02 lessons (MAE ~1.98, n=30 modeled; BOS@LAD still In Progress)
+
+Strong/elite overs cashed when they got length; soft unders mixed again — Williams **10** and Liberatore/Ureña/Roupp all cleared 6.
+
+| Solo grade | n | mean expK → act | notes |
+|------------|---|-----------------|-------|
+| **ELITE** | 3 | 5.93 → 6.00 | Burns **9**, Rea **7**; Keller **2**/2 IP early hook |
+| **STRONG** | 7 | 5.02 → 5.71 | Misio **10**, Lambert **8**, Freeland **8**; Wheeler rain short (3/2 IP) |
+| **AVG** | 6 | 4.83 → 4.33 | Jax spiked **8**; Kirby/Bradley/Cavalli soft unders vs chalk |
+| **SOFT** | 13 | 4.31 → **4.92** | **4/13 ≥6 K** — Williams **10**, Liberatore **7**, Ureña **7**, Roupp **6**; Kay/Bradish/Bennett/Montero under lane OK |
+
+### Report-card style
+
+| Lean type | Result | Note |
+|-----------|--------|------|
+| **O Misio / Burns / Lambert / Freeland** | 10 / 9 / 8 / 8 | Strong/elite + length — overs cashed |
+| **O Wheeler / Keller** | 3 / 2 | Rain / early hook — IP killed overs |
+| **O Rea MATCHUP_OK** | 7 K / 6 IP | Soft-contact + elite solo worked with length |
+| **U Kay / Bradish / Bennett / Montero** | 3 / 3 / 4 / 2 | Soft under lane held |
+| **U Williams (soft)** | **10 K** | Soft spike — never auto-U6 on soft with mid Exp K |
+| **U Liberatore / Ureña / Roupp** | 7 / 7 / 6 | Soft cleared 6 again — prefer U6.5+ or low Exp K |
+
+### Reinforced / adjusted
+
+1. **SOFT still not automatic U6** (2nd straight night of spikes after 8/1) — require Exp K ≤ ~4.2 or line U6.5+, else pass.
+2. **STRONG/ELITE + clear IP** remains the over path (Misio/Burns/Freeland); rain/early hooks (Wheeler/Keller) still kill.
+3. **MATCHUP_OK with length** can cash (Rea 7) — still thin O3.5/O4.5 only without Exp K cushion.
+4. **Sheehan / Bennett** still In Progress at grading — treat partial; don’t lock process lessons on unfinished outs.
+5. **SPIKE reminder:** Williams soft→10 K — no soft unders on arms that can run K9 ≥ ~10.
+
 ## 2026-08-01 lessons (MAE ~2.21, n=23 starters)
 
 Tough night for absolute SOFT unders — several soft-mix arms spiked Ks. Elite overs mostly short-outing misses.

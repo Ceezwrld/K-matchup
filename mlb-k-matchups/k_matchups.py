@@ -1433,6 +1433,28 @@ def main(argv: list[str] | None = None) -> int:
     hand_mixes = fetch_pitcher_hand_mixes(
         pitcher_ids, year, args.min_usage, args.verbose, log
     )
+    # Returning / low-PA starters often miss the Savant arsenal board (min PA).
+    # Statcast fallback is required — retry any pitcher the batch mix fetch dropped
+    # (transient Savant blanks previously left arms like Javier unscored).
+    missing_mix_ids = [
+        pid
+        for pid in pitcher_ids
+        if pitcher_usage_weights(arsenal, pid, args.min_usage) is None
+        and not (
+            pid in hand_mixes and hand_mixes[pid].get("usage_all") is not None
+        )
+    ]
+    if missing_mix_ids:
+        log(
+            True,
+            f"Retrying Statcast pitch mixes for {len(missing_mix_ids)} "
+            f"arsenal-missing pitcher(s): {missing_mix_ids}",
+        )
+        hand_mixes.update(
+            fetch_pitcher_hand_mixes(
+                missing_mix_ids, year, args.min_usage, args.verbose, log
+            )
+        )
     batter_k_vs_hand = fetch_batter_hand_k_rates(
         batter_ids, year, args.verbose, log
     )
@@ -1577,11 +1599,19 @@ def main(argv: list[str] | None = None) -> int:
             usage = pitcher_usage_weights(arsenal, pid, args.min_usage)
             mixes = hand_mixes.get(pid)
             used_statcast_mix = False
+            # Last-chance single-pitcher Statcast pull before marking unscored.
+            if usage is None and not (mixes and mixes.get("usage_all") is not None):
+                retry = fetch_pitcher_hand_mixes(
+                    [pid], year, args.min_usage, args.verbose, log
+                )
+                if pid in retry:
+                    hand_mixes[pid] = retry[pid]
+                    mixes = retry[pid]
             if usage is None and not (mixes and mixes.get("usage_all") is not None):
                 row["status"] = "missing_arsenal"
             else:
                 # Prefer Savant arsenal board; fall back to Statcast pitch-level
-                # when the board drops low-sample / returning starters (e.g. Bieber).
+                # when the board drops low-sample / returning starters (e.g. Javier).
                 if usage is None and mixes is not None:
                     usage = mixes.get("usage_all")
                     used_statcast_mix = True

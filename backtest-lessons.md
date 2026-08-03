@@ -47,6 +47,8 @@ That grade is banded on the pitcher’s arsenal-weighted K% vs *this* lineup and
 
 Also check edges on the card: **vs league** (`expected_k_pct − 22.5`) and **vs opp K%** (mix beats/lags the lineup’s raw K tendency).
 
+**Stuff ceiling (velo/whiff by pitch)** — separate from solo grade. Usage-weighted pitcher-own whiff% + primary FB velo → `stuff_grade` / **SPIKE** chip. Soft solo **+ SPIKE** = do **not** auto-under (U6.5+ or pass). Does not move Exp K.
+
 **Secondary only:** slate `#` / slate `matchup_grade` / opp lineup K% `#` — “who’s best *today*,” not solo quality.  
 Exp K and projected IP size the outing; they do not define the side.
 

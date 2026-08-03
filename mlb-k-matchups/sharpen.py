@@ -9,6 +9,8 @@
 7. Opposing lineup K% / contact form overlay on expected Ks
 8. Ticket outlook — soft-contact FILLER profile gated by opposing
    lineup arsenal rank (expected_k_pct vs slate)
+9. Pitcher stuff ceiling — own velo/whiff by pitch → SPIKE caution
+   (does not change expected_ks; blocks soft-under autopilot)
 
 Hits-prop helpers (barrel / hard-hit / xwOBA) live here too but are
 display-only — they never modify expected_ks.
@@ -95,6 +97,30 @@ HR9_WARN = 1.20
 HR9_HIGH = 1.50
 XFIP_WARN = 4.20
 XFIP_HIGH = 4.80
+
+# Pitcher-own stuff ceiling (usage-weighted whiff / primary FB velo).
+# Display + SPIKE gate only — never blended into expected_ks.
+STUFF_WHIFF_ELITE = 30.0
+STUFF_WHIFF_STRONG = 26.0
+STUFF_WHIFF_AVG = 22.0
+SPIKE_K9 = 10.0
+SPIKE_STUFF_WHIFF = 28.0
+SPIKE_STUFF_WHIFF_WITH_VELO = 26.0
+SPIKE_FB_VELO = 95.0
+FASTBALL_TYPES = ("FF", "SI", "FC", "FT")
+WHIFF_DESCS = {
+    "swinging_strike",
+    "swinging_strike_blocked",
+    "foul_tip",
+}
+SWING_DESCS = WHIFF_DESCS | {
+    "foul",
+    "foul_bunt",
+    "bunt_foul_tip",
+    "hit_into_play",
+    "foul_pitchout",
+    "swinging_pitchout",
+}
 
 # Early-exit / survival haircuts (multiplicative on projected BF/IP).
 SURVIVAL_FLOOR = 0.82
@@ -235,6 +261,101 @@ def _counts_from_pitch_df(df: pd.DataFrame) -> dict[str, dict[str, int]]:
     return out
 
 
+def _pitch_stuff_from_df(df: pd.DataFrame) -> dict[str, dict[str, Any]]:
+    """Per-pitch velo + whiff% from a Statcast pitch-detail frame.
+
+    Whiff% = swinging misses / swings (Savant-style). Velo = mean release_speed.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    if df is None or df.empty or "pitch_type" not in df.columns:
+        return out
+    work = df.copy()
+    work["pitch_type"] = work["pitch_type"].astype(str).str.upper()
+    work = work[~work["pitch_type"].isin(SKIP_PITCH_TYPES)]
+    if work.empty:
+        return out
+    has_speed = "release_speed" in work.columns
+    has_desc = "description" in work.columns
+    if has_speed:
+        work["release_speed"] = pd.to_numeric(work["release_speed"], errors="coerce")
+    if has_desc:
+        work["description"] = work["description"].astype(str).str.lower()
+    for pt, g in work.groupby("pitch_type"):
+        n = int(len(g))
+        velo = None
+        if has_speed:
+            speeds = g["release_speed"].dropna()
+            if not speeds.empty:
+                velo = float(speeds.mean())
+        whiff = None
+        if has_desc:
+            desc = g["description"]
+            swings = int(desc.isin(SWING_DESCS).sum())
+            whiffs = int(desc.isin(WHIFF_DESCS).sum())
+            if swings > 0:
+                whiff = 100.0 * whiffs / swings
+        out[str(pt)] = {
+            "pitches": n,
+            "velo": velo,
+            "whiff_percent": whiff,
+            "source": "statcast",
+        }
+    return out
+
+
+def build_savant_pitcher_stuff(arsenal: pd.DataFrame) -> dict[int, dict[str, dict[str, Any]]]:
+    """Index Savant pitcher-arsenal board rows: pid → pitch_type → whiff/usage."""
+    out: dict[int, dict[str, dict[str, Any]]] = {}
+    if arsenal is None or arsenal.empty:
+        return out
+    need = {"player_id", "pitch_type"}
+    if not need.issubset(set(arsenal.columns)):
+        return out
+    work = arsenal.copy()
+    work["player_id"] = pd.to_numeric(work["player_id"], errors="coerce")
+    work = work.dropna(subset=["player_id", "pitch_type"])
+    for c in ("whiff_percent", "k_percent", "pitch_usage", "pitches"):
+        if c in work.columns:
+            work[c] = pd.to_numeric(work[c], errors="coerce")
+    for pid, g in work.groupby("player_id"):
+        by_pt: dict[str, dict[str, Any]] = {}
+        for _, row in g.iterrows():
+            pt = str(row["pitch_type"]).upper()
+            if pt in SKIP_PITCH_TYPES:
+                continue
+            by_pt[pt] = {
+                "pitch_name": (
+                    str(row["pitch_name"])
+                    if "pitch_name" in row.index and pd.notna(row.get("pitch_name"))
+                    else PITCH_NAMES.get(pt, pt)
+                ),
+                "whiff_percent": (
+                    float(row["whiff_percent"])
+                    if "whiff_percent" in row.index and pd.notna(row.get("whiff_percent"))
+                    else None
+                ),
+                "k_percent": (
+                    float(row["k_percent"])
+                    if "k_percent" in row.index and pd.notna(row.get("k_percent"))
+                    else None
+                ),
+                "pitch_usage": (
+                    float(row["pitch_usage"])
+                    if "pitch_usage" in row.index and pd.notna(row.get("pitch_usage"))
+                    else None
+                ),
+                "pitches": (
+                    float(row["pitches"])
+                    if "pitches" in row.index and pd.notna(row.get("pitches"))
+                    else None
+                ),
+                "source": "savant_arsenal",
+            }
+        if by_pt:
+            out[int(pid)] = by_pt
+    return out
+
+
 def fetch_pitcher_hand_mixes(
     pitcher_ids: list[int],
     year: int,
@@ -242,7 +363,7 @@ def fetch_pitcher_hand_mixes(
     verbose: bool,
     log: Callable[[bool, str], None],
 ) -> dict[int, dict[str, Any]]:
-    """Per pitcher: usage frames for ALL / L / R plus pitch totals."""
+    """Per pitcher: usage frames for ALL / L / R plus pitch totals + stuff."""
     ids = sorted({int(x) for x in pitcher_ids if x is not None})
     out: dict[int, dict[str, Any]] = {}
 
@@ -265,6 +386,7 @@ def fetch_pitcher_hand_mixes(
             "usage_all": _usage_frame_from_counts(counts["ALL"], min_usage),
             "usage_l": None,
             "usage_r": None,
+            "pitch_stuff": _pitch_stuff_from_df(df),
         }
         if mixes["pitches_l"] >= MIN_HAND_SPLIT_PITCHES:
             mixes["usage_l"] = _usage_frame_from_counts(counts["L"], min_usage)
@@ -301,8 +423,13 @@ def usage_for_batter_side(
 def arsenal_from_mixes(
     mixes: dict[str, Any] | None,
     fallback: pd.DataFrame | None,
+    savant_stuff: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Union arsenal rows with overall + vs-L / vs-R usage for display."""
+    """Union arsenal rows with overall + vs-L / vs-R usage for display.
+
+    When available, attaches pitcher-own whiff% (Savant preferred) and
+    release velo (Statcast) per pitch — ceiling layer only.
+    """
     base = None
     if mixes and mixes.get("usage_all") is not None:
         base = mixes["usage_all"]
@@ -321,9 +448,16 @@ def arsenal_from_mixes(
 
     l_map = _map(mixes.get("usage_l") if mixes else None)
     r_map = _map(mixes.get("usage_r") if mixes else None)
+    sc_stuff = (mixes or {}).get("pitch_stuff") or {}
+    savant_stuff = savant_stuff or {}
     rows: list[dict[str, Any]] = []
     for _, row in base.sort_values("usage_frac", ascending=False).iterrows():
         pt = str(row["pitch_type"])
+        sav = savant_stuff.get(pt) or savant_stuff.get(pt.upper()) or {}
+        sc = sc_stuff.get(pt) or sc_stuff.get(pt.upper()) or {}
+        pitcher_whiff = sav.get("whiff_percent")
+        if pitcher_whiff is None:
+            pitcher_whiff = sc.get("whiff_percent")
         rows.append(
             {
                 "pitch_type": pt,
@@ -336,9 +470,204 @@ def arsenal_from_mixes(
                 "usage_frac": float(row["usage_frac"]),
                 "usage_vs_lhb": l_map.get(pt),
                 "usage_vs_rhb": r_map.get(pt),
+                "pitcher_whiff_pct": pitcher_whiff,
+                "pitcher_velo": sc.get("velo"),
+                "pitcher_k_pct": sav.get("k_percent"),
             }
         )
     return rows
+
+
+def stuff_grade(whiff_pct: float | None) -> str:
+    """Absolute grade on pitcher usage-weighted own whiff%."""
+    if whiff_pct is None or (isinstance(whiff_pct, float) and pd.isna(whiff_pct)):
+        return ""
+    w = float(whiff_pct)
+    if w >= STUFF_WHIFF_ELITE:
+        return "elite"
+    if w >= STUFF_WHIFF_STRONG:
+        return "strong"
+    if w >= STUFF_WHIFF_AVG:
+        return "avg"
+    return "soft"
+
+
+def _primary_fb_velo(pitch_stuff: dict[str, dict[str, Any]]) -> tuple[float | None, str]:
+    """Pick primary fastball velo: most-thrown among FF/SI/FC/FT with a velo."""
+    best_pt = ""
+    best_n = -1
+    best_velo: float | None = None
+    for pt in FASTBALL_TYPES:
+        info = pitch_stuff.get(pt) or {}
+        velo = info.get("velo")
+        if velo is None:
+            continue
+        n = int(info.get("pitches") or 0)
+        if n > best_n:
+            best_n = n
+            best_velo = float(velo)
+            best_pt = pt
+    return best_velo, best_pt
+
+
+def classify_spike_risk(
+    *,
+    k9: float | None,
+    last3_k9: float | None,
+    stuff_whiff_pct: float | None,
+    stuff_fb_velo: float | None,
+) -> tuple[bool, str]:
+    """True when pitcher has a high-K ceiling — do not auto soft-under."""
+    bits: list[str] = []
+    if k9 is not None and float(k9) >= SPIKE_K9:
+        bits.append(f"K9 {float(k9):.1f}")
+    if last3_k9 is not None and float(last3_k9) >= SPIKE_K9:
+        bits.append(f"L3 K9 {float(last3_k9):.1f}")
+    if stuff_whiff_pct is not None and float(stuff_whiff_pct) >= SPIKE_STUFF_WHIFF:
+        bits.append(f"stuff whiff {float(stuff_whiff_pct):.1f}%")
+    elif (
+        stuff_whiff_pct is not None
+        and stuff_fb_velo is not None
+        and float(stuff_whiff_pct) >= SPIKE_STUFF_WHIFF_WITH_VELO
+        and float(stuff_fb_velo) >= SPIKE_FB_VELO
+    ):
+        bits.append(
+            f"stuff whiff {float(stuff_whiff_pct):.1f}% + FB {float(stuff_fb_velo):.1f}"
+        )
+    if not bits:
+        return False, ""
+    return True, ", ".join(bits)
+
+
+def apply_pitcher_stuff_overlay(
+    df: pd.DataFrame,
+    savant_stuff: dict[int, dict[str, dict[str, Any]]],
+    hand_mixes: dict[int, dict[str, Any]],
+) -> pd.DataFrame:
+    """Attach usage-weighted pitcher whiff / FB velo + SPIKE flag.
+
+    Ceiling / caution layer only — does not modify expected_ks.
+    """
+    out = df.copy()
+    for col, default in (
+        ("stuff_whiff_pct", pd.NA),
+        ("stuff_fb_velo", pd.NA),
+        ("stuff_fb_pitch", ""),
+        ("stuff_grade", ""),
+        ("spike_risk", False),
+        ("spike_flags", ""),
+        ("stuff_source", ""),
+    ):
+        if col not in out.columns:
+            out[col] = default
+
+    for idx, row in out.iterrows():
+        pid_raw = row.get("pitcher_id")
+        if pid_raw is None or (isinstance(pid_raw, float) and pd.isna(pid_raw)):
+            continue
+        try:
+            pid = int(pid_raw)
+        except (TypeError, ValueError):
+            continue
+
+        sav = savant_stuff.get(pid) or {}
+        mixes = hand_mixes.get(pid) or {}
+        sc_stuff = mixes.get("pitch_stuff") or {}
+
+        # Prefer arsenal / pitch_lineup_avg usage already on the row.
+        arsenal_rows = row.get("arsenal") or row.get("pitch_lineup_avg") or []
+        if isinstance(arsenal_rows, float) and pd.isna(arsenal_rows):
+            arsenal_rows = []
+        usage_pairs: list[tuple[str, float]] = []
+        if isinstance(arsenal_rows, list) and arsenal_rows:
+            for p in arsenal_rows:
+                pt = str(p.get("pitch_type") or "").upper()
+                frac = p.get("usage_frac")
+                if not pt or frac is None:
+                    continue
+                usage_pairs.append((pt, float(frac)))
+        elif mixes.get("usage_all") is not None:
+            frame = mixes["usage_all"]
+            for _, r in frame.iterrows():
+                usage_pairs.append((str(r["pitch_type"]).upper(), float(r["usage_frac"])))
+
+        whiff_num = 0.0
+        whiff_den = 0.0
+        source_bits: list[str] = []
+        for pt, frac in usage_pairs:
+            w = None
+            src = ""
+            if pt in sav and sav[pt].get("whiff_percent") is not None:
+                w = float(sav[pt]["whiff_percent"])
+                src = "savant"
+            elif pt in sc_stuff and sc_stuff[pt].get("whiff_percent") is not None:
+                w = float(sc_stuff[pt]["whiff_percent"])
+                src = "statcast"
+            if w is None:
+                continue
+            whiff_num += frac * w
+            whiff_den += frac
+            if src and src not in source_bits:
+                source_bits.append(src)
+
+        stuff_whiff = (whiff_num / whiff_den) if whiff_den > 0 else None
+        fb_velo, fb_pt = _primary_fb_velo(sc_stuff)
+
+        # Enrich per-pitch display rows in place.
+        for key in ("arsenal", "pitch_lineup_avg"):
+            pitches = row.get(key)
+            if not isinstance(pitches, list) or not pitches:
+                continue
+            enriched = []
+            for p in pitches:
+                pt = str(p.get("pitch_type") or "").upper()
+                sav_p = sav.get(pt) or {}
+                sc_p = sc_stuff.get(pt) or {}
+                e = dict(p)
+                if e.get("pitcher_whiff_pct") is None:
+                    e["pitcher_whiff_pct"] = sav_p.get("whiff_percent")
+                    if e["pitcher_whiff_pct"] is None:
+                        e["pitcher_whiff_pct"] = sc_p.get("whiff_percent")
+                if e.get("pitcher_velo") is None:
+                    e["pitcher_velo"] = sc_p.get("velo")
+                if e.get("pitcher_k_pct") is None:
+                    e["pitcher_k_pct"] = sav_p.get("k_percent")
+                enriched.append(e)
+            out.at[idx, key] = enriched
+
+        try:
+            k9 = (
+                float(row["k9"])
+                if row.get("k9") is not None and pd.notna(row.get("k9"))
+                else None
+            )
+        except (TypeError, ValueError):
+            k9 = None
+        try:
+            l3k9 = (
+                float(row["last3_k9"])
+                if row.get("last3_k9") is not None and pd.notna(row.get("last3_k9"))
+                else None
+            )
+        except (TypeError, ValueError):
+            l3k9 = None
+
+        spike, spike_flags = classify_spike_risk(
+            k9=k9,
+            last3_k9=l3k9,
+            stuff_whiff_pct=stuff_whiff,
+            stuff_fb_velo=fb_velo,
+        )
+        out.at[idx, "stuff_whiff_pct"] = stuff_whiff
+        out.at[idx, "stuff_fb_velo"] = fb_velo
+        out.at[idx, "stuff_fb_pitch"] = fb_pt
+        out.at[idx, "stuff_grade"] = stuff_grade(stuff_whiff)
+        out.at[idx, "spike_risk"] = spike
+        out.at[idx, "spike_flags"] = spike_flags
+        out.at[idx, "stuff_source"] = "+".join(source_bits) if source_bits else (
+            "statcast_velo" if fb_velo is not None else ""
+        )
+    return out
 
 
 def fetch_batter_hand_k_rates(
@@ -1560,9 +1889,42 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
             f"slate #{ark}/{n} {slate_grade})"
         )
 
+        spike = bool(row.get("spike_risk"))
+        spike_flags = str(row.get("spike_flags") or "").strip()
+        stuff_w = row.get("stuff_whiff_pct")
+        stuff_g = str(row.get("stuff_grade") or "").strip()
+        fb_velo = row.get("stuff_fb_velo")
+        stuff_bit = ""
+        if stuff_w is not None and not (isinstance(stuff_w, float) and pd.isna(stuff_w)):
+            stuff_bit = f"; stuff whiff {float(stuff_w):.1f}%"
+            if stuff_g:
+                stuff_bit += f" ({stuff_g})"
+            if fb_velo is not None and not (
+                isinstance(fb_velo, float) and pd.isna(fb_velo)
+            ):
+                fb_pt = str(row.get("stuff_fb_pitch") or "FB")
+                stuff_bit += f", {fb_pt} {float(fb_velo):.1f} mph"
+        spike_caveat = ""
+        if spike:
+            spike_caveat = (
+                f"; SPIKE ({spike_flags}) — no soft U6; prefer U6.5+ or pass"
+            )
+
         if not soft:
-            out.at[idx, "ticket_outlook"] = ""
-            out.at[idx, "ticket_note"] = matchup_bit
+            note = matchup_bit + stuff_bit
+            # Soft solo matchup + high stuff ceiling = classic false under.
+            if abs_grade == "soft" and spike:
+                out.at[idx, "ticket_outlook"] = "SPIKE"
+                out.at[idx, "ticket_note"] = (
+                    f"{note}{spike_caveat} — solo SOFT vs lineup but pitcher "
+                    f"stuff/K9 can clear 6+"
+                )
+            else:
+                # High-stuff overs keep a blank outlook; SPIKE chip still shows.
+                out.at[idx, "ticket_outlook"] = ""
+                out.at[idx, "ticket_note"] = note + (
+                    f"; stuff ceiling ({spike_flags})" if spike else ""
+                )
             continue
 
         role = str(row.get("outing_role") or "starter")
@@ -1574,19 +1936,27 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
         if abs_grade in ("elite", "strong"):
             out.at[idx, "ticket_outlook"] = "MATCHUP_OK"
             out.at[idx, "ticket_note"] = (
-                f"soft-contact profile ({profile_flags}) but {matchup_bit} "
-                f"— O3.5 / thin O4.5 K only; disclose, not a nuke anchor; "
-                f"if skipping Ks, consider pitcher outs when IP/risk holds"
+                f"soft-contact profile ({profile_flags}) but {matchup_bit}"
+                f"{stuff_bit} — O3.5 / thin O4.5 K only; disclose, not a nuke "
+                f"anchor; if skipping Ks, consider pitcher outs when IP/risk holds"
                 f"{role_caveat}"
             )
         else:
-            out.at[idx, "ticket_outlook"] = "FILLER"
-            out.at[idx, "ticket_note"] = (
-                f"soft-contact ({profile_flags}) + {matchup_bit} "
-                f"— FILLER on Ks: pass or O3.5; does not help a K ticket; "
-                f"consider pitcher outs if clear/low risk and projected IP holds"
-                f"{role_caveat}"
-            )
+            # Soft-contact + soft matchup, but SPIKE stuff → don't sell as locked under.
+            if spike:
+                out.at[idx, "ticket_outlook"] = "SPIKE"
+                out.at[idx, "ticket_note"] = (
+                    f"soft-contact ({profile_flags}) + {matchup_bit}{stuff_bit}"
+                    f"{spike_caveat}{role_caveat}"
+                )
+            else:
+                out.at[idx, "ticket_outlook"] = "FILLER"
+                out.at[idx, "ticket_note"] = (
+                    f"soft-contact ({profile_flags}) + {matchup_bit}{stuff_bit} "
+                    f"— FILLER on Ks: pass or O3.5; does not help a K ticket; "
+                    f"consider pitcher outs if clear/low risk and projected IP holds"
+                    f"{role_caveat}"
+                )
     return out
 
 

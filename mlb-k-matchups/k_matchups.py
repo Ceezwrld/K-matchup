@@ -18,10 +18,12 @@ from rankings_html import write_interactive_html  # noqa: E402
 from sharpen import (  # noqa: E402
     apply_lineup_discipline_overlay,
     apply_lineup_offense_overlay,
+    apply_pitcher_stuff_overlay,
     apply_recent_form_overlay,
     apply_ticket_outlook,
     arsenal_from_mixes,
     build_hits_board,
+    build_savant_pitcher_stuff,
     classify_outing_risk,
     effective_bat_side,
     enrich_lineup_hits_props,
@@ -1169,6 +1171,9 @@ def format_table(df: pd.DataFrame) -> str:
             "outing_role",
             "ticket_outlook",
             "arsenal_abs_grade",
+            "stuff_grade",
+            "stuff_whiff_pct",
+            "spike_risk",
             "matchup_grade",
             "arsenal_matchup_rank",
             "arsenal_vs_league",
@@ -1374,6 +1379,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     arsenal = load_pitcher_arsenal(year, args.min_pa, args.verbose)
+    savant_pitcher_stuff = build_savant_pitcher_stuff(arsenal)
     batter_df = load_batter_pitch_rates(year, args.min_pa_batter, args.verbose)
     id_to_name, name_to_id = build_pitcher_indexes(arsenal)
 
@@ -1662,6 +1668,9 @@ def main(argv: list[str] | None = None) -> int:
             ranks.append(pd.NA)
     out.insert(0, "rank", ranks)
 
+    # Pitcher-own velo/whiff ceiling (SPIKE) — before ticket outlook notes.
+    out = apply_pitcher_stuff_overlay(out, savant_pitcher_stuff, hand_mixes)
+
     # Soft-contact FILLER gated by opposing lineup arsenal rank on this slate.
     out = apply_ticket_outlook(out)
 
@@ -1675,12 +1684,31 @@ def main(argv: list[str] | None = None) -> int:
     # Print ticket outlook for flagged soft-contact arms.
     flagged = out[out["ticket_outlook"].astype(str).str.len() > 0]
     if not flagged.empty:
-        print("\nTicket outlook (soft-contact profile × opp arsenal rank)")
+        print("\nTicket outlook (soft-contact / SPIKE × opp arsenal)")
         for _, r in flagged.iterrows():
             print(
                 f"  {r.get('ticket_outlook'):<11} {r.get('pitcher')}: "
                 f"{r.get('ticket_note')}"
             )
+    # Stuff / SPIKE watch (ceiling layer — does not move expected_ks).
+    if "spike_risk" in out.columns:
+        spikes = out[out["status"].eq("ok") & out["spike_risk"].astype(bool)]
+        if not spikes.empty:
+            print("\nSPIKE / stuff ceiling watch (no soft U6)")
+            for _, r in spikes.iterrows():
+                wh = r.get("stuff_whiff_pct")
+                velo = r.get("stuff_fb_velo")
+                wh_s = "" if wh is None or pd.isna(wh) else f"{float(wh):.1f}%"
+                velo_s = (
+                    ""
+                    if velo is None or pd.isna(velo)
+                    else f"{r.get('stuff_fb_pitch') or 'FB'} {float(velo):.1f}"
+                )
+                print(
+                    f"  {r.get('pitcher')}: solo={r.get('arsenal_abs_grade')} "
+                    f"stuff={r.get('stuff_grade') or '?'} whiff {wh_s} "
+                    f"{velo_s} · {r.get('spike_flags')}"
+                )
     # Discipline / pitch-count watch list.
     if "discipline_grade" in out.columns:
         watch = out[

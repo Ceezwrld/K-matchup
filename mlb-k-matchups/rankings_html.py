@@ -205,6 +205,9 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "usage_frac": _json_safe(p.get("usage_frac")),
                     "usage_vs_lhb": _json_safe(p.get("usage_vs_lhb")),
                     "usage_vs_rhb": _json_safe(p.get("usage_vs_rhb")),
+                    "pitcher_whiff_pct": _json_safe(p.get("pitcher_whiff_pct")),
+                    "pitcher_velo": _json_safe(p.get("pitcher_velo")),
+                    "pitcher_k_pct": _json_safe(p.get("pitcher_k_pct")),
                 }
             )
         clean_pitch_avg = []
@@ -219,6 +222,9 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "usage_vs_rhb": _json_safe(p.get("usage_vs_rhb")),
                     "lineup_k_pct": _json_safe(p.get("lineup_k_pct")),
                     "batters_with_rate": _json_safe(p.get("batters_with_rate")),
+                    "pitcher_whiff_pct": _json_safe(p.get("pitcher_whiff_pct")),
+                    "pitcher_velo": _json_safe(p.get("pitcher_velo")),
+                    "pitcher_k_pct": _json_safe(p.get("pitcher_k_pct")),
                 }
             )
 
@@ -279,6 +285,13 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "arsenal_abs_grade": r.get("arsenal_abs_grade") or "",
                 "arsenal_vs_league": _json_safe(r.get("arsenal_vs_league")),
                 "arsenal_vs_opp": _json_safe(r.get("arsenal_vs_opp")),
+                "stuff_whiff_pct": _json_safe(r.get("stuff_whiff_pct")),
+                "stuff_fb_velo": _json_safe(r.get("stuff_fb_velo")),
+                "stuff_fb_pitch": r.get("stuff_fb_pitch") or "",
+                "stuff_grade": r.get("stuff_grade") or "",
+                "stuff_source": r.get("stuff_source") or "",
+                "spike_risk": bool(r.get("spike_risk")),
+                "spike_flags": r.get("spike_flags") or "",
                 "ticket_outlook": r.get("ticket_outlook") or "",
                 "ticket_note": r.get("ticket_note") or "",
                 "vs_team_games": _json_safe(r.get("vs_team_games")),
@@ -436,6 +449,16 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
                 f" · vs L {_fmt(vs_l, 0) if vs_l is not None else '—'}%"
                 f" / vs R {_fmt(vs_r, 0) if vs_r is not None else '—'}%"
             )
+        stuff_txt = ""
+        p_whiff = p.get("pitcher_whiff_pct")
+        p_velo = p.get("pitcher_velo")
+        if p_whiff is not None or p_velo is not None:
+            bits = []
+            if p_whiff is not None:
+                bits.append(f"his whiff {_fmt(p_whiff, 1)}%")
+            if p_velo is not None:
+                bits.append(f"{_fmt(p_velo, 1)} mph")
+            stuff_txt = " · " + " · ".join(bits)
         open_attr = " open" if i == 0 else ""
 
         rows_html: list[str] = []
@@ -486,7 +509,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             "<summary>"
             f"<span class='pname'>{_esc(pname)}</span>"
             f"<span class='pmeta'>{_fmt(p.get('usage_pct'), 1)}% overall"
-            f"{_esc(hand_txt)} · {_esc(avg_txt)}</span>"
+            f"{_esc(hand_txt)}{stuff_txt} · {_esc(avg_txt)}</span>"
             "</summary>"
             f"<div class='pitch-list'>{''.join(rows_html)}</div>"
             "</details>"
@@ -500,6 +523,8 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         "Rates prefer true K% vs this pitcher’s hand when sample ≥15 PA; "
         "else overall pitch K%; "
         "<code>†</code> = same-handed league average. "
+        "Pitcher <em>his whiff / mph</em> is own-stuff (ceiling) — "
+        "does not change Exp K. "
         "Longer/darker bar = more K-prone."
         "</p>"
         "</div>"
@@ -634,6 +659,14 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"Does not depend on other pitchers today.'>"
             f"{_esc(abs_grade.upper())}</span>"
         )
+    if row.get("spike_risk") and scored:
+        spike_title = row.get("spike_flags") or "high K ceiling"
+        chips.append(
+            f"<span class='ark ark-spike' "
+            f"title='SPIKE / stuff ceiling: {_esc(spike_title)}. "
+            f"Do not auto soft-under (prefer U6.5+ or pass). "
+            f"Does not change Exp K.'>SPIKE</span>"
+        )
     if opp_rank is not None and scored:
         chips.append(
             f"<span class='ark ark-opp' "
@@ -718,6 +751,21 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     if row.get("last3_k9") is not None:
         form_bits.append(f"{_fmt(row.get('last3_k9'), 1)} K/9")
     form_val = " · ".join(form_bits) if form_bits else "no L3 form"
+    stuff_bits = []
+    if row.get("stuff_whiff_pct") is not None:
+        sg = (row.get("stuff_grade") or "").strip()
+        stuff_bits.append(
+            f"stuff whiff {_fmt(row.get('stuff_whiff_pct'), 1)}%"
+            f"{'' if not sg else ' (' + sg + ')'}"
+        )
+    if row.get("stuff_fb_velo") is not None:
+        stuff_bits.append(
+            f"{row.get('stuff_fb_pitch') or 'FB'} "
+            f"{_fmt(row.get('stuff_fb_velo'), 1)} mph"
+        )
+    if row.get("spike_risk"):
+        stuff_bits.append(f"SPIKE {row.get('spike_flags') or ''}".strip())
+    stuff_val = " · ".join(stuff_bits) if stuff_bits else ""
 
     opp = row.get("opponent") or "opp"
     matchup_bits = []
@@ -799,6 +847,12 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "<span class='meta-label'>Rates / form</span>"
         f"<span class='meta-value'>{_esc(rates_val)} · {_esc(form_val)} {risk_chip}</span>"
         "</div>"
+        "<div class='meta-cell meta-stuff'>"
+        "<span class='meta-label'>Stuff ceiling (velo / whiff)</span>"
+        f"<span class='meta-value'>"
+        f"{_esc(stuff_val) if stuff_val else '—'}"
+        "</span>"
+        "</div>"
         "<div class='meta-cell meta-matchup'>"
         "<span class='meta-label'>Arsenal matchup</span>"
         f"<span class='meta-value'>{matchup_val}</span>"
@@ -810,7 +864,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
     )
     ticket_note = (row.get("ticket_note") or "").strip()
-    # Banner only for flagged soft-contact outlooks (FILLER / MATCHUP_OK).
+    # Banner for flagged outlooks (FILLER / MATCHUP_OK / SPIKE).
     if outlook:
         note = _esc(ticket_note) if ticket_note else matchup_val
         head += (
@@ -1258,6 +1312,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .ark-strong { background: rgba(15, 106, 77, 0.10); color: var(--ok); }
   .ark-avg { background: rgba(154, 91, 18, 0.12); color: var(--warn); }
   .ark-soft { background: rgba(140, 40, 40, 0.12); color: #8c2828; }
+  .ark-spike {
+    background: rgba(154, 40, 18, 0.16);
+    color: #8a2410;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
   .ark-abs {
     font-size: 0.62rem;
     letter-spacing: 0.04em;
@@ -1284,6 +1344,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
   }
   .outlook-filler { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
+  .outlook-spike { background: rgba(154, 40, 18, 0.16); color: #8a2410; }
   .outlook-matchup_ok { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
   .detail {
     padding: 0 1rem 1.15rem;
@@ -1354,6 +1415,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .outlook-banner.outlook-filler {
     background: rgba(140, 40, 40, 0.08); border-color: rgba(140, 40, 40, 0.22);
     color: #6e2020;
+  }
+  .outlook-banner.outlook-spike {
+    background: rgba(154, 40, 18, 0.10); border-color: rgba(154, 40, 18, 0.28);
+    color: #7a220e;
   }
   .outlook-banner.outlook-matchup_ok {
     background: rgba(15, 106, 77, 0.08); border-color: rgba(15, 106, 77, 0.22);

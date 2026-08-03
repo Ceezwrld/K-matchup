@@ -48,6 +48,7 @@ No league-average blending: rates come only from the opposing lineup’s batters
 7. **Recent form** — last 3 starts’ K/9 blended into `expected_ks` (~30% weight when available); `expected_ks_model` keeps the pre-form (post-offense/discipline) number.
 8. **Outing risk** — BB/9, HR/9, xFIP (FanGraphs, Stats API fallback) → `outing_risk` flags.
 9. **Ticket outlook (FILLER vs MATCHUP_OK)** — soft-contact / low-K **profile** (K9 / soft L3 / elev_xFIP) is gated by **absolute** arsenal-vs-lineup quality (`expected_k_pct` → `arsenal_abs_grade`: elite≥24 / strong≥22.5 / avg≥20 / soft&lt;20). Soft profile + avg/soft solo grade = **FILLER**; soft profile + strong/elite solo grade = **MATCHUP_OK** (disclose; O3.5 / thin O4.5 K only). Slate `#` / `matchup_grade` remain secondary “today’s relative” context. When Ks are a poor fit, notes also flag **pitcher outs** as an alt ticket lane if outing length / risk supports it.
+10. **Pitcher stuff ceiling (velo / whiff by pitch)** — Savant pitcher-arsenal **whiff%** (usage-weighted) + Statcast **release velo** on the primary fastball. Surfaces as `stuff_whiff_pct` / `stuff_fb_velo` / `stuff_grade` and a **SPIKE** flag when K9≥~10 or stuff whiff is elite (or strong whiff + ≥95 mph FB). **Does not change `expected_ks`** — it blocks soft-under autopilot when the mix-vs-lineup grade is SOFT but the arm still has swing-and-miss stuff. Soft solo + SPIKE → ticket outlook **SPIKE**.
 
 **Hits props (separate board — does not affect `expected_ks`)**
 

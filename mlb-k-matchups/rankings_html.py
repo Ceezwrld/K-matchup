@@ -677,24 +677,28 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"Do not auto soft-under (prefer U6.5+ or pass). "
             f"Does not change Exp K.'>SPIKE</span>"
         )
+    # Pitcher style lives next to the name (not buried in the K% chip stack).
     pstyle = (row.get("pitcher_style") or "").strip().lower()
+    style_labels = {
+        "whiff": ("WHIFF", "K-first / strikeout outs"),
+        "contact_gb": ("GB", "ground-ball / in-play outs"),
+        "fly_popup": ("FLY", "fly-ball + popup (IFFB) outs"),
+        "balanced": ("BAL", "mixed out-getting profile"),
+    }
+    style_chip_html = ""
     if pstyle and scored:
-        style_labels = {
-            "whiff": ("P-WHIFF", "K-first / strikeout outs"),
-            "contact_gb": ("P-GB", "ground-ball / in-play outs"),
-            "fly_popup": ("P-FLY", "fly-ball + popup (IFFB) outs"),
-            "balanced": ("P-BAL", "mixed out-getting profile"),
-        }
         chip_txt, chip_desc = style_labels.get(
-            pstyle, (f"P-{pstyle.upper()[:4]}", pstyle)
+            pstyle, (pstyle.upper()[:4], pstyle)
         )
         style_flags = row.get("pitcher_style_flags") or ""
-        chips.append(
-            f"<span class='ark ark-pstyle ark-pstyle-{_esc(pstyle)}' "
+        style_chip_html = (
+            f"<span class='style-chip ark-pstyle-{_esc(pstyle)}' "
             f"title='Pitcher out-getting style: {_esc(chip_desc)}"
             f"{'' if not style_flags else ' — ' + _esc(style_flags)}. "
             f"Season FanGraphs K%/Contact%/GB%/FB%/IFFB — confirmation only; "
-            f"does not change Exp K.'>{_esc(chip_txt)}</span>"
+            f"does not change Exp K.'>"
+            f"<span class='style-chip-lab'>STYLE</span> {_esc(chip_txt)}"
+            f"</span>"
         )
     if opp_rank is not None and scored:
         chips.append(
@@ -726,7 +730,8 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "<div class='summary-grid'>"
         f"<div class='rank'>{_esc(row.get('rank') if row.get('rank') is not None else '—')}</div>"
         "<div class='who'>"
-        f"<div class='pitcher'>{_esc(row.get('pitcher') or '—')}{hand_html}</div>"
+        f"<div class='pitcher'>{_esc(row.get('pitcher') or '—')}{hand_html}"
+        f"{style_chip_html}</div>"
         f"<div class='sub'>{_esc(row.get('pitcher_team') or '?')} vs "
         f"{_esc(row.get('opponent') or '?')}"
         f"{'' if status in ('', 'ok') else ' · ' + _esc(status)}</div>"
@@ -896,13 +901,12 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
 
     head = (
         "<div class='meta-strip'>"
-        "<div class='meta-cell'>"
-        "<span class='meta-label'>Outing</span>"
-        f"<span class='meta-value'>{outing_val}{role_html}</span>"
-        "</div>"
-        "<div class='meta-cell'>"
-        "<span class='meta-label'>Rates / form</span>"
-        f"<span class='meta-value'>{_esc(rates_val)} · {_esc(form_val)} {risk_chip}</span>"
+        # Style first so it's visible without scrolling the meta strip.
+        "<div class='meta-cell meta-pstyle'>"
+        "<span class='meta-label'>Pitcher style (Ks vs BIP outs)</span>"
+        f"<span class='meta-value'>"
+        f"{_esc(style_val) if style_val else '—'}"
+        "</span>"
         "</div>"
         "<div class='meta-cell meta-stuff'>"
         "<span class='meta-label'>Stuff ceiling (velo / whiff)</span>"
@@ -910,11 +914,13 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"{_esc(stuff_val) if stuff_val else '—'}"
         "</span>"
         "</div>"
-        "<div class='meta-cell meta-pstyle'>"
-        "<span class='meta-label'>Pitcher style (Ks vs BIP outs)</span>"
-        f"<span class='meta-value'>"
-        f"{_esc(style_val) if style_val else '—'}"
-        "</span>"
+        "<div class='meta-cell'>"
+        "<span class='meta-label'>Outing</span>"
+        f"<span class='meta-value'>{outing_val}{role_html}</span>"
+        "</div>"
+        "<div class='meta-cell'>"
+        "<span class='meta-label'>Rates / form</span>"
+        f"<span class='meta-value'>{_esc(rates_val)} · {_esc(form_val)} {risk_chip}</span>"
         "</div>"
         "<div class='meta-cell meta-matchup'>"
         "<span class='meta-label'>Arsenal matchup</span>"
@@ -1381,21 +1387,49 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-weight: 700;
     letter-spacing: 0.03em;
   }
-  .ark-pstyle-whiff {
-    background: rgba(15, 106, 77, 0.14);
+  .style-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    margin-left: 0.4rem;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .style-chip-lab {
+    opacity: 0.7;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+  }
+  .ark-pstyle-whiff, .style-chip.ark-pstyle-whiff {
+    background: rgba(15, 106, 77, 0.16);
     color: #064832;
+    border-color: rgba(15, 106, 77, 0.28);
   }
-  .ark-pstyle-contact_gb {
-    background: rgba(40, 72, 120, 0.12);
+  .ark-pstyle-contact_gb, .style-chip.ark-pstyle-contact_gb {
+    background: rgba(40, 72, 120, 0.14);
     color: #1e3a5f;
+    border-color: rgba(40, 72, 120, 0.28);
   }
-  .ark-pstyle-fly_popup {
-    background: rgba(120, 72, 40, 0.12);
+  .ark-pstyle-fly_popup, .style-chip.ark-pstyle-fly_popup {
+    background: rgba(120, 72, 40, 0.14);
     color: #5c3418;
+    border-color: rgba(120, 72, 40, 0.28);
   }
-  .ark-pstyle-balanced {
-    background: rgba(20, 32, 26, 0.08);
-    color: var(--muted);
+  .ark-pstyle-balanced, .style-chip.ark-pstyle-balanced {
+    background: rgba(20, 32, 26, 0.10);
+    color: var(--ink);
+    border-color: rgba(20, 32, 26, 0.18);
+  }
+  .meta-pstyle {
+    border-color: rgba(40, 72, 120, 0.30);
+    background: rgba(40, 72, 120, 0.07);
+    grid-column: 1 / -1;
   }
   .ark-abs {
     font-size: 0.62rem;

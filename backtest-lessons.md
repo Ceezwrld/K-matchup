@@ -89,6 +89,13 @@ Other cards: **Barnett** (#2 elite / low Exp K) = matchup > mean projection, but
 - **UNDER gate — SOFT solo arsenal is the edge:** when absolute arsenal vs that nine is **SOFT (&lt;20% K)**, lean **unders** (esp. soft **U6.5 / U7.5**) even if opp lineup K% ranks high or Exp K sits near 5–6. McLean proved high opp K% ≠ over juice when the mix is soft vs that nine. Still: **no soft unders on SPIKE arms (K9 ≥ ~10)**; prefer wide edge under the line.
 - Prefer **soft U6.5 / U7.5** with wide edge when arsenal is soft; **U5.5** OK if non-SPIKE and edge holds.
 - **Fade unders on SPIKE arms (K9 ≥ ~10)** — they can jump a soft under even when proj is mid / arsenal looks soft.
+- **Good-pitcher unders (line vs Exp K) — Cam rule:** books often set lines off **name / K9 / SPIKE ceiling**, not arsenal vs *this* nine. Edge = **Exp K well under the posted line** even on WHIFF/SPIKE arms.
+  1. Exp K (fair) vs book line (ask) — want ~**1.0–1.5+ K** of cushion for unders.
+  2. Solo grade **SOFT or AVG** vs that nine (ELITE/STRONG → not an under).
+  3. STYLE/SPIKE size the *line*, not the side: **SOFT+SPIKE+WHIFF** → only **wide** unders (Cam U7 with Exp K ~5.4); non-SPIKE soft/avg → U6.5 OK if edge holds.
+  4. Opp **contact_heavy** BIP strengthens the under; whiff-prone opp fights it (need extra line cushion).
+  - **Cam 8/3:** Exp K ~5.4, STYLE WHIFF + SPIKE, book **7** → U7 edge; actual **6** in 3 IP cashed.
+  - **Javier 8/3:** Exp K ~2.9, SOFT + TOR contact_heavy → under vs juiced name line; actual **2**.
 - Fade **openers / uncertain swingmen** for *full-outing* K props (Barnett-style elite arsenal still isn’t a starter O4.5).
 - **Medium/high** outing risk → need *more* edge for overs (or pass).
 - **Soft-contact / low-K volume arms (K9 ≲ ~7, soft L3 Ks, elev_xFIP):** flag the **profile**, then check arsenal rank.

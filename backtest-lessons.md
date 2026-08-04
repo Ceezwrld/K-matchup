@@ -24,10 +24,19 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
    **Under leans** — solo arsenal grade **SOFT**  
    **Fade / thin** — FILLER, openers, MATCHUP_OK (thin O3.5 only), high-risk watch list  
 
-   For each arm include: **solo grade**, arsenal K%, vs league / vs opp K%, Exp K, outing risk, game/time.  
+   For each arm include: **solo grade**, arsenal K%, vs league / vs opp K%, Exp K, outing risk, game/time, plus the **info lean** (3b).  
    Slate `#` and opp K% `#` are optional context only.  
    Also check **vs Team history** on each card (career K% vs that batting team + recent games with **HOME/AWAY** for the pitcher). Use history to confirm or caution the model side — not to override a clear absolute arsenal gate.  
    Mark the whole board **provisional** until official lineups post.
+
+3b. **Info lean (default on every arm — not a full essay):** stack three signals so outs-type is visible at a glance:
+   - **Solo grade** → can the mix K *this* nine?
+   - **STYLE** (WHIFF / GB / FLY / BAL) → does he usually get outs via Ks or BIP?
+   - **Opp BIP / contact** (whiff_prone / neutral / contact_heavy) → will the nine help or fight Ks?
+
+   One-glance combos: ELITE+WHIFF+whiff-prone = strong K info · ELITE+FLY/GB = matchup OK, don’t overweight K total · SOFT+GB/FLY+contact_heavy = strong under info · SOFT+WHIFF/SPIKE = soft grade but K ceiling live · AVG+WHIFF+juiced line = Cam-rule under info.
+
+3c. **Full thesis / essay (on request only):** when asked for a specific pitcher (or a short list), expand to Littell/Skubal depth — table of arsenal / opp BIP / STYLE / stuff·SPIKE / IP·risk, then answer “can we trust the K total?” and line-sizing. Do **not** essay the whole slate unless asked. Same daily routine, deeper read on demand.
 4. **Re-refresh when lineups confirm** — same report shape, flip prior→official, re-check leans before locking tickets.
 5. **Accuracy lock before firing** — official nine in, starter not opener, side matches arsenal vulnerability, line edge still holds.
 

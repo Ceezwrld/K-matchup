@@ -1161,6 +1161,8 @@ def format_table(df: pd.DataFrame) -> str:
             "projected_bf",
             "expected_k_pct",
             "lineup_k_pct",
+            "lineup_bip_pct",
+            "contact_grade",
             "lineup_bb_pct",
             "offense_factor",
             "last3_ks",
@@ -1564,6 +1566,8 @@ def main(argv: list[str] | None = None) -> int:
             "lineup_k_pct": offense_summary.get("lineup_k_pct"),
             "lineup_avg": offense_summary.get("lineup_avg"),
             "lineup_bb_pct": offense_summary.get("lineup_bb_pct"),
+            "lineup_bip_pct": offense_summary.get("lineup_bip_pct"),
+            "contact_grade": offense_summary.get("contact_grade") or "",
             "offense_source": offense_summary.get("offense_source"),
             "offense_factor": None,
             "discipline_grade": discipline_meta.get("discipline_grade"),
@@ -1655,6 +1659,8 @@ def main(argv: list[str] | None = None) -> int:
                     row["lineup_k_pct"] = offense_meta.get("lineup_k_pct")
                     row["lineup_avg"] = offense_meta.get("lineup_avg")
                     row["lineup_bb_pct"] = offense_meta.get("lineup_bb_pct")
+                    row["lineup_bip_pct"] = offense_meta.get("lineup_bip_pct")
+                    row["contact_grade"] = offense_meta.get("contact_grade") or ""
                     row["offense_source"] = offense_meta.get("offense_source")
                     row["discipline_grade"] = (
                         offense_meta.get("discipline_grade")
@@ -1755,6 +1761,25 @@ def main(argv: list[str] | None = None) -> int:
                     f"{r.get('pitcher')} · opp BB% {bb_s} · "
                     f"pitch-count {r.get('pitch_count_risk')} · "
                     f"bf×{r.get('discipline_bf_factor')} ks×{r.get('discipline_ks_factor')}"
+                )
+    # Contact / BIP environment (high BIP trims Exp K; whiff-prone boosts).
+    if "contact_grade" in out.columns:
+        contact = out[
+            out["status"].eq("ok")
+            & out["contact_grade"].isin(["contact_heavy", "whiff_prone"])
+        ]
+        if not contact.empty:
+            print("\nLineup contact / BIP watch")
+            for _, r in contact.sort_values("lineup_bip_pct", ascending=False).iterrows():
+                bip = r.get("lineup_bip_pct")
+                kk = r.get("lineup_k_pct")
+                bip_s = "" if bip is None or pd.isna(bip) else f"{float(bip):.1f}%"
+                kk_s = "" if kk is None or pd.isna(kk) else f"{float(kk):.1f}%"
+                off = r.get("offense_factor")
+                off_s = "" if off is None or pd.isna(off) else f"off×{float(off):.3f}"
+                print(
+                    f"  {r.get('contact_grade'):<14} vs {r.get('opponent')}: "
+                    f"{r.get('pitcher')} · BIP {bip_s} · opp K% {kk_s} · {off_s}"
                 )
     if args.detail:
         print()

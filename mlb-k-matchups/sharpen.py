@@ -130,9 +130,14 @@ SHORT_RECENT_IP_SOFT = 4.75
 # Opposing lineup offense overlay (mild ± on matchup expected_ks).
 LEAGUE_K_PCT = 22.5
 LEAGUE_AVG = 0.245
+# Balls in play / PA ≈ (AB − SO) / PA. High BIP = contact-heavy nine.
+LEAGUE_BIP_PCT = 68.0
 OFFENSE_FACTOR_MAX = 0.07
 OFFENSE_RECENT_GAMES = 10
 OFFENSE_MIN_RECENT_PA = 25
+# Contact environment labels from lineup BIP% (+ K% confirmation).
+CONTACT_HEAVY_BIP = 71.0
+WHIFF_PRONE_BIP = 64.0
 
 # Plate discipline / pitch-count layer (lineup BB% + K% shape).
 LEAGUE_BB_PCT = 8.3
@@ -1144,13 +1149,27 @@ def classify_outing_risk(
     }
 
 
+def _bip_pct(ab: float | None, so: float | None, pa: float | None) -> float | None:
+    """Balls-in-play % of PA ≈ (AB − SO) / PA."""
+    try:
+        ab_f = float(ab or 0.0)
+        so_f = float(so or 0.0)
+        pa_f = float(pa or 0.0)
+    except (TypeError, ValueError):
+        return None
+    if pa_f <= 0:
+        return None
+    bip = max(0.0, ab_f - min(so_f, ab_f))
+    return 100.0 * bip / pa_f
+
+
 def fetch_batter_offense_profiles(
     batter_ids: list[int],
     year: int,
     verbose: bool,
     log: Callable[[bool, str], None],
 ) -> dict[int, dict[str, Any]]:
-    """Season + recent hitting K%/AVG/BB% for offense + discipline overlays."""
+    """Season + recent K%/AVG/BB%/BIP% for offense + discipline overlays."""
     ids = sorted({int(x) for x in batter_ids if x is not None})
     out: dict[int, dict[str, Any]] = {}
     for i in range(0, len(ids), 25):
@@ -1168,6 +1187,7 @@ def fetch_batter_offense_profiles(
             if pid is None:
                 continue
             season_k = season_avg = season_pa = season_bb = None
+            season_ab = season_so = None
             recent_so = recent_ab = recent_h = recent_pa = recent_bb = 0.0
             for block in person.get("stats") or []:
                 typ = ((block.get("type") or {}).get("displayName") or "").lower()
@@ -1190,6 +1210,10 @@ def fetch_batter_offense_profiles(
                             season_avg = float(h) / float(ab)
                         if pa is not None:
                             season_pa = float(pa)
+                        if ab is not None:
+                            season_ab = float(ab)
+                        if so is not None:
+                            season_so = float(so)
                         if bb is not None and pa not in (None, 0, "0"):
                             season_bb = 100.0 * float(bb) / float(pa)
                     except (TypeError, ValueError, ZeroDivisionError):
@@ -1233,23 +1257,44 @@ def fetch_batter_offense_profiles(
                 "season_k_pct": season_k,
                 "season_avg": season_avg,
                 "season_pa": season_pa,
+                "season_ab": season_ab,
+                "season_so": season_so,
                 "season_bb_pct": season_bb,
+                "season_bip_pct": _bip_pct(season_ab, season_so, season_pa),
                 "recent_k_pct": recent_k,
                 "recent_avg": recent_avg,
                 "recent_pa": recent_pa,
                 "recent_ab": recent_ab,
+                "recent_so": recent_so,
                 "recent_bb_pct": recent_bb_pct,
+                "recent_bip_pct": _bip_pct(recent_ab, recent_so, recent_pa),
             }
     return out
+
+
+def classify_contact_grade(
+    bip_pct: float | None, k_pct: float | None
+) -> str:
+    """Label lineup contact environment from BIP% (+ K% confirm)."""
+    if bip_pct is None:
+        return ""
+    bip = float(bip_pct)
+    k = float(k_pct) if k_pct is not None else LEAGUE_K_PCT
+    if bip >= CONTACT_HEAVY_BIP or (bip >= 69.0 and k <= 19.5):
+        return "contact_heavy"
+    if bip <= WHIFF_PRONE_BIP or (bip <= 66.0 and k >= 25.0):
+        return "whiff_prone"
+    return "neutral"
 
 
 def summarize_lineup_offense(
     lineup: list[dict[str, Any]],
     profiles: dict[int, dict[str, Any]],
 ) -> dict[str, Any]:
-    """PA-weighted lineup K% / AVG / BB%; prefer recent form when sample is enough."""
-    recent_rows: list[tuple[float, float, float, float]] = []  # pa, k, avg, bb
-    season_rows: list[tuple[float, float, float, float]] = []
+    """PA-weighted lineup K% / AVG / BB% / BIP%; prefer recent when sample OK."""
+    # rows: pa, k, avg, bb, bip
+    recent_rows: list[tuple[float, float, float, float, float]] = []
+    season_rows: list[tuple[float, float, float, float, float]] = []
     for slot in lineup:
         try:
             bid = int(slot["batter_id"])
@@ -1260,6 +1305,7 @@ def summarize_lineup_offense(
         r_k = prof.get("recent_k_pct")
         r_avg = prof.get("recent_avg")
         r_bb = prof.get("recent_bb_pct")
+        r_bip = prof.get("recent_bip_pct")
         if r_pa > 0 and r_k is not None:
             recent_rows.append(
                 (
@@ -1267,12 +1313,14 @@ def summarize_lineup_offense(
                     float(r_k),
                     float(r_avg) if r_avg is not None else LEAGUE_AVG,
                     float(r_bb) if r_bb is not None else LEAGUE_BB_PCT,
+                    float(r_bip) if r_bip is not None else LEAGUE_BIP_PCT,
                 )
             )
         s_pa = float(prof.get("season_pa") or 0.0) or 1.0
         s_k = prof.get("season_k_pct")
         s_avg = prof.get("season_avg")
         s_bb = prof.get("season_bb_pct")
+        s_bip = prof.get("season_bip_pct")
         if s_k is not None:
             season_rows.append(
                 (
@@ -1280,29 +1328,31 @@ def summarize_lineup_offense(
                     float(s_k),
                     float(s_avg) if s_avg is not None else LEAGUE_AVG,
                     float(s_bb) if s_bb is not None else LEAGUE_BB_PCT,
+                    float(s_bip) if s_bip is not None else LEAGUE_BIP_PCT,
                 )
             )
 
     def _wavg(
-        rows: list[tuple[float, float, float, float]],
-    ) -> tuple[float | None, float | None, float | None, float]:
+        rows: list[tuple[float, float, float, float, float]],
+    ) -> tuple[float | None, float | None, float | None, float | None, float]:
         if not rows:
-            return None, None, None, 0.0
+            return None, None, None, None, 0.0
         tw = sum(r[0] for r in rows)
         if tw <= 0:
-            return None, None, None, 0.0
+            return None, None, None, None, 0.0
         k = sum(r[0] * r[1] for r in rows) / tw
         avg = sum(r[0] * r[2] for r in rows) / tw
         bb = sum(r[0] * r[3] for r in rows) / tw
-        return k, avg, bb, tw
+        bip = sum(r[0] * r[4] for r in rows) / tw
+        return k, avg, bb, bip, tw
 
     recent_pa_total = sum(r[0] for r in recent_rows)
     if recent_pa_total >= OFFENSE_MIN_RECENT_PA and recent_rows:
-        k_pct, avg, bb_pct, pa = _wavg(recent_rows)
+        k_pct, avg, bb_pct, bip_pct, pa = _wavg(recent_rows)
         source = "recent"
         n = len(recent_rows)
     elif season_rows:
-        k_pct, avg, bb_pct, pa = _wavg(season_rows)
+        k_pct, avg, bb_pct, bip_pct, pa = _wavg(season_rows)
         source = "season"
         n = len(season_rows)
     else:
@@ -1310,6 +1360,8 @@ def summarize_lineup_offense(
             "lineup_k_pct": None,
             "lineup_avg": None,
             "lineup_bb_pct": None,
+            "lineup_bip_pct": None,
+            "contact_grade": "",
             "offense_pa": 0.0,
             "offense_source": None,
             "offense_n": 0,
@@ -1317,10 +1369,13 @@ def summarize_lineup_offense(
         }
 
     grade = classify_discipline_grade(bb_pct, k_pct)
+    contact = classify_contact_grade(bip_pct, k_pct)
     return {
         "lineup_k_pct": k_pct,
         "lineup_avg": avg,
         "lineup_bb_pct": bb_pct,
+        "lineup_bip_pct": bip_pct,
+        "contact_grade": contact,
         "offense_pa": pa,
         "offense_source": source,
         "offense_n": n,
@@ -1353,15 +1408,18 @@ def apply_lineup_offense_overlay(
     expected_ks: float,
     summary: dict[str, Any] | None,
 ) -> tuple[float, float | None, dict[str, Any]]:
-    """Mild ± adjust matchup Ks from opposing lineup K%/contact.
+    """Mild ± adjust matchup Ks from opposing lineup K% / BIP contact.
 
-    Higher lineup K% → more pitcher Ks. Higher AVG / contact → fewer Ks.
-    Capped at ±OFFENSE_FACTOR_MAX so this stays a sharpening layer.
+    Higher lineup K% → more pitcher Ks.
+    Higher balls-in-play % (contact-heavy nine) → fewer pitcher Ks.
+    AVG remains a small secondary contact cue. Capped at ±OFFENSE_FACTOR_MAX.
     """
     empty = {
         "lineup_k_pct": None,
         "lineup_avg": None,
         "lineup_bb_pct": None,
+        "lineup_bip_pct": None,
+        "contact_grade": "",
         "offense_source": None,
         "offense_factor": None,
         "discipline_grade": None,
@@ -1370,27 +1428,38 @@ def apply_lineup_offense_overlay(
         return expected_ks, None, empty
     k_pct = summary.get("lineup_k_pct")
     avg = summary.get("lineup_avg")
+    bip_pct = summary.get("lineup_bip_pct")
     if k_pct is None:
         return expected_ks, None, {
             **empty,
-            **{k: summary.get(k) for k in empty if k in (summary or {})},
             "lineup_bb_pct": summary.get("lineup_bb_pct"),
+            "lineup_bip_pct": summary.get("lineup_bip_pct"),
+            "contact_grade": summary.get("contact_grade") or "",
             "discipline_grade": summary.get("discipline_grade"),
+            "offense_source": summary.get("offense_source"),
         }
 
+    # Whiff-prone lineups boost Ks; contact/BIP-heavy lineups trim them.
     k_edge = (float(k_pct) - LEAGUE_K_PCT) / 100.0
-    contact_edge = 0.0
+    bip_edge = 0.0
+    if bip_pct is not None:
+        bip_edge = -(float(bip_pct) - LEAGUE_BIP_PCT) / 100.0
+    avg_edge = 0.0
     if avg is not None:
-        # Elevated AVG with soft K% is a contact environment.
-        contact_edge = -(float(avg) - LEAGUE_AVG) * 0.55
-    raw = (k_edge * 1.15) + contact_edge
+        avg_edge = -(float(avg) - LEAGUE_AVG) * 0.25
+    raw = (k_edge * 1.05) + (bip_edge * 0.90) + avg_edge
     delta = max(-OFFENSE_FACTOR_MAX, min(OFFENSE_FACTOR_MAX, raw))
     factor = 1.0 + delta
     blended = float(expected_ks) * factor
+    contact = summary.get("contact_grade") or classify_contact_grade(
+        float(bip_pct) if bip_pct is not None else None, float(k_pct)
+    )
     meta = {
         "lineup_k_pct": float(k_pct),
         "lineup_avg": None if avg is None else float(avg),
         "lineup_bb_pct": summary.get("lineup_bb_pct"),
+        "lineup_bip_pct": None if bip_pct is None else float(bip_pct),
+        "contact_grade": contact,
         "offense_source": summary.get("offense_source"),
         "offense_factor": factor,
         "offense_pa": summary.get("offense_pa"),

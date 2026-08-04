@@ -271,6 +271,8 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "lineup_k_pct": _json_safe(r.get("lineup_k_pct")),
                 "lineup_avg": _json_safe(r.get("lineup_avg")),
                 "lineup_bb_pct": _json_safe(r.get("lineup_bb_pct")),
+                "lineup_bip_pct": _json_safe(r.get("lineup_bip_pct")),
+                "contact_grade": r.get("contact_grade") or "",
                 "offense_source": r.get("offense_source"),
                 "offense_factor": _json_safe(r.get("offense_factor")),
                 "discipline_grade": r.get("discipline_grade") or "",
@@ -788,6 +790,12 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         matchup_bits.append(
             f"opp K% {_fmt(row.get('lineup_k_pct'), 1)}"
             f"{'' if not src else ' (' + _esc(src) + ')'}"
+        )
+    if row.get("lineup_bip_pct") is not None:
+        cg = (row.get("contact_grade") or "").strip()
+        matchup_bits.append(
+            f"opp BIP {_fmt(row.get('lineup_bip_pct'), 1)}%"
+            f"{'' if not cg else ' (' + _esc(cg.replace('_', ' ')) + ')'}"
         )
     if row.get("lineup_bb_pct") is not None:
         matchup_bits.append(f"opp BB% {_fmt(row.get('lineup_bb_pct'), 1)}")

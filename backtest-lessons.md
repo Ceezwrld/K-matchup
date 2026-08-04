@@ -49,6 +49,8 @@ Also check edges on the card: **vs league** (`expected_k_pct − 22.5`) and **vs
 
 **Stuff ceiling (velo/whiff by pitch)** — separate from solo grade. Usage-weighted pitcher-own whiff% + primary FB velo → `stuff_grade` / **SPIKE** chip. Soft solo **+ SPIKE** = do **not** auto-under (U6.5+ or pass). Does not move Exp K.
 
+**Lineup contact / BIP** — opposing nine’s balls-in-play rate (`lineup_bip_pct`) + `contact_grade` (`whiff_prone` / `neutral` / `contact_heavy`). Contact-heavy BIP trims Exp K; whiff-prone (high K% / low BIP) boosts it. Secondary to solo arsenal grade — sizes the number, doesn’t flip the side.
+
 **Secondary only:** slate `#` / slate `matchup_grade` / opp lineup K% `#` — “who’s best *today*,” not solo quality.  
 Exp K and projected IP size the outing; they do not define the side.
 

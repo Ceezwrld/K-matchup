@@ -43,7 +43,7 @@ No league-average blending: rates come only from the opposing lineup’s batters
 2. **Batter pitch-type K% vs LHP/RHP** — Statcast PA-ending K% by pitch against lefties/righties (min 15 PA); falls back to overall pitch K% then league fill.
 3. **Batter K% vs pitcher hand** — Stats API `vl`/`vr` hitting splits softly adjust arsenal-weighted K% when pitch×hand coverage is thin (skipped when ≥60% of usage already uses pitch×hand rates).
 4. **Outing survival / early-exit** — BB/9 haircut plus short recent IP and high HR/xFIP+BB flags shrink projected BF/IP (`bf_risk_factor`, `survival_flags`).
-5. **Opposing lineup offense form** — lineup K% and AVG (prefer last ~10 games when PA sample is enough, else season) apply a mild ±7% overlay on matchup Ks (`offense_factor`, `lineup_k_pct`).
+5. **Opposing lineup offense / contact form** — lineup **K%** and **balls-in-play %** (`lineup_bip_pct` ≈ (AB−SO)/PA; prefer last ~10 games when sample is enough, else season) apply a mild ±7% overlay on matchup Ks (`offense_factor`). High-K / low-BIP (**whiff_prone**) nines nudge Exp K up; contact-heavy / high-BIP nines trim Exp K. AVG is a small secondary cue.
 6. **Plate discipline / pitch counts** — lineup BB% + K% shape → `discipline_grade` (`patient`, `three_true`, `free_swing`, …). Patient/walk-heavy nines trim projected BF/IP (`discipline_bf_factor`, `pitch_count_risk`) before the order walk and mildly soften `expected_ks` (`discipline_ks_factor`).
 7. **Recent form** — last 3 starts’ K/9 blended into `expected_ks` (~30% weight when available); `expected_ks_model` keeps the pre-form (post-offense/discipline) number.
 8. **Outing risk** — BB/9, HR/9, xFIP (FanGraphs, Stats API fallback) → `outing_risk` flags.

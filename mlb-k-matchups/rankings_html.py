@@ -294,6 +294,14 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "stuff_source": r.get("stuff_source") or "",
                 "spike_risk": bool(r.get("spike_risk")),
                 "spike_flags": r.get("spike_flags") or "",
+                "pitcher_k_pct": _json_safe(r.get("pitcher_k_pct")),
+                "pitcher_contact_pct": _json_safe(r.get("pitcher_contact_pct")),
+                "pitcher_gb_pct": _json_safe(r.get("pitcher_gb_pct")),
+                "pitcher_fb_pct": _json_safe(r.get("pitcher_fb_pct")),
+                "pitcher_iffb_pct": _json_safe(r.get("pitcher_iffb_pct")),
+                "pitcher_soft_pct": _json_safe(r.get("pitcher_soft_pct")),
+                "pitcher_style": r.get("pitcher_style") or "",
+                "pitcher_style_flags": r.get("pitcher_style_flags") or "",
                 "ticket_outlook": r.get("ticket_outlook") or "",
                 "ticket_note": r.get("ticket_note") or "",
                 "vs_team_games": _json_safe(r.get("vs_team_games")),
@@ -669,6 +677,25 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"Do not auto soft-under (prefer U6.5+ or pass). "
             f"Does not change Exp K.'>SPIKE</span>"
         )
+    pstyle = (row.get("pitcher_style") or "").strip().lower()
+    if pstyle and scored:
+        style_labels = {
+            "whiff": ("P-WHIFF", "K-first / strikeout outs"),
+            "contact_gb": ("P-GB", "ground-ball / in-play outs"),
+            "fly_popup": ("P-FLY", "fly-ball + popup (IFFB) outs"),
+            "balanced": ("P-BAL", "mixed out-getting profile"),
+        }
+        chip_txt, chip_desc = style_labels.get(
+            pstyle, (f"P-{pstyle.upper()[:4]}", pstyle)
+        )
+        style_flags = row.get("pitcher_style_flags") or ""
+        chips.append(
+            f"<span class='ark ark-pstyle ark-pstyle-{_esc(pstyle)}' "
+            f"title='Pitcher out-getting style: {_esc(chip_desc)}"
+            f"{'' if not style_flags else ' — ' + _esc(style_flags)}. "
+            f"Season FanGraphs K%/Contact%/GB%/FB%/IFFB — confirmation only; "
+            f"does not change Exp K.'>{_esc(chip_txt)}</span>"
+        )
     if opp_rank is not None and scored:
         chips.append(
             f"<span class='ark ark-opp' "
@@ -769,6 +796,28 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         stuff_bits.append(f"SPIKE {row.get('spike_flags') or ''}".strip())
     stuff_val = " · ".join(stuff_bits) if stuff_bits else ""
 
+    style_bits: list[str] = []
+    pstyle = (row.get("pitcher_style") or "").strip().lower()
+    if pstyle:
+        style_names = {
+            "whiff": "K-first (WHIFF)",
+            "contact_gb": "GB / in-play",
+            "fly_popup": "Fly / popup",
+            "balanced": "Balanced",
+        }
+        style_bits.append(style_names.get(pstyle, pstyle))
+        if row.get("pitcher_k_pct") is not None:
+            style_bits.append(f"K% {_fmt(row.get('pitcher_k_pct'), 1)}")
+        if row.get("pitcher_contact_pct") is not None:
+            style_bits.append(f"Con% {_fmt(row.get('pitcher_contact_pct'), 1)}")
+        if row.get("pitcher_gb_pct") is not None:
+            style_bits.append(f"GB% {_fmt(row.get('pitcher_gb_pct'), 1)}")
+        if row.get("pitcher_fb_pct") is not None:
+            style_bits.append(f"FB% {_fmt(row.get('pitcher_fb_pct'), 1)}")
+        if row.get("pitcher_iffb_pct") is not None:
+            style_bits.append(f"IFFB% {_fmt(row.get('pitcher_iffb_pct'), 1)}")
+    style_val = " · ".join(style_bits) if style_bits else ""
+
     opp = row.get("opponent") or "opp"
     matchup_bits = []
     if abs_grade:
@@ -859,6 +908,12 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "<span class='meta-label'>Stuff ceiling (velo / whiff)</span>"
         f"<span class='meta-value'>"
         f"{_esc(stuff_val) if stuff_val else '—'}"
+        "</span>"
+        "</div>"
+        "<div class='meta-cell meta-pstyle'>"
+        "<span class='meta-label'>Pitcher style (Ks vs BIP outs)</span>"
+        f"<span class='meta-value'>"
+        f"{_esc(style_val) if style_val else '—'}"
         "</span>"
         "</div>"
         "<div class='meta-cell meta-matchup'>"
@@ -1325,6 +1380,22 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: #8a2410;
     font-weight: 700;
     letter-spacing: 0.03em;
+  }
+  .ark-pstyle-whiff {
+    background: rgba(15, 106, 77, 0.14);
+    color: #064832;
+  }
+  .ark-pstyle-contact_gb {
+    background: rgba(40, 72, 120, 0.12);
+    color: #1e3a5f;
+  }
+  .ark-pstyle-fly_popup {
+    background: rgba(120, 72, 40, 0.12);
+    color: #5c3418;
+  }
+  .ark-pstyle-balanced {
+    background: rgba(20, 32, 26, 0.08);
+    color: var(--muted);
   }
   .ark-abs {
     font-size: 0.62rem;

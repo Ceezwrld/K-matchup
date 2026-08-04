@@ -927,10 +927,25 @@ def apply_recent_form_overlay(
     return blended, form_ks, weight
 
 
+def _fg_pct(value: Any) -> float:
+    """FanGraphs % fields may be 0–1 proportions or 0–100."""
+    if value is None:
+        return float("nan")
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return float("nan")
+    if pd.isna(f):
+        return float("nan")
+    if 0.0 <= f <= 1.5:
+        f *= 100.0
+    return f
+
+
 def fetch_fangraphs_pitching(
     year: int, verbose: bool, log: Callable[[bool, str], None]
 ) -> dict[int, dict[str, float]]:
-    """xFIP / BB/9 / HR/9 / K/9 keyed by MLBAM id."""
+    """xFIP / rates / contact profile (K%, Contact%, GB%, FB%, IFFB%) by MLBAM id."""
     url = FANGRAPHS_PITCHING_URL.format(year=year)
     try:
         payload = _get(url, verbose, log).json()
@@ -949,6 +964,12 @@ def fetch_fangraphs_pitching(
                 "bb9": float(row["BB/9"]) if row.get("BB/9") is not None else float("nan"),
                 "hr9": float(row["HR/9"]) if row.get("HR/9") is not None else float("nan"),
                 "k9": float(row["K/9"]) if row.get("K/9") is not None else float("nan"),
+                "pitcher_k_pct": _fg_pct(row.get("K%")),
+                "pitcher_contact_pct": _fg_pct(row.get("Contact%")),
+                "pitcher_gb_pct": _fg_pct(row.get("GB%")),
+                "pitcher_fb_pct": _fg_pct(row.get("FB%")),
+                "pitcher_iffb_pct": _fg_pct(row.get("IFFB%")),
+                "pitcher_soft_pct": _fg_pct(row.get("Soft%")),
             }
         except (TypeError, ValueError):
             continue
@@ -961,7 +982,7 @@ def fetch_pitcher_rate_stats(
     verbose: bool,
     log: Callable[[bool, str], None],
 ) -> dict[int, dict[str, float]]:
-    """Stats API fallback rates: BB/9, HR/9, K/9."""
+    """Stats API fallback rates: BB/9, HR/9, K/9 + rough K%/GB% from BIP outs."""
     ids = sorted({int(x) for x in pitcher_ids if x is not None})
     out: dict[int, dict[str, float]] = {}
     for i in range(0, len(ids), 40):
@@ -979,6 +1000,14 @@ def fetch_pitcher_rate_stats(
                 if not splits:
                     continue
                 stat = splits[0].get("stat") or {}
+                try:
+                    bf = float(stat.get("battersFaced") or 0)
+                    so = float(stat.get("strikeOuts") or 0)
+                    go = float(stat.get("groundOuts") or 0)
+                    ao = float(stat.get("airOuts") or 0)
+                except (TypeError, ValueError):
+                    bf = so = go = ao = 0.0
+                bip_outs = go + ao
                 out[int(pid)] = {
                     "bb9": float(stat["walksPer9Inn"])
                     if stat.get("walksPer9Inn") not in (None, "")
@@ -990,9 +1019,92 @@ def fetch_pitcher_rate_stats(
                     if stat.get("strikeoutsPer9Inn") not in (None, "")
                     else float("nan"),
                     "xfip": float("nan"),
+                    "pitcher_k_pct": (100.0 * so / bf) if bf > 0 else float("nan"),
+                    # Approx GB% of in-play outs (not true batted-ball GB%).
+                    "pitcher_gb_pct": (100.0 * go / bip_outs) if bip_outs > 0 else float("nan"),
+                    "pitcher_fb_pct": (100.0 * ao / bip_outs) if bip_outs > 0 else float("nan"),
+                    "pitcher_contact_pct": float("nan"),
+                    "pitcher_iffb_pct": float("nan"),
+                    "pitcher_soft_pct": float("nan"),
                 }
                 break
     return out
+
+
+# Pitcher out-getting style bands (season profile; confirmation layer).
+PITCHER_WHIFF_K = 24.5
+PITCHER_WHIFF_CONTACT = 75.0
+PITCHER_GB_CONTACT = 48.0
+PITCHER_GB_K_MAX = 22.0
+PITCHER_FB = 40.0
+PITCHER_IFFB = 11.0
+
+
+def classify_pitcher_style(
+    *,
+    k_pct: float | None,
+    contact_pct: float | None,
+    gb_pct: float | None,
+    fb_pct: float | None,
+    iffb_pct: float | None,
+    k9: float | None = None,
+) -> tuple[str, str]:
+    """Return (style, short flags) for how a pitcher usually gets outs.
+
+    Styles:
+      whiff      — strikeout-first
+      contact_gb — ground-ball / in-play outs
+      fly_popup  — fly-ball + popup (IFFB) tendency
+      balanced   — mixed
+    """
+    bits: list[str] = []
+    k = float(k_pct) if k_pct is not None else None
+    con = float(contact_pct) if contact_pct is not None else None
+    gb = float(gb_pct) if gb_pct is not None else None
+    fb = float(fb_pct) if fb_pct is not None else None
+    iffb = float(iffb_pct) if iffb_pct is not None else None
+
+    whiff = False
+    if k is not None and k >= PITCHER_WHIFF_K:
+        whiff = True
+        bits.append(f"K% {k:.1f}")
+    elif k9 is not None and float(k9) >= 10.0 and (k is None or k >= 23.0):
+        whiff = True
+        bits.append(f"K9 {float(k9):.1f}")
+    if con is not None and con <= PITCHER_WHIFF_CONTACT and whiff:
+        bits.append(f"Contact% {con:.1f}")
+
+    gb_style = gb is not None and gb >= PITCHER_GB_CONTACT and (
+        k is None or k <= PITCHER_GB_K_MAX
+    )
+    if gb_style:
+        bits.append(f"GB% {gb:.1f}")
+
+    fly_style = (
+        fb is not None
+        and fb >= PITCHER_FB
+        and iffb is not None
+        and iffb >= PITCHER_IFFB
+    )
+    if fly_style:
+        bits.append(f"FB% {fb:.1f}")
+        bits.append(f"IFFB% {iffb:.1f}")
+
+    # Prefer the dominant identity; whiff wins ties (K props care most).
+    if whiff and not gb_style:
+        return "whiff", ", ".join(bits)
+    if gb_style and not whiff:
+        return "contact_gb", ", ".join(bits)
+    if fly_style and not whiff:
+        return "fly_popup", ", ".join(bits)
+    if whiff and gb_style:
+        return "whiff", ", ".join(bits)  # K-first even if GB is high
+    if bits:
+        return "balanced", ", ".join(bits)
+    # Enough rate data to call balanced; otherwise leave blank (no chip).
+    if k is not None or gb is not None or fb is not None:
+        return "balanced", ""
+    return "", ""
 
 
 def merge_risk_metrics(
@@ -1000,14 +1112,23 @@ def merge_risk_metrics(
     fangraphs: dict[int, dict[str, float]],
     api_rates: dict[int, dict[str, float]],
 ) -> dict[str, Any]:
+    empty = {
+        "bb9": None,
+        "hr9": None,
+        "k9": None,
+        "xfip": None,
+        "pitcher_k_pct": None,
+        "pitcher_contact_pct": None,
+        "pitcher_gb_pct": None,
+        "pitcher_fb_pct": None,
+        "pitcher_iffb_pct": None,
+        "pitcher_soft_pct": None,
+        "pitcher_style": "",
+        "pitcher_style_flags": "",
+        "risk_source": None,
+    }
     if pitcher_id is None:
-        return {
-            "bb9": None,
-            "hr9": None,
-            "k9": None,
-            "xfip": None,
-            "risk_source": None,
-        }
+        return empty
     pid = int(pitcher_id)
     fg = fangraphs.get(pid) or {}
     api = api_rates.get(pid) or {}
@@ -1030,12 +1151,34 @@ def merge_risk_metrics(
     hr9 = _pick("hr9")
     k9 = _pick("k9")
     xfip = _pick("xfip")
+    pk = _pick("pitcher_k_pct")
+    pc = _pick("pitcher_contact_pct")
+    gb = _pick("pitcher_gb_pct")
+    fb = _pick("pitcher_fb_pct")
+    iffb = _pick("pitcher_iffb_pct")
+    soft = _pick("pitcher_soft_pct")
+    style, style_flags = classify_pitcher_style(
+        k_pct=pk,
+        contact_pct=pc,
+        gb_pct=gb,
+        fb_pct=fb,
+        iffb_pct=iffb,
+        k9=k9,
+    )
     source = "fangraphs" if pid in fangraphs else ("statsapi" if pid in api_rates else None)
     return {
         "bb9": bb9,
         "hr9": hr9,
         "k9": k9,
         "xfip": xfip,
+        "pitcher_k_pct": pk,
+        "pitcher_contact_pct": pc,
+        "pitcher_gb_pct": gb,
+        "pitcher_fb_pct": fb,
+        "pitcher_iffb_pct": iffb,
+        "pitcher_soft_pct": soft,
+        "pitcher_style": style,
+        "pitcher_style_flags": style_flags,
         "risk_source": source,
     }
 
@@ -1979,21 +2122,43 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
                 f"; SPIKE ({spike_flags}) — no soft U6; prefer U6.5+ or pass"
             )
 
+        # Pitcher out-getting style (season K%/Contact%/GB%/FB%/IFFB) — confirmation only.
+        pstyle = str(row.get("pitcher_style") or "").strip().lower()
+        pflags = str(row.get("pitcher_style_flags") or "").strip()
+        style_bit = ""
+        style_cue = ""
+        if pstyle == "whiff":
+            style_bit = f"; pitcher style WHIFF ({pflags or 'K-first'})"
+            style_cue = "; K-first arm — confirms overs / SPIKE caution on soft unders"
+        elif pstyle == "contact_gb":
+            style_bit = f"; pitcher style GB/contact ({pflags or 'in-play outs'})"
+            style_cue = (
+                "; GB/contact out-getter — soft matchup strengthens under; "
+                "elite mix alone is not a nuke over without length"
+            )
+        elif pstyle == "fly_popup":
+            style_bit = f"; pitcher style FLY/popup ({pflags or 'air outs'})"
+            style_cue = (
+                "; fly/popup out-getter — BIP outs over Ks; same under cue as GB style"
+            )
+        elif pstyle == "balanced" and pflags:
+            style_bit = f"; pitcher style balanced ({pflags})"
+
         if not soft:
-            note = matchup_bit + stuff_bit
+            note = matchup_bit + stuff_bit + style_bit
             # Soft solo matchup + high stuff ceiling = classic false under.
             if abs_grade == "soft" and spike:
                 out.at[idx, "ticket_outlook"] = "SPIKE"
                 out.at[idx, "ticket_note"] = (
                     f"{note}{spike_caveat} — solo SOFT vs lineup but pitcher "
-                    f"stuff/K9 can clear 6+"
+                    f"stuff/K9 can clear 6+{style_cue}"
                 )
             else:
                 # High-stuff overs keep a blank outlook; SPIKE chip still shows.
                 out.at[idx, "ticket_outlook"] = ""
                 out.at[idx, "ticket_note"] = note + (
                     f"; stuff ceiling ({spike_flags})" if spike else ""
-                )
+                ) + (style_cue if pstyle == "whiff" and abs_grade in ("elite", "strong") else "")
             continue
 
         role = str(row.get("outing_role") or "starter")
@@ -2006,9 +2171,9 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
             out.at[idx, "ticket_outlook"] = "MATCHUP_OK"
             out.at[idx, "ticket_note"] = (
                 f"soft-contact profile ({profile_flags}) but {matchup_bit}"
-                f"{stuff_bit} — O3.5 / thin O4.5 K only; disclose, not a nuke "
+                f"{stuff_bit}{style_bit} — O3.5 / thin O4.5 K only; disclose, not a nuke "
                 f"anchor; if skipping Ks, consider pitcher outs when IP/risk holds"
-                f"{role_caveat}"
+                f"{style_cue}{role_caveat}"
             )
         else:
             # Soft-contact + soft matchup, but SPIKE stuff → don't sell as locked under.
@@ -2016,15 +2181,16 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
                 out.at[idx, "ticket_outlook"] = "SPIKE"
                 out.at[idx, "ticket_note"] = (
                     f"soft-contact ({profile_flags}) + {matchup_bit}{stuff_bit}"
-                    f"{spike_caveat}{role_caveat}"
+                    f"{style_bit}{spike_caveat}{style_cue}{role_caveat}"
                 )
             else:
                 out.at[idx, "ticket_outlook"] = "FILLER"
                 out.at[idx, "ticket_note"] = (
-                    f"soft-contact ({profile_flags}) + {matchup_bit}{stuff_bit} "
+                    f"soft-contact ({profile_flags}) + {matchup_bit}{stuff_bit}"
+                    f"{style_bit} "
                     f"— FILLER on Ks: pass or O3.5; does not help a K ticket; "
                     f"consider pitcher outs if clear/low risk and projected IP holds"
-                    f"{role_caveat}"
+                    f"{style_cue}{role_caveat}"
                 )
     return out
 

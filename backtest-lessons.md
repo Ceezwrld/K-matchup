@@ -51,6 +51,8 @@ Also check edges on the card: **vs league** (`expected_k_pct − 22.5`) and **vs
 
 **Lineup contact / BIP** — opposing nine’s balls-in-play rate (`lineup_bip_pct`) + `contact_grade` (`whiff_prone` / `neutral` / `contact_heavy`). Contact-heavy BIP trims Exp K; whiff-prone (high K% / low BIP) boosts it. Secondary to solo arsenal grade — sizes the number, doesn’t flip the side.
 
+**Pitcher style (Ks vs BIP outs)** — season FanGraphs K%/Contact%/GB%/FB%/IFFB → `pitcher_style` chips (`P-WHIFF` / `P-GB` / `P-FLY` / `P-BAL`). Confirmation only (no Exp K move). WHIFF confirms overs / SPIKE caution on soft unders; GB/FLY = outs via contact — soft matchup strengthens under; don’t force huge overs on elite mix + contact style without length.
+
 **Secondary only:** slate `#` / slate `matchup_grade` / opp lineup K% `#` — “who’s best *today*,” not solo quality.  
 Exp K and projected IP size the outing; they do not define the side.
 

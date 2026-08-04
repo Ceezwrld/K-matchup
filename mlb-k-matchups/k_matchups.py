@@ -1136,7 +1136,19 @@ def format_table(df: pd.DataFrame) -> str:
         )
     if "rank" in show.columns:
         show["rank"] = show["rank"].map(lambda x: "" if pd.isna(x) else int(x))
-    for col in ("last3_ks", "bb9", "hr9", "xfip", "lineup_k_pct", "lineup_bb_pct", "offense_factor"):
+    for col in (
+        "last3_ks",
+        "bb9",
+        "hr9",
+        "xfip",
+        "lineup_k_pct",
+        "lineup_bb_pct",
+        "lineup_bip_pct",
+        "offense_factor",
+        "pitcher_k_pct",
+        "pitcher_gb_pct",
+        "pitcher_contact_pct",
+    ):
         if col in show.columns:
             show[col] = show[col].map(
                 lambda x: "" if pd.isna(x) or x is None else f"{float(x):.2f}"
@@ -1176,6 +1188,9 @@ def format_table(df: pd.DataFrame) -> str:
             "stuff_grade",
             "stuff_whiff_pct",
             "spike_risk",
+            "pitcher_style",
+            "pitcher_k_pct",
+            "pitcher_gb_pct",
             "matchup_grade",
             "arsenal_matchup_rank",
             "arsenal_vs_league",
@@ -1554,6 +1569,14 @@ def main(argv: list[str] | None = None) -> int:
             "hr9": risk_metrics.get("hr9"),
             "k9": risk_metrics.get("k9"),
             "xfip": risk_metrics.get("xfip"),
+            "pitcher_k_pct": risk_metrics.get("pitcher_k_pct"),
+            "pitcher_contact_pct": risk_metrics.get("pitcher_contact_pct"),
+            "pitcher_gb_pct": risk_metrics.get("pitcher_gb_pct"),
+            "pitcher_fb_pct": risk_metrics.get("pitcher_fb_pct"),
+            "pitcher_iffb_pct": risk_metrics.get("pitcher_iffb_pct"),
+            "pitcher_soft_pct": risk_metrics.get("pitcher_soft_pct"),
+            "pitcher_style": risk_metrics.get("pitcher_style") or "",
+            "pitcher_style_flags": risk_metrics.get("pitcher_style_flags") or "",
             "outing_risk": risk.get("outing_risk"),
             "risk_flags": risk.get("risk_flags") or "",
             "bf_risk_factor": risk.get("bf_risk_factor"),
@@ -1780,6 +1803,42 @@ def main(argv: list[str] | None = None) -> int:
                 print(
                     f"  {r.get('contact_grade'):<14} vs {r.get('opponent')}: "
                     f"{r.get('pitcher')} · BIP {bip_s} · opp K% {kk_s} · {off_s}"
+                )
+    # Pitcher out-getting style (K-first vs GB/fly contact outs) — confirmation only.
+    if "pitcher_style" in out.columns:
+        styles = out[
+            out["status"].eq("ok")
+            & out["pitcher_style"].astype(str).str.len().gt(0)
+        ]
+        if not styles.empty:
+            print("\nPitcher style (outs via Ks vs GB / fly-popup)")
+            order = {"whiff": 0, "contact_gb": 1, "fly_popup": 2, "balanced": 3}
+            styles = styles.copy()
+            styles["_style_ord"] = styles["pitcher_style"].map(
+                lambda s: order.get(str(s), 9)
+            )
+            for _, r in styles.sort_values(
+                ["_style_ord", "expected_ks"], ascending=[True, False]
+            ).iterrows():
+                pk = r.get("pitcher_k_pct")
+                gb = r.get("pitcher_gb_pct")
+                fb = r.get("pitcher_fb_pct")
+                iff = r.get("pitcher_iffb_pct")
+                con = r.get("pitcher_contact_pct")
+                bits = []
+                if pk is not None and not (isinstance(pk, float) and pd.isna(pk)):
+                    bits.append(f"K% {float(pk):.1f}")
+                if con is not None and not (isinstance(con, float) and pd.isna(con)):
+                    bits.append(f"Con% {float(con):.1f}")
+                if gb is not None and not (isinstance(gb, float) and pd.isna(gb)):
+                    bits.append(f"GB% {float(gb):.1f}")
+                if fb is not None and not (isinstance(fb, float) and pd.isna(fb)):
+                    bits.append(f"FB% {float(fb):.1f}")
+                if iff is not None and not (isinstance(iff, float) and pd.isna(iff)):
+                    bits.append(f"IFFB% {float(iff):.1f}")
+                print(
+                    f"  {str(r.get('pitcher_style') or ''):<11} {r.get('pitcher')}: "
+                    f"{' · '.join(bits) or (r.get('pitcher_style_flags') or '')}"
                 )
     if args.detail:
         print()

@@ -593,7 +593,12 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
 
 def _render_hits_board(hits_board: list[dict[str, Any]] | None) -> str:
     if not hits_board:
-        return ""
+        return (
+            "<section class='hits-board' id='hitsBoard'>"
+            "<h2>Hits board <span>(display-only)</span></h2>"
+            "<p class='hits-lede'>No hits props ranked for this slate yet.</p>"
+            "</section>"
+        )
     rows = []
     for r in hits_board[:15]:
         rows.append(
@@ -1983,8 +1988,62 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     display: inline-block; margin-left: 0.45rem; color: var(--muted);
     font-size: 0.72rem; font-weight: 500;
   }
+  .view-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin: 0 0 1.15rem;
+    padding: 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.55);
+  }
+  .view-tabs > input {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0; border: 0;
+    clip: rect(0 0 0 0);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .view-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .view-tab:hover { color: var(--ink); }
+  .view-tabs > input:checked + .view-tab {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(15, 106, 77, 0.22);
+  }
+  .view-tab .tab-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    opacity: 0.8;
+  }
+  .view-panel {
+    display: none;
+    grid-column: 1 / -1;
+    margin-top: 0.65rem;
+    padding: 0.15rem 0.1rem 0.2rem;
+    animation: panelIn 0.18s ease-out;
+  }
+  .view-tabs > input#view-pitchers:checked ~ .panel-pitchers { display: block; }
+  .view-tabs > input#view-hits:checked ~ .panel-hits { display: block; }
   .hits-board {
-    margin: 0 0 1.25rem; padding: 1rem 1.1rem 1.15rem;
+    margin: 0; padding: 0.85rem 0.95rem 1rem;
     border: 1px solid var(--line); border-radius: 14px;
     background: rgba(255,255,255,0.55);
   }
@@ -2052,62 +2111,79 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <p class="noscript">
         JavaScript is off or blocked — rankings still work.
         Expand any pitcher, open <strong>Arsenal vs lineup</strong>, then open a pitch.
+        Use the <strong>Pitchers / Hits</strong> tabs above the boards.
       </p>
     </noscript>
 
-    <section class="controls" id="controls" autocomplete="off">
-      <label>Search
-        <input id="q" type="search" placeholder="Pitcher, team, game…" autocomplete="off" />
+    <section class="view-tabs" aria-label="Board view">
+      <input type="radio" name="board-view" id="view-pitchers" checked />
+      <label class="view-tab" for="view-pitchers">
+        Pitchers <span class="tab-count">K slate</span>
       </label>
-      <label>Lineup
-        <select id="lineupFilter" autocomplete="off">
-          <option value="all" selected>All sources</option>
-          <option value="official">Official only</option>
-          <option value="prior">Prior only</option>
-        </select>
+      <input type="radio" name="board-view" id="view-hits" />
+      <label class="view-tab" for="view-hits">
+        Hits <span class="tab-count">props</span>
       </label>
-      <label>Status
-        <select id="statusFilter" autocomplete="off">
-          <option value="scored" selected>Scored</option>
-          <option value="all">All rows</option>
-          <option value="missing">Missing / unresolved</option>
-        </select>
-      </label>
-      <label>Sort
-        <select id="sort" autocomplete="off">
-          <option value="expected_ks:desc" selected>Expected Ks ↓</option>
-          <option value="expected_ks:asc">Expected Ks ↑</option>
-          <option value="projected_ip:desc">Proj IP ↓</option>
-          <option value="tto:desc">TTO ↓</option>
-          <option value="kpct:desc">Arsenal K% ↓</option>
-          <option value="rank:asc">Rank</option>
-          <option value="pitcher:asc">Pitcher A–Z</option>
-        </select>
-      </label>
-    </section>
 
-    __HITS_BOARD__
+      <div class="view-panel panel-pitchers">
+        <section class="controls" id="controls" autocomplete="off">
+          <label>Search
+            <input id="q" type="search" placeholder="Pitcher, team, game…" autocomplete="off" />
+          </label>
+          <label>Lineup
+            <select id="lineupFilter" autocomplete="off">
+              <option value="all" selected>All sources</option>
+              <option value="official">Official only</option>
+              <option value="prior">Prior only</option>
+            </select>
+          </label>
+          <label>Status
+            <select id="statusFilter" autocomplete="off">
+              <option value="scored" selected>Scored</option>
+              <option value="all">All rows</option>
+              <option value="missing">Missing / unresolved</option>
+            </select>
+          </label>
+          <label>Sort
+            <select id="sort" autocomplete="off">
+              <option value="expected_ks:desc" selected>Expected Ks ↓</option>
+              <option value="expected_ks:asc">Expected Ks ↑</option>
+              <option value="projected_ip:desc">Proj IP ↓</option>
+              <option value="tto:desc">TTO ↓</option>
+              <option value="kpct:desc">Arsenal K% ↓</option>
+              <option value="rank:asc">Rank</option>
+              <option value="pitcher:asc">Pitcher A–Z</option>
+            </select>
+          </label>
+        </section>
 
-    <div class="colhead">
-      <div>#</div><div>Pitcher</div><div>Game</div><div>Exp K</div>
-      <div>IP</div><div>TTO</div><div>K%</div><div>Flags</div>
-    </div>
+        <div class="colhead">
+          <div>#</div><div>Pitcher</div><div>Game</div><div>Exp K</div>
+          <div>IP</div><div>TTO</div><div>K%</div><div>Flags</div>
+        </div>
 
-    <div class="board" id="board">
+        <div class="board" id="board">
 __MATCHUP_CARDS__
-    </div>
-    <div class="empty" id="empty" hidden>
-      No matchups match these filters.
-      <span id="emptyHint"></span>
-    </div>
+        </div>
+        <div class="empty" id="empty" hidden>
+          No matchups match these filters.
+          <span id="emptyHint"></span>
+        </div>
 
-    <p class="footnote">
-      Expand a pitcher → <strong>Arsenal vs lineup</strong> for pitch-by-pitch K%,
-      or <strong>Batting order</strong> for the nine. Arsenal <strong>#</strong> ranks
-      this pitcher vs <em>this</em> lineup (absolute bands). The numeric <strong>#</strong> is
-      only today’s slate rank. FILLER / MATCHUP OK flag soft-contact arms.
-      Pre-lineup days are all <strong>Prior</strong> — use Lineup <strong>All sources</strong>.
-    </p>
+        <p class="footnote">
+          Expand a pitcher → <strong>Arsenal vs lineup</strong> for pitch-by-pitch K%,
+          or <strong>Batting order</strong> for the nine. Arsenal <strong>#</strong> ranks
+          this pitcher vs <em>this</em> lineup (absolute bands). The numeric <strong>#</strong> is
+          only today’s slate rank. FILLER / MATCHUP OK flag soft-contact arms.
+          Pre-lineup days are all <strong>Prior</strong> — use Lineup <strong>All sources</strong>.
+          Switch to the <strong>Hits</strong> tab for Hits / H+R+RBI props.
+        </p>
+      </div>
+
+      <div class="view-panel panel-hits">
+        __HITS_BOARD__
+      </div>
+    </section>
   </div>
 
   <script id="data" type="application/json">__DATA_JSON__</script>

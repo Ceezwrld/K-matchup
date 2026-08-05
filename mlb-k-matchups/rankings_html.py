@@ -996,54 +996,97 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     )
 
 
+def _key_chip(text: str, css: str, title: str = "") -> str:
+    tip = f" title='{_esc(title)}'" if title else ""
+    return f"<span class='key-chip {_esc(css)}'{tip}>{_esc(text)}</span>"
+
+
 def _render_model_keys() -> str:
-    """Top-of-board legend: BIP bands + solo/style/outlook keys."""
-    bip = (
-        f"<strong>whiff_prone</strong> ≤ ~{WHIFF_PRONE_BIP:g}% BIP"
-        f" · <strong>league</strong> ~{LEAGUE_BIP_PCT:g}%"
-        f" · <strong>contact_heavy</strong> ≥ ~{CONTACT_HEAVY_BIP:g}%"
-        f" (or ≥69% with K% ≤19.5)."
-        f" Low BIP helps overs; high BIP helps unders."
+    """Top-of-board legend: color-coded BIP / solo / style / outlook keys."""
+    bip_chips = (
+        _key_chip(
+            f"whiff_prone ≤{WHIFF_PRONE_BIP:g}%",
+            "key-bip-whiff",
+            "Low BIP / high-K nines — helps overs",
+        )
+        + _key_chip(
+            f"league ~{LEAGUE_BIP_PCT:g}%",
+            "key-bip-league",
+            "Neutral contact environment",
+        )
+        + _key_chip(
+            f"contact_heavy ≥{CONTACT_HEAVY_BIP:g}%",
+            "key-bip-contact",
+            "High BIP nines — helps unders (also ≥69% with K% ≤19.5)",
+        )
     )
-    solo = (
-        f"<strong>ELITE</strong> ≥{ABS_MATCHUP_ELITE:g}%"
-        f" · <strong>STRONG</strong> ≥{ABS_MATCHUP_STRONG:g}%"
-        f" · <strong>AVG</strong> ≥{ABS_MATCHUP_AVG:g}%"
-        f" · <strong>SOFT</strong> &lt;{ABS_MATCHUP_AVG:g}%"
-        f" arsenal K% vs this nine (league K% ~{LEAGUE_K_PCT:g})."
-        f" Side first — Exp K sizes the line."
+    bip_note = (
+        "Low BIP helps overs · high BIP helps unders"
+        " · contact_heavy also if BIP ≥69% with K% ≤19.5."
     )
-    style = (
-        "<strong>WHIFF</strong> = trust K totals"
-        " · <strong>GB / FLY</strong> = BIP outs (thin juiced totals)"
-        " · <strong>BAL</strong> = mixed / caution."
+    solo_chips = (
+        _key_chip(f"ELITE ≥{ABS_MATCHUP_ELITE:g}%", "ark ark-elite")
+        + _key_chip(f"STRONG ≥{ABS_MATCHUP_STRONG:g}%", "ark ark-strong")
+        + _key_chip(f"AVG ≥{ABS_MATCHUP_AVG:g}%", "ark ark-avg")
+        + _key_chip(f"SOFT <{ABS_MATCHUP_AVG:g}%", "ark ark-soft")
     )
-    outlook = (
-        f"<strong>TRUST</strong> = ELITE/STRONG + WHIFF + Exp K ≥{TRUST_TOTAL_EXP_KS:g}"
-        f" · <strong>THIN_TOTAL</strong> = high Exp K but GB/FLY → O3.5 / thin O4.5 only"
-        f" · <strong>UNDER_OK</strong> = SOFT + ≥{UNDER_CONFIRM_MIN:g} of"
-        f" GB/FLY · contact_heavy · Exp K ≤{UNDER_CONFIRM_EXP_KS:g}"
-        f" · <strong>SPIKE</strong> = no soft U6"
-        f" · <strong>MATCHUP_OK / FILLER</strong> = thin O3.5 or pass K overs."
+    solo_note = (
+        f"Arsenal K% vs this nine (league ~{LEAGUE_K_PCT:g}%)."
+        " Side first — Exp K sizes the line."
+    )
+    style_chips = (
+        _key_chip("WHIFF", "ark-pstyle-whiff", "Trust K totals")
+        + _key_chip("GB", "ark-pstyle-contact_gb", "Ground-ball / BIP outs")
+        + _key_chip("FLY", "ark-pstyle-fly_popup", "Fly / popup BIP outs")
+        + _key_chip("BAL", "ark-pstyle-balanced", "Mixed profile — caution on juiced totals")
+    )
+    style_note = "WHIFF = trust K totals · GB/FLY = BIP outs (thin juiced totals) · BAL = caution."
+    outlook_chips = (
+        _key_chip(
+            "TRUST",
+            "outlook outlook-trust",
+            f"ELITE/STRONG + WHIFF + Exp K ≥{TRUST_TOTAL_EXP_KS:g}",
+        )
+        + _key_chip(
+            "THIN TOTAL",
+            "outlook outlook-thin_total",
+            "High Exp K but GB/FLY — O3.5 / thin O4.5 only",
+        )
+        + _key_chip(
+            "UNDER OK",
+            "outlook outlook-under_ok",
+            f"SOFT + ≥{UNDER_CONFIRM_MIN:g} of GB/FLY · contact_heavy · Exp K ≤{UNDER_CONFIRM_EXP_KS:g}",
+        )
+        + _key_chip("SPIKE", "outlook outlook-spike", "No soft U6")
+        + _key_chip("MATCHUP OK", "outlook outlook-matchup_ok", "Thin O3.5 only")
+        + _key_chip("FILLER", "outlook outlook-filler", "Pass K overs")
+    )
+    outlook_note = (
+        f"TRUST needs Exp K ≥{TRUST_TOTAL_EXP_KS:g} · UNDER_OK needs"
+        f" ≥{UNDER_CONFIRM_MIN:g} confirms · SPIKE blocks soft U6."
     )
     return (
         "<div class='model-keys' aria-label='Model keys'>"
         "<div class='keys-title'>Keys — what to aim for</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Opp BIP</span>"
-        f"<span class='key-val'>{bip}</span>"
+        f"<span class='key-val'><span class='key-chips'>{bip_chips}</span>"
+        f"<span class='key-note'>{bip_note}</span></span>"
         "</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Solo grade</span>"
-        f"<span class='key-val'>{solo}</span>"
+        f"<span class='key-val'><span class='key-chips'>{solo_chips}</span>"
+        f"<span class='key-note'>{solo_note}</span></span>"
         "</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Style</span>"
-        f"<span class='key-val'>{style}</span>"
+        f"<span class='key-val'><span class='key-chips'>{style_chips}</span>"
+        f"<span class='key-note'>{style_note}</span></span>"
         "</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Outlook</span>"
-        f"<span class='key-val'>{outlook}</span>"
+        f"<span class='key-val'><span class='key-chips'>{outlook_chips}</span>"
+        f"<span class='key-note'>{outlook_note}</span></span>"
         "</div>"
         "</div>"
     )
@@ -1450,10 +1493,57 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     padding-top: 0.12rem;
   }
   .model-keys .key-val {
+    display: grid;
+    gap: 0.3rem;
     font-weight: 600;
     color: var(--ink);
   }
-  .model-keys .key-val strong { font-weight: 800; }
+  .model-keys .key-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .model-keys .key-note {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+  .model-keys .key-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .model-keys .key-chip.ark {
+    border-radius: 6px;
+    letter-spacing: 0.03em;
+  }
+  .model-keys .key-bip-whiff {
+    background: rgba(15, 106, 77, 0.16);
+    color: #064832;
+    border-color: rgba(15, 106, 77, 0.28);
+  }
+  .model-keys .key-bip-league {
+    background: rgba(20, 32, 26, 0.08);
+    color: var(--muted);
+    border-color: rgba(20, 32, 26, 0.16);
+  }
+  .model-keys .key-bip-contact {
+    background: rgba(30, 90, 160, 0.14);
+    color: #1a4a7a;
+    border-color: rgba(30, 90, 160, 0.28);
+  }
+  .outlook-trust {
+    background: rgba(15, 106, 77, 0.18);
+    color: #064832;
+  }
   .badge {
     display: inline-flex; padding: 0.22rem 0.55rem; border-radius: 999px;
     font-size: 0.72rem; font-weight: 700;

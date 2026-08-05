@@ -15,6 +15,19 @@ from typing import Any
 
 import pandas as pd
 
+from sharpen import (  # noqa: E402
+    ABS_MATCHUP_AVG,
+    ABS_MATCHUP_ELITE,
+    ABS_MATCHUP_STRONG,
+    CONTACT_HEAVY_BIP,
+    LEAGUE_BIP_PCT,
+    LEAGUE_K_PCT,
+    TRUST_TOTAL_EXP_KS,
+    UNDER_CONFIRM_EXP_KS,
+    UNDER_CONFIRM_MIN,
+    WHIFF_PRONE_BIP,
+)
+
 # Canonical public board URL. Bookmark this — never commit-SHA previews.
 # htmlpreview renders interactive tabs; always point at main (not a commit SHA).
 STABLE_BOARD_URL = (
@@ -983,6 +996,59 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     )
 
 
+def _render_model_keys() -> str:
+    """Top-of-board legend: BIP bands + solo/style/outlook keys."""
+    bip = (
+        f"<strong>whiff_prone</strong> ≤ ~{WHIFF_PRONE_BIP:g}% BIP"
+        f" · <strong>league</strong> ~{LEAGUE_BIP_PCT:g}%"
+        f" · <strong>contact_heavy</strong> ≥ ~{CONTACT_HEAVY_BIP:g}%"
+        f" (or ≥69% with K% ≤19.5)."
+        f" Low BIP helps overs; high BIP helps unders."
+    )
+    solo = (
+        f"<strong>ELITE</strong> ≥{ABS_MATCHUP_ELITE:g}%"
+        f" · <strong>STRONG</strong> ≥{ABS_MATCHUP_STRONG:g}%"
+        f" · <strong>AVG</strong> ≥{ABS_MATCHUP_AVG:g}%"
+        f" · <strong>SOFT</strong> &lt;{ABS_MATCHUP_AVG:g}%"
+        f" arsenal K% vs this nine (league K% ~{LEAGUE_K_PCT:g})."
+        f" Side first — Exp K sizes the line."
+    )
+    style = (
+        "<strong>WHIFF</strong> = trust K totals"
+        " · <strong>GB / FLY</strong> = BIP outs (thin juiced totals)"
+        " · <strong>BAL</strong> = mixed / caution."
+    )
+    outlook = (
+        f"<strong>TRUST</strong> = ELITE/STRONG + WHIFF + Exp K ≥{TRUST_TOTAL_EXP_KS:g}"
+        f" · <strong>THIN_TOTAL</strong> = high Exp K but GB/FLY → O3.5 / thin O4.5 only"
+        f" · <strong>UNDER_OK</strong> = SOFT + ≥{UNDER_CONFIRM_MIN:g} of"
+        f" GB/FLY · contact_heavy · Exp K ≤{UNDER_CONFIRM_EXP_KS:g}"
+        f" · <strong>SPIKE</strong> = no soft U6"
+        f" · <strong>MATCHUP_OK / FILLER</strong> = thin O3.5 or pass K overs."
+    )
+    return (
+        "<div class='model-keys' aria-label='Model keys'>"
+        "<div class='keys-title'>Keys — what to aim for</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Opp BIP</span>"
+        f"<span class='key-val'>{bip}</span>"
+        "</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Solo grade</span>"
+        f"<span class='key-val'>{solo}</span>"
+        "</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Style</span>"
+        f"<span class='key-val'>{style}</span>"
+        "</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Outlook</span>"
+        f"<span class='key-val'>{outlook}</span>"
+        "</div>"
+        "</div>"
+    )
+
+
 def write_interactive_html(
     path: str,
     df: pd.DataFrame,
@@ -1049,6 +1115,7 @@ def write_interactive_html(
         f"Hard-refresh before tickets; never use old commit / htmlpreview links."
         f"</div>"
     )
+    model_keys = _render_model_keys()
 
     payload = {
         "generated_at": generated,
@@ -1065,6 +1132,7 @@ def write_interactive_html(
     html = HTML_TEMPLATE
     html = html.replace("__META_CHIPS__", meta_html)
     html = html.replace("__FRESHNESS__", freshness)
+    html = html.replace("__MODEL_KEYS__", model_keys)
     html = html.replace("__HITS_BOARD__", hits_html)
     html = html.replace("__MATCHUP_CARDS__", cards)
     html = html.replace("__DATA_JSON__", json.dumps(payload, ensure_ascii=False))
@@ -1345,6 +1413,47 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-radius: 999px;
     background: currentColor;
   }
+  .model-keys {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 0.35rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.55);
+  }
+  .model-keys .keys-title {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .model-keys .key-row {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 0.55rem 0.75rem;
+    align-items: start;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+  @media (max-width: 640px) {
+    .model-keys .key-row { grid-template-columns: 1fr; gap: 0.15rem; }
+  }
+  .model-keys .key-lab {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 0.12rem;
+  }
+  .model-keys .key-val {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .model-keys .key-val strong { font-weight: 800; }
   .badge {
     display: inline-flex; padding: 0.22rem 0.55rem; border-radius: 999px;
     font-size: 0.72rem; font-weight: 700;
@@ -1846,6 +1955,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <span class="swatch grade-elite">elite</span>
         <span>Exp K · IP · Arsenal K%</span>
       </div>
+      __MODEL_KEYS__
     </header>
 
     <noscript>

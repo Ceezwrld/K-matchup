@@ -107,6 +107,13 @@ SPIKE_K9 = 10.0
 SPIKE_STUFF_WHIFF = 28.0
 SPIKE_STUFF_WHIFF_WITH_VELO = 26.0
 SPIKE_FB_VELO = 95.0
+
+# Total-trust / under-confirm gates (ticket sizing — do not move expected_ks).
+# ELITE/STRONG + high Exp K only trusts the *total* when STYLE is WHIFF (8/4 Dobbins/Tidwell).
+TRUST_TOTAL_EXP_KS = 5.5
+# Soft under needs ≥2 of: GB/FLY style, contact_heavy BIP, Exp K ≤ floor (8/4 Dobnak/Assad).
+UNDER_CONFIRM_EXP_KS = 4.2
+UNDER_CONFIRM_MIN = 2
 FASTBALL_TYPES = ("FF", "SI", "FC", "FT")
 WHIFF_DESCS = {
     "swinging_strike",
@@ -2022,8 +2029,22 @@ def soft_contact_profile(row: dict[str, Any]) -> tuple[bool, str]:
     return False, ""
 
 
+def _under_confirm_bits(row: dict[str, Any], exp_ks: float | None) -> tuple[int, list[str]]:
+    """Count soft-under confirmation signals (need ≥ UNDER_CONFIRM_MIN)."""
+    bits: list[str] = []
+    pstyle = str(row.get("pitcher_style") or "").strip().lower()
+    contact = str(row.get("contact_grade") or "").strip().lower()
+    if pstyle in ("contact_gb", "fly_popup"):
+        bits.append("GB/FLY style")
+    if contact == "contact_heavy":
+        bits.append("opp contact-heavy BIP")
+    if exp_ks is not None and exp_ks <= UNDER_CONFIRM_EXP_KS:
+        bits.append(f"Exp K ≤{UNDER_CONFIRM_EXP_KS:g}")
+    return len(bits), bits
+
+
 def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
-    """Label FILLER vs MATCHUP_OK using pitcher profile + arsenal-vs-lineup quality.
+    """Label FILLER / MATCHUP_OK / SPIKE / THIN_TOTAL / UNDER_OK for tickets.
 
     Primary matchup read is **absolute** `expected_k_pct` vs this nine
     (`arsenal_abs_grade`) — elite/strong/avg/soft bands that do not depend on
@@ -2033,6 +2054,11 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
     - FILLER: soft-contact profile AND absolute matchup not strong → pass / O3.5
     - MATCHUP_OK: soft-contact profile BUT absolute arsenal vs lineup is
       strong/elite → disclose; soft O3.5 / thin O4.5 only, never nuke
+    - THIN_TOTAL: ELITE/STRONG + high Exp K but STYLE not WHIFF → thin overs only
+      (do not trust the juiced total; 8/4 Dobbins/Tidwell)
+    - UNDER_OK: SOFT non-SPIKE with ≥2 under confirms (GB/FLY, contact-heavy,
+      Exp K ≤ floor) → preferred soft-under lane (8/4 Dobnak/Assad)
+    - SPIKE: soft solo + stuff ceiling → no soft U6
     - (blank): normal process arm
     """
     out = df.copy()
@@ -2047,6 +2073,8 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
         ("arsenal_vs_opp", pd.NA),
         ("ticket_outlook", ""),
         ("ticket_note", ""),
+        ("under_confirm_n", pd.NA),
+        ("total_trust", ""),
     ):
         if col not in out.columns:
             out[col] = default
@@ -2106,6 +2134,12 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
         stuff_w = row.get("stuff_whiff_pct")
         stuff_g = str(row.get("stuff_grade") or "").strip()
         fb_velo = row.get("stuff_fb_velo")
+        exp_ks_raw = row.get("expected_ks")
+        exp_ks: float | None = None
+        if exp_ks_raw is not None and not (
+            isinstance(exp_ks_raw, float) and pd.isna(exp_ks_raw)
+        ):
+            exp_ks = float(exp_ks_raw)
         stuff_bit = ""
         if stuff_w is not None and not (isinstance(stuff_w, float) and pd.isna(stuff_w)):
             stuff_bit = f"; stuff whiff {float(stuff_w):.1f}%"
@@ -2144,6 +2178,58 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
         elif pstyle == "balanced" and pflags:
             style_bit = f"; pitcher style balanced ({pflags})"
 
+        # Total-trust: juiced Exp K on ELITE/STRONG only if STYLE WHIFF.
+        # Hard THIN_TOTAL badge = GB/FLY (BIP outs). BAL gets a soft note only
+        # (8/4 Manaea BAL cashed; Dobbins GB was the leak).
+        total_trust = ""
+        trust_cue = ""
+        high_total = exp_ks is not None and exp_ks >= TRUST_TOTAL_EXP_KS
+        if abs_grade in ("elite", "strong") and high_total:
+            if pstyle == "whiff":
+                total_trust = "trust"
+                trust_cue = (
+                    f"; TRUST total — ELITE/STRONG + WHIFF + Exp K "
+                    f"{exp_ks:.1f} (≥{TRUST_TOTAL_EXP_KS:g})"
+                )
+            elif pstyle in ("contact_gb", "fly_popup"):
+                total_trust = "thin"
+                sty_label = "GB" if pstyle == "contact_gb" else "FLY"
+                trust_cue = (
+                    f"; THIN total — Exp K {exp_ks:.1f} with STYLE {sty_label} "
+                    f"(BIP outs); O3.5 / thin O4.5 only, do not nuke the number"
+                )
+            elif pstyle == "balanced":
+                total_trust = "caution"
+                trust_cue = (
+                    f"; total caution — Exp K {exp_ks:.1f} with STYLE BAL "
+                    f"(not WHIFF); prefer O4.5 floor over juiced O5.5+/O6.5"
+                )
+        out.at[idx, "total_trust"] = total_trust
+
+        # Soft-under confirmation stack (does not override SPIKE).
+        under_n, under_bits = _under_confirm_bits(row.to_dict(), exp_ks)
+        out.at[idx, "under_confirm_n"] = under_n
+        under_cue = ""
+        if abs_grade == "soft" and not spike:
+            if under_n >= UNDER_CONFIRM_MIN:
+                under_cue = (
+                    f"; UNDER_OK — {under_n}/{UNDER_CONFIRM_MIN}+ confirms "
+                    f"({', '.join(under_bits)})"
+                )
+            else:
+                need = UNDER_CONFIRM_MIN - under_n
+                have = ", ".join(under_bits) if under_bits else "none"
+                under_cue = (
+                    f"; weak under — only {under_n}/{UNDER_CONFIRM_MIN} confirms "
+                    f"({have}); need {need} more of GB/FLY · contact-heavy · "
+                    f"Exp K ≤{UNDER_CONFIRM_EXP_KS:g} (or take U6.5+ / pass)"
+                )
+
+        role = str(row.get("outing_role") or "starter")
+        role_caveat = ""
+        if role in ("swingman", "opener_likely", "opener"):
+            role_caveat = f"; also {role} — fade full-outing chalk"
+
         if not soft:
             note = matchup_bit + stuff_bit + style_bit
             # Soft solo matchup + high stuff ceiling = classic false under.
@@ -2153,27 +2239,42 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
                     f"{note}{spike_caveat} — solo SOFT vs lineup but pitcher "
                     f"stuff/K9 can clear 6+{style_cue}"
                 )
+            elif abs_grade == "soft" and under_n >= UNDER_CONFIRM_MIN:
+                out.at[idx, "ticket_outlook"] = "UNDER_OK"
+                out.at[idx, "ticket_note"] = (
+                    f"{note}{under_cue}{style_cue}{role_caveat}"
+                )
+            elif total_trust == "thin":
+                out.at[idx, "ticket_outlook"] = "THIN_TOTAL"
+                out.at[idx, "ticket_note"] = (
+                    note
+                    + (f"; stuff ceiling ({spike_flags})" if spike else "")
+                    + trust_cue
+                    + (style_cue if pstyle in ("contact_gb", "fly_popup", "balanced") else "")
+                    + role_caveat
+                )
             else:
                 # High-stuff overs keep a blank outlook; SPIKE chip still shows.
                 out.at[idx, "ticket_outlook"] = ""
-                out.at[idx, "ticket_note"] = note + (
-                    f"; stuff ceiling ({spike_flags})" if spike else ""
-                ) + (style_cue if pstyle == "whiff" and abs_grade in ("elite", "strong") else "")
+                out.at[idx, "ticket_note"] = (
+                    note
+                    + (f"; stuff ceiling ({spike_flags})" if spike else "")
+                    + (style_cue if pstyle == "whiff" and abs_grade in ("elite", "strong") else "")
+                    + trust_cue
+                    + under_cue
+                    + role_caveat
+                )
             continue
 
-        role = str(row.get("outing_role") or "starter")
-        role_caveat = ""
-        if role in ("swingman", "opener_likely", "opener"):
-            role_caveat = f"; also {role} — fade full-outing chalk"
-
-        # Gate on absolute solo grade — not slate percentile.
+        # Soft-contact profile path — gate on absolute solo grade.
         if abs_grade in ("elite", "strong"):
             out.at[idx, "ticket_outlook"] = "MATCHUP_OK"
+            thin_extra = trust_cue if total_trust == "thin" else ""
             out.at[idx, "ticket_note"] = (
                 f"soft-contact profile ({profile_flags}) but {matchup_bit}"
                 f"{stuff_bit}{style_bit} — O3.5 / thin O4.5 K only; disclose, not a nuke "
                 f"anchor; if skipping Ks, consider pitcher outs when IP/risk holds"
-                f"{style_cue}{role_caveat}"
+                f"{style_cue}{thin_extra}{role_caveat}"
             )
         else:
             # Soft-contact + soft matchup, but SPIKE stuff → don't sell as locked under.
@@ -2184,14 +2285,25 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
                     f"{style_bit}{spike_caveat}{style_cue}{role_caveat}"
                 )
             else:
-                out.at[idx, "ticket_outlook"] = "FILLER"
-                out.at[idx, "ticket_note"] = (
-                    f"soft-contact ({profile_flags}) + {matchup_bit}{stuff_bit}"
-                    f"{style_bit} "
-                    f"— FILLER on Ks: pass or O3.5; does not help a K ticket; "
-                    f"consider pitcher outs if clear/low risk and projected IP holds"
-                    f"{style_cue}{role_caveat}"
-                )
+                # FILLER for K overs, but surface UNDER_OK when BIP/style confirms under.
+                if under_n >= UNDER_CONFIRM_MIN:
+                    out.at[idx, "ticket_outlook"] = "UNDER_OK"
+                    out.at[idx, "ticket_note"] = (
+                        f"soft-contact ({profile_flags}) + {matchup_bit}{stuff_bit}"
+                        f"{style_bit}{under_cue} — FILLER on K overs (pass/O3.5); "
+                        f"under lane preferred when confirms hold; pitcher outs also live "
+                        f"if clear/low risk and projected IP holds"
+                        f"{style_cue}{role_caveat}"
+                    )
+                else:
+                    out.at[idx, "ticket_outlook"] = "FILLER"
+                    out.at[idx, "ticket_note"] = (
+                        f"soft-contact ({profile_flags}) + {matchup_bit}{stuff_bit}"
+                        f"{style_bit} "
+                        f"— FILLER on Ks: pass or O3.5; does not help a K ticket; "
+                        f"consider pitcher outs if clear/low risk and projected IP holds"
+                        f"{under_cue}{style_cue}{role_caveat}"
+                    )
     return out
 
 

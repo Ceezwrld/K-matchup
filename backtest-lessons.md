@@ -42,6 +42,40 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
 
 This morning pack is the daily starting point — not optional.
 
+## How to read the board on your own (60-second card)
+
+Open a pitcher card and answer **four questions in order**. Do not start at Exp K.
+
+| Step | Look at | Question | What it decides |
+|------|---------|----------|-----------------|
+| 1 | **ELITE / STRONG / AVG / SOFT** chip | Can his mix K *this* nine? | **Side** (over vs under bias) |
+| 2 | **STYLE** chip (WHIFF / GB / FLY / BAL) next to name | Does he get outs via Ks or BIP? | Whether to **trust the total** |
+| 3 | **Opp BIP** (whiff_prone / contact_heavy in meta) | Will the nine help or fight Ks? | Confirmation / line size |
+| 4 | **SPIKE / THIN_TOTAL / UNDER_OK / MATCHUP_OK / FILLER** | Any veto or size cap? | Ticket legality |
+
+**One-glance recipes**
+
+| Stack | Read | Ticket move |
+|-------|------|-------------|
+| ELITE/STRONG + **WHIFF** + Exp K ≥5.5 | **Trust total** | Soft O4.5 / O5.5 OK if IP clear |
+| ELITE/STRONG + **GB/FLY** + Exp K ≥5.5 | **THIN_TOTAL** | O3.5 / thin O4.5 only |
+| ELITE/STRONG + **BAL** + Exp K ≥5.5 | Total caution | Prefer O4.5 floor; don’t juice O6.5 |
+| SOFT + **UNDER_OK** (2+ confirms) | Preferred under | Soft U6 / BIP under |
+| SOFT + SPIKE / WHIFF | Ceiling live | No soft U6; Cam U7+ or pass |
+| MATCHUP_OK | Soft profile + good mix | Thin O3.5 only — never nuke |
+| FILLER / opener | Bad K fit or short role | Pass K overs; outs alt maybe |
+
+Also check: **Official** vs Prior · projected IP · outing risk · vs-team history (confirm only).
+
+## Better tickets (habit)
+
+1. **Default = 2-leg.** One clear over + one clear under, or two UNDER_OK / two TRUST overs. No 6-legs.
+2. **Build from outlook chips, not Exp K rank.** Top of board ≠ best bet (Dobbins).
+3. **Pair opposite scripts:** TRUST over (WHIFF) + UNDER_OK under (GB + contact-heavy). Avoid same-game opposing K overs.
+4. **Line sizing:** overs need IP + trust; unders need confirms or U6.5+. Cam rule: if book juices name/SPIKE above Exp K by ~1.0–1.5 on AVG/SOFT, under is live.
+5. **Accuracy lock:** official nine · starter not opener · side matches solo grade · outlook doesn’t veto · edge still holds.
+6. **Cap:** any arm on ≤2 tickets; one nuke/chalk pair max per day.
+
 ## Core thesis — pitcher vs batter vulnerability first
 
 **Primary edge = solo arsenal vs this nine** — absolute `expected_k_pct` and **`arsenal_abs_grade`** (ELITE / STRONG / AVG / SOFT).  
@@ -61,6 +95,10 @@ Also check edges on the card: **vs league** (`expected_k_pct − 22.5`) and **vs
 **Lineup contact / BIP** — opposing nine’s balls-in-play rate (`lineup_bip_pct`) + `contact_grade` (`whiff_prone` / `neutral` / `contact_heavy`). Contact-heavy BIP trims Exp K; whiff-prone (high K% / low BIP) boosts it. Secondary to solo arsenal grade — sizes the number, doesn’t flip the side.
 
 **Pitcher style (Ks vs BIP outs)** — season FanGraphs K%/Contact%/GB%/FB%/IFFB → `pitcher_style` chips (`P-WHIFF` / `P-GB` / `P-FLY` / `P-BAL`). Confirmation only (no Exp K move). WHIFF confirms overs / SPIKE caution on soft unders; GB/FLY = outs via contact — soft matchup strengthens under; don’t force huge overs on elite mix + contact style without length.
+
+**Total-trust gate (THIN_TOTAL) — added after 8/4:** ELITE/STRONG with Exp K ≥ ~**5.5** only **fully trusts** the juiced total when STYLE is **WHIFF**. STYLE **GB/FLY** → board outlook **THIN_TOTAL** (O3.5 / thin O4.5 only — Dobbins 7.7→4). STYLE **BAL** → soft “total caution” note (prefer O4.5 floor; Manaea 6.8→7 still OK). Mix side can still be a thin over; the *total* is the leak on BIP-out styles.
+
+**Under confirmation (UNDER_OK) — added after 8/4:** SOFT non-SPIKE needs ≥**2 of 3**: GB/FLY style · opp **contact_heavy** BIP · Exp K ≤ ~**4.2**. Passes → **UNDER_OK**. Fewer → weak under (prefer U6.5+ or pass). SPIKE still vetoes soft U6. Best 8/4 lane: Dobnak/Assad (SOFT+GB+contact-heavy).
 
 **Secondary only:** slate `#` / slate `matchup_grade` / opp lineup K% `#` — “who’s best *today*,” not solo quality.  
 Exp K and projected IP size the outing; they do not define the side.
@@ -228,6 +266,43 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 3. **U4.5:** only if proj ≤ ~3.5 and non-SPIKE; otherwise **U5.5+**.
 4. **Same-game:** pitcher K over ↔ opposing bats for hits is fine; never pitcher K over + that team’s bats for hits vs him.
 5. Log misses into this file after each `backtest-YYYY-MM-DD.csv`.
+
+## 2026-08-04 lessons (MAE ~1.61, n=24 Final; 6 still live at grade)
+
+Process night for STYLE / BIP / SPIKE. ELITE totals overstated without WHIFF; contact-heavy soft unders were the clean lane.
+
+| Solo grade | n | mean expK → act | Notes |
+|------------|---|-----------------|-------|
+| **ELITE** | 7 | 5.81 → **4.14** | **−1.66 bias** — Dobbins 7.7→4, Tidwell 6.8→3, Yesavage 0 / 2 IP |
+| **STRONG** | 2 | 5.97 → 6.00 | Manaea **7**, Cantillo **5** — held |
+| **AVG** | 6 | 4.58 → 5.17 | Henderson **8** SPIKE upside; Ryan soft |
+| **SOFT** | 9 | 3.93 → 3.67 | Non-SPIKE under lane OK; Luzardo/Weathers SPIKE cleared 6+ |
+
+| Layer | Signal |
+|-------|--------|
+| **contact_heavy** (n=4 Final) | mean act **~2.0** — Dobnak 1, Assad 3, Palmquist 0 |
+| **whiff_prone** | mixed — Manaea/GRod OK; did **not** save Tidwell total |
+| **STYLE WHIFF** | +0.5 bias; **GB** −0.9 (BIP outs) |
+| **SOFT+SPIKE** | Luzardo **7**, Weathers **6** — SPIKE veto correct |
+| **MATCHUP_OK** | Povich **7** / Tidwell **3** — thin-only rule kept |
+
+### Reinforced / shipped
+
+1. **THIN_TOTAL** — ELITE/STRONG + Exp K ≥5.5 + non-WHIFF → thin overs only (Dobbins/Tidwell).
+2. **UNDER_OK** — SOFT non-SPIKE needs ≥2 of GB/FLY · contact-heavy · Exp K ≤4.2 (Dobnak/Assad).
+3. SPIKE still blocks soft U6; MATCHUP_OK stays O3.5 / thin O4.5; 2-leg default.
+4. Do **not** retune BIP ±7% or move STYLE into Exp K off one night.
+
+### Discussed legs (partial)
+
+| Leg path | Actual | Note |
+|----------|--------|------|
+| Dobbins high Exp K over | 4 K / 6.1 IP | THIN_TOTAL prototype (ELITE+GB) |
+| Cantillo over | 5 K | STRONG+WHIFF floor OK |
+| Dobnak under / floor | 1 K | UNDER_OK stack cashed |
+| Luzardo soft under | 7 K / 8 IP | SPIKE veto — pass was right |
+| Tidwell MATCHUP_OK nuke | 3 K | thin-only validated |
+| Singer soft under | 6 K | weak under (no contact-heavy) |
 
 ## 2026-08-02 lessons (MAE ~1.94, n=28 starters)
 

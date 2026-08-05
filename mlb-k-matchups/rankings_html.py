@@ -933,7 +933,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
     )
     ticket_note = (row.get("ticket_note") or "").strip()
-    # Banner for flagged outlooks (FILLER / MATCHUP_OK / SPIKE).
+    # Banner for flagged outlooks (FILLER / MATCHUP_OK / SPIKE / THIN_TOTAL / UNDER_OK).
     if outlook:
         note = _esc(ticket_note) if ticket_note else matchup_val
         head += (
@@ -1459,6 +1459,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .outlook-filler { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
   .outlook-spike { background: rgba(154, 40, 18, 0.16); color: #8a2410; }
   .outlook-matchup_ok { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
+  .outlook-thin_total { background: rgba(154, 91, 18, 0.16); color: #8a4b0f; }
+  .outlook-under_ok { background: rgba(30, 90, 160, 0.14); color: #1a4a7a; }
   .detail {
     padding: 0 1rem 1.15rem;
     border-top: 1px solid var(--line);
@@ -1536,6 +1538,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .outlook-banner.outlook-matchup_ok {
     background: rgba(15, 106, 77, 0.08); border-color: rgba(15, 106, 77, 0.22);
     color: #0a4a36;
+  }
+  .outlook-banner.outlook-thin_total {
+    background: rgba(154, 91, 18, 0.10); border-color: rgba(154, 91, 18, 0.28);
+    color: #6e3a0c;
+  }
+  .outlook-banner.outlook-under_ok {
+    background: rgba(30, 90, 160, 0.08); border-color: rgba(30, 90, 160, 0.24);
+    color: #163a5c;
   }
   @media (max-width: 560px) {
     .outlook-banner { grid-template-columns: 1fr; gap: 0.25rem; }

@@ -1740,10 +1740,11 @@ def main(argv: list[str] | None = None) -> int:
         log(True, f"vs-team history skipped: {exc}")
 
     print(format_table(out))
-    # Print ticket outlook for flagged soft-contact arms.
+    # Print ticket outlook for flagged arms (FILLER / MATCHUP_OK / SPIKE /
+    # THIN_TOTAL / UNDER_OK).
     flagged = out[out["ticket_outlook"].astype(str).str.len() > 0]
     if not flagged.empty:
-        print("\nTicket outlook (soft-contact / SPIKE × opp arsenal)")
+        print("\nTicket outlook (profile / SPIKE / total-trust / under-confirm)")
         for _, r in flagged.iterrows():
             print(
                 f"  {r.get('ticket_outlook'):<11} {r.get('pitcher')}: "

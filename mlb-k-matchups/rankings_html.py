@@ -901,7 +901,11 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
 
     head = (
         "<div class='meta-strip'>"
-        # Style first so it's visible without scrolling the meta strip.
+        # Card read order: solo arsenal → style → stuff → rates → outing → history.
+        "<div class='meta-cell meta-matchup'>"
+        "<span class='meta-label'>Arsenal matchup</span>"
+        f"<span class='meta-value'>{matchup_val}</span>"
+        "</div>"
         "<div class='meta-cell meta-pstyle'>"
         "<span class='meta-label'>Pitcher style (Ks vs BIP outs)</span>"
         f"<span class='meta-value'>"
@@ -915,16 +919,12 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</span>"
         "</div>"
         "<div class='meta-cell'>"
-        "<span class='meta-label'>Outing</span>"
-        f"<span class='meta-value'>{outing_val}{role_html}</span>"
-        "</div>"
-        "<div class='meta-cell'>"
         "<span class='meta-label'>Rates / form</span>"
         f"<span class='meta-value'>{_esc(rates_val)} · {_esc(form_val)} {risk_chip}</span>"
         "</div>"
-        "<div class='meta-cell meta-matchup'>"
-        "<span class='meta-label'>Arsenal matchup</span>"
-        f"<span class='meta-value'>{matchup_val}</span>"
+        "<div class='meta-cell'>"
+        "<span class='meta-label'>Outing / form</span>"
+        f"<span class='meta-value'>{outing_val}{role_html}</span>"
         "</div>"
         "<div class='meta-cell meta-history'>"
         f"<span class='meta-label'>vs {_esc(opp)} history (HOME/AWAY)</span>"
@@ -1474,12 +1474,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .meta-strip {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
     margin: 0.85rem 0 0.75rem;
-  }
-  @media (max-width: 820px) {
-    .meta-strip { grid-template-columns: 1fr; gap: 0.4rem; }
   }
   .meta-cell {
     padding: 0.55rem 0.7rem;

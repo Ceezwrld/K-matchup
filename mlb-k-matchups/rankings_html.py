@@ -91,7 +91,7 @@ def _heat_style(k: Any) -> str:
 
 
 def _grade_band(value: Any, low: float, mid: float, high: float) -> str | None:
-    """Map a numeric value onto low / mid / high / elite."""
+    """Map a numeric value onto low / mid / high / elite (higher = better)."""
     v = _json_safe(value)
     if v is None:
         return None
@@ -108,8 +108,30 @@ def _grade_band(value: Any, low: float, mid: float, high: float) -> str | None:
     return "elite"
 
 
+def _grade_band_desc(value: Any, best: float, good: float, ok: float) -> str | None:
+    """Map a numeric value onto elite / high / mid / low (lower = better)."""
+    v = _json_safe(value)
+    if v is None:
+        return None
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return None
+    if x <= best:
+        return "elite"
+    if x <= good:
+        return "high"
+    if x <= ok:
+        return "mid"
+    return "low"
+
+
 def _grade_for(metric: str, value: Any) -> str | None:
-    """Color-grade key projection metrics for the HTML board."""
+    """Color-grade key projection / rates metrics for the HTML board.
+
+    Bands are K-prop oriented: green = helps strikeout scripts / command,
+    red = soft for overs (does not invent unders by itself).
+    """
     if metric == "expected_ks":
         return _grade_band(value, 4.0, 5.0, 6.0)
     if metric == "expected_k_pct":
@@ -120,6 +142,33 @@ def _grade_for(metric: str, value: Any) -> str | None:
         return _grade_band(value, 2.2, 2.6, 3.0)
     if metric == "batter_k_pct":
         return _grade_band(value, 15.0, 20.0, 25.0)
+    # Rates / command — attack-plate pack thresholds from backtest-lessons.
+    if metric == "strike_pct":
+        # ≥66 elite · ≥65 good · ≥63 avg · <63 soft (≤62 poor for overs)
+        return _grade_band(value, 63.0, 65.0, 66.0)
+    if metric == "f_strike_pct":
+        # League F-Strike% ~60–61
+        return _grade_band(value, 58.0, 62.0, 65.0)
+    if metric == "zone_pct":
+        # ≥44 elite · ≥43 attack · ≥40 avg · <40 off-plate
+        return _grade_band(value, 40.0, 43.0, 44.0)
+    if metric in ("k9", "last3_k9"):
+        return _grade_band(value, 7.0, 8.5, 10.0)
+    if metric == "last3_ks":
+        return _grade_band(value, 3.5, 5.0, 6.5)
+    if metric == "bb9":
+        return _grade_band_desc(value, 2.2, 2.8, 3.5)
+    if metric == "hr9":
+        return _grade_band_desc(value, 0.9, 1.2, 1.5)
+    if metric == "xfip":
+        return _grade_band_desc(value, 3.40, 3.90, 4.50)
+    if metric == "pitcher_k_pct":
+        return _grade_band(value, 20.0, 24.0, 27.0)
+    if metric == "pitcher_contact_pct":
+        # Lower contact% = more whiff
+        return _grade_band_desc(value, 72.0, 76.0, 80.0)
+    if metric == "stuff_whiff_pct":
+        return _grade_band(value, 20.0, 24.0, 28.0)
     return None
 
 
@@ -127,6 +176,32 @@ def _grade_class(metric: str, value: Any) -> str:
     band = _grade_for(metric, value)
     return f" grade-{band}" if band else ""
 
+
+def _rate_chip(
+    label: str,
+    value: Any,
+    metric: str,
+    digits: int = 1,
+    *,
+    suffix: str = "",
+    title: str = "",
+) -> str:
+    """Colored pill for one Rates / form (or style) stat."""
+    band = _grade_for(metric, value)
+    shown = _fmt(value, digits)
+    if shown == "—":
+        return (
+            f"<span class='rate-chip rate-na' title='{_esc(title or label)}'>"
+            f"{_esc(label)} —</span>"
+        )
+    cls = f"rate-chip grade-{band}" if band else "rate-chip"
+    tip = title or label
+    return (
+        f"<span class='{cls}' title='{_esc(tip)}'>"
+        f"<span class='rate-lab'>{_esc(label)}</span> "
+        f"<span class='rate-val'>{_esc(shown)}{_esc(suffix)}</span>"
+        f"</span>"
+    )
 
 def _lineup_label(src: Any) -> tuple[str, str]:
     if not src:
@@ -798,40 +873,124 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     outing_val = (
         f"{_fmt(row.get('projected_ip'), 1)} IP · {tto_s} · BF {_esc(bf)} · cover {cover}"
     )
-    rates_bits = [
-        f"BB/9 {_fmt(row.get('bb9'), 2)}",
-        f"HR/9 {_fmt(row.get('hr9'), 2)}",
-        f"xFIP {_fmt(row.get('xfip'), 2)}",
-        f"K9 {_fmt(row.get('k9'), 1)}",
+    rates_chips = [
+        _rate_chip(
+            "BB/9",
+            row.get("bb9"),
+            "bb9",
+            2,
+            title="Walk rate — lower is better for command / length",
+        ),
+        _rate_chip(
+            "HR/9",
+            row.get("hr9"),
+            "hr9",
+            2,
+            title="Home-run rate — lower is better",
+        ),
+        _rate_chip(
+            "xFIP",
+            row.get("xfip"),
+            "xfip",
+            2,
+            title="Expected FIP — lower is better",
+        ),
+        _rate_chip(
+            "K9",
+            row.get("k9"),
+            "k9",
+            1,
+            title="Season K/9 — higher helps K scripts",
+        ),
     ]
     if row.get("strike_pct") is not None:
-        rates_bits.append(f"Strike% {_fmt(row.get('strike_pct'), 1)}")
+        rates_chips.append(
+            _rate_chip(
+                "Strike%",
+                row.get("strike_pct"),
+                "strike_pct",
+                1,
+                title="Strikes ÷ pitches · ≥~65 confirms attack-plate overs",
+            )
+        )
     if row.get("f_strike_pct") is not None:
-        rates_bits.append(f"F-Strike% {_fmt(row.get('f_strike_pct'), 1)}")
+        rates_chips.append(
+            _rate_chip(
+                "F-Strike%",
+                row.get("f_strike_pct"),
+                "f_strike_pct",
+                1,
+                title="First-pitch strike rate — higher = more ahead counts",
+            )
+        )
     if row.get("zone_pct") is not None:
-        rates_bits.append(f"Zone% {_fmt(row.get('zone_pct'), 1)}")
-    rates_val = " · ".join(rates_bits)
-    form_bits = []
+        rates_chips.append(
+            _rate_chip(
+                "Zone%",
+                row.get("zone_pct"),
+                "zone_pct",
+                1,
+                title="In-zone rate · ≥~43 with high Strike% = attacks the plate",
+            )
+        )
+    form_chips: list[str] = []
     if row.get("last3_ks") is not None:
-        form_bits.append(f"L3 {_fmt(row.get('last3_ks'), 1)} K")
+        form_chips.append(
+            _rate_chip(
+                "L3 K",
+                row.get("last3_ks"),
+                "last3_ks",
+                1,
+                title="Avg strikeouts over last 3 starts",
+            )
+        )
     if row.get("last3_k9") is not None:
-        form_bits.append(f"{_fmt(row.get('last3_k9'), 1)} K/9")
-    form_val = " · ".join(form_bits) if form_bits else "no L3 form"
-    stuff_bits = []
+        form_chips.append(
+            _rate_chip(
+                "L3 K/9",
+                row.get("last3_k9"),
+                "last3_k9",
+                1,
+                title="K/9 over last 3 starts",
+            )
+        )
+    form_html = (
+        "".join(form_chips)
+        if form_chips
+        else "<span class='rate-chip rate-na'>no L3 form</span>"
+    )
+    rates_html = "".join(rates_chips) + form_html
+
+    stuff_bits: list[str] = []
     if row.get("stuff_whiff_pct") is not None:
         sg = (row.get("stuff_grade") or "").strip()
+        tip = f"Usage-weighted pitcher whiff%{'' if not sg else ' (' + sg + ')'}"
         stuff_bits.append(
-            f"stuff whiff {_fmt(row.get('stuff_whiff_pct'), 1)}%"
-            f"{'' if not sg else ' (' + sg + ')'}"
+            _rate_chip(
+                "stuff whiff",
+                row.get("stuff_whiff_pct"),
+                "stuff_whiff_pct",
+                1,
+                suffix="%" + (f" ({sg})" if sg else ""),
+                title=tip,
+            )
         )
     if row.get("stuff_fb_velo") is not None:
+        pitch = row.get("stuff_fb_pitch") or "FB"
         stuff_bits.append(
-            f"{row.get('stuff_fb_pitch') or 'FB'} "
-            f"{_fmt(row.get('stuff_fb_velo'), 1)} mph"
+            f"<span class='rate-chip rate-na' title='Primary fastball velocity'>"
+            f"<span class='rate-lab'>{_esc(pitch)}</span> "
+            f"<span class='rate-val'>{_esc(_fmt(row.get('stuff_fb_velo'), 1))} mph</span>"
+            f"</span>"
         )
     if row.get("spike_risk"):
-        stuff_bits.append(f"SPIKE {row.get('spike_flags') or ''}".strip())
-    stuff_val = " · ".join(stuff_bits) if stuff_bits else ""
+        stuff_bits.append(
+            f"<span class='rate-chip rate-spike' title='Stuff / K9 ceiling — no soft U6'>"
+            f"<span class='rate-lab'>SPIKE</span> "
+            f"<span class='rate-val'>{_esc(row.get('spike_flags') or '')}</span>"
+            f"</span>"
+        )
+    stuff_val = "".join(stuff_bits)
 
     style_bits: list[str] = []
     pstyle = (row.get("pitcher_style") or "").strip().lower()
@@ -842,19 +1001,53 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             "fly_popup": "Fly / popup",
             "balanced": "Balanced",
         }
-        style_bits.append(style_names.get(pstyle, pstyle))
+        style_bits.append(
+            f"<span class='rate-chip rate-na'>"
+            f"<span class='rate-val'>{_esc(style_names.get(pstyle, pstyle))}</span>"
+            f"</span>"
+        )
         if row.get("pitcher_k_pct") is not None:
-            style_bits.append(f"K% {_fmt(row.get('pitcher_k_pct'), 1)}")
+            style_bits.append(
+                _rate_chip(
+                    "K%",
+                    row.get("pitcher_k_pct"),
+                    "pitcher_k_pct",
+                    1,
+                    title="Season pitcher K% — higher confirms WHIFF",
+                )
+            )
         if row.get("pitcher_contact_pct") is not None:
-            style_bits.append(f"Con% {_fmt(row.get('pitcher_contact_pct'), 1)}")
+            style_bits.append(
+                _rate_chip(
+                    "Con%",
+                    row.get("pitcher_contact_pct"),
+                    "pitcher_contact_pct",
+                    1,
+                    title="Season contact% — lower = more swing-and-miss",
+                )
+            )
         if row.get("pitcher_gb_pct") is not None:
-            style_bits.append(f"GB% {_fmt(row.get('pitcher_gb_pct'), 1)}")
+            style_bits.append(
+                f"<span class='rate-chip rate-na' title='Ground-ball rate'>"
+                f"<span class='rate-lab'>GB%</span> "
+                f"<span class='rate-val'>{_esc(_fmt(row.get('pitcher_gb_pct'), 1))}</span>"
+                f"</span>"
+            )
         if row.get("pitcher_fb_pct") is not None:
-            style_bits.append(f"FB% {_fmt(row.get('pitcher_fb_pct'), 1)}")
+            style_bits.append(
+                f"<span class='rate-chip rate-na' title='Fly-ball rate'>"
+                f"<span class='rate-lab'>FB%</span> "
+                f"<span class='rate-val'>{_esc(_fmt(row.get('pitcher_fb_pct'), 1))}</span>"
+                f"</span>"
+            )
         if row.get("pitcher_iffb_pct") is not None:
-            style_bits.append(f"IFFB% {_fmt(row.get('pitcher_iffb_pct'), 1)}")
-    style_val = " · ".join(style_bits) if style_bits else ""
-
+            style_bits.append(
+                f"<span class='rate-chip rate-na' title='Infield-fly rate'>"
+                f"<span class='rate-lab'>IFFB%</span> "
+                f"<span class='rate-val'>{_esc(_fmt(row.get('pitcher_iffb_pct'), 1))}</span>"
+                f"</span>"
+            )
+    style_val = "".join(style_bits)
     opp = row.get("opponent") or "opp"
     matchup_bits = []
     if abs_grade:
@@ -940,19 +1133,19 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
         "<div class='meta-cell meta-pstyle'>"
         "<span class='meta-label'>Pitcher style (Ks vs BIP outs)</span>"
-        f"<span class='meta-value'>"
-        f"{_esc(style_val) if style_val else '—'}"
+        f"<span class='meta-value meta-rates'>"
+        f"{style_val if style_val else '—'}"
         "</span>"
         "</div>"
         "<div class='meta-cell meta-stuff'>"
         "<span class='meta-label'>Stuff ceiling (velo / whiff)</span>"
-        f"<span class='meta-value'>"
-        f"{_esc(stuff_val) if stuff_val else '—'}"
+        f"<span class='meta-value meta-rates'>"
+        f"{stuff_val if stuff_val else '—'}"
         "</span>"
         "</div>"
-        "<div class='meta-cell'>"
+        "<div class='meta-cell meta-rates-cell'>"
         "<span class='meta-label'>Rates / form</span>"
-        f"<span class='meta-value'>{_esc(rates_val)} · {_esc(form_val)} {risk_chip}</span>"
+        f"<span class='meta-value meta-rates'>{rates_html} {risk_chip}</span>"
         "</div>"
         "<div class='meta-cell'>"
         "<span class='meta-label'>Outing / form</span>"
@@ -1086,30 +1279,46 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
     )
     strike_chips = (
         _key_chip(
-            "Strike% = strikes / pitches",
-            "key-bip-league",
-            "Season pitches thrown for strikes ÷ all pitches",
+            "Strike% ≥66",
+            "rate-chip grade-elite",
+            "Elite command — sizes up WHIFF overs",
         )
         + _key_chip(
-            "F-Strike%",
-            "ark ark-strong",
-            "First-pitch strike rate",
+            "≥65",
+            "rate-chip grade-high",
+            "Attack-plate confirm (≥~65 Strike% / ≥~43 Zone%)",
         )
         + _key_chip(
-            "Zone%",
-            "ark ark-avg",
-            "Pitches in the rulebook zone",
+            "~63–65",
+            "rate-chip grade-mid",
+            "Average strike rate",
+        )
+        + _key_chip(
+            "<63",
+            "rate-chip grade-low",
+            "Soft for overs — does not auto-under SPIKE/WHIFF",
+        )
+        + _key_chip(
+            "Zone% ≥43",
+            "rate-chip grade-high",
+            "In-zone attack — pair with high Strike%",
+        )
+        + _key_chip(
+            "Zone% <40",
+            "rate-chip grade-low",
+            "Off-plate / nibble profile",
         )
     )
     if avg_strike_pct is not None:
         strike_chips += _key_chip(
             f"slate avg {_fmt(avg_strike_pct, 1)}%",
-            "key-bip-whiff",
+            "rate-chip grade-mid",
             "Average Strike% across today's scored starters",
         )
     strike_note = (
-        "Higher Strike% / F-Strike% = more competitive pitches · "
-        "league Strike% usually ~63–65% · shown on each pitcher's Rates / form row."
+        "Green = good for K scripts · amber = average · red = soft for overs. "
+        "Rates / form chips use the same colors (K9, BB/9, xFIP, L3, Strike%/Zone%). "
+        "Command confirms the script — it does not flip the side."
     )
     return (
         "<div class='model-keys' aria-label='Model keys'>"
@@ -1770,6 +1979,68 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .meta-value {
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem;
     font-size: 0.84rem; line-height: 1.4; color: var(--ink); font-weight: 600;
+  }
+  .meta-value.meta-rates {
+    gap: 0.35rem;
+  }
+  .rate-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.22rem;
+    padding: 0.16rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgba(20, 32, 26, 0.14);
+    background: rgba(20, 32, 26, 0.06);
+    color: var(--ink);
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    line-height: 1.25;
+  }
+  .rate-chip .rate-lab {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    opacity: 0.78;
+  }
+  .rate-chip .rate-val {
+    font-weight: 800;
+  }
+  .rate-chip.grade-elite {
+    background: rgba(15, 106, 77, 0.18);
+    color: #064832;
+    border-color: rgba(15, 106, 77, 0.32);
+  }
+  .rate-chip.grade-high {
+    background: rgba(15, 106, 77, 0.11);
+    color: #0f6a4d;
+    border-color: rgba(15, 106, 77, 0.24);
+  }
+  .rate-chip.grade-mid {
+    background: rgba(154, 91, 18, 0.12);
+    color: #8a4b0f;
+    border-color: rgba(154, 91, 18, 0.26);
+  }
+  .rate-chip.grade-low {
+    background: rgba(140, 40, 40, 0.12);
+    color: #8c2828;
+    border-color: rgba(140, 40, 40, 0.26);
+  }
+  .rate-chip.rate-na {
+    background: rgba(20, 32, 26, 0.05);
+    color: var(--muted);
+    border-color: rgba(20, 32, 26, 0.12);
+    font-weight: 600;
+  }
+  .rate-chip.rate-spike {
+    background: rgba(154, 40, 18, 0.14);
+    color: #8a2410;
+    border-color: rgba(154, 40, 18, 0.28);
+  }
+  .model-keys .key-chip.rate-chip {
+    border-radius: 999px;
   }
   .outlook-banner {
     display: grid;

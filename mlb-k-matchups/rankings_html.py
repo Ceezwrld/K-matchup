@@ -273,6 +273,11 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "hr9": _json_safe(r.get("hr9")),
                 "k9": _json_safe(r.get("k9")),
                 "xfip": _json_safe(r.get("xfip")),
+                "strike_pct": _json_safe(r.get("strike_pct")),
+                "f_strike_pct": _json_safe(r.get("f_strike_pct")),
+                "zone_pct": _json_safe(r.get("zone_pct")),
+                "pitches": _json_safe(r.get("pitches")),
+                "strikes": _json_safe(r.get("strikes")),
                 "outing_risk": r.get("outing_risk"),
                 "risk_flags": r.get("risk_flags") or "",
                 "bf_risk_factor": _json_safe(r.get("bf_risk_factor")),
@@ -793,10 +798,19 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     outing_val = (
         f"{_fmt(row.get('projected_ip'), 1)} IP · {tto_s} · BF {_esc(bf)} · cover {cover}"
     )
-    rates_val = (
-        f"BB/9 {_fmt(row.get('bb9'), 2)} · HR/9 {_fmt(row.get('hr9'), 2)} · "
-        f"xFIP {_fmt(row.get('xfip'), 2)} · K9 {_fmt(row.get('k9'), 1)}"
-    )
+    rates_bits = [
+        f"BB/9 {_fmt(row.get('bb9'), 2)}",
+        f"HR/9 {_fmt(row.get('hr9'), 2)}",
+        f"xFIP {_fmt(row.get('xfip'), 2)}",
+        f"K9 {_fmt(row.get('k9'), 1)}",
+    ]
+    if row.get("strike_pct") is not None:
+        rates_bits.append(f"Strike% {_fmt(row.get('strike_pct'), 1)}")
+    if row.get("f_strike_pct") is not None:
+        rates_bits.append(f"F-Strike% {_fmt(row.get('f_strike_pct'), 1)}")
+    if row.get("zone_pct") is not None:
+        rates_bits.append(f"Zone% {_fmt(row.get('zone_pct'), 1)}")
+    rates_val = " · ".join(rates_bits)
     form_bits = []
     if row.get("last3_ks") is not None:
         form_bits.append(f"L3 {_fmt(row.get('last3_ks'), 1)} K")
@@ -1006,7 +1020,7 @@ def _key_chip(text: str, css: str, title: str = "") -> str:
     return f"<span class='key-chip {_esc(css)}'{tip}>{_esc(text)}</span>"
 
 
-def _render_model_keys() -> str:
+def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
     """Top-of-board legend: color-coded BIP / solo / style / outlook keys."""
     bip_chips = (
         _key_chip(
@@ -1070,6 +1084,33 @@ def _render_model_keys() -> str:
         f"TRUST needs Exp K ≥{TRUST_TOTAL_EXP_KS:g} · UNDER_OK needs"
         f" ≥{UNDER_CONFIRM_MIN:g} confirms · SPIKE blocks soft U6."
     )
+    strike_chips = (
+        _key_chip(
+            "Strike% = strikes / pitches",
+            "key-bip-league",
+            "Season pitches thrown for strikes ÷ all pitches",
+        )
+        + _key_chip(
+            "F-Strike%",
+            "ark ark-strong",
+            "First-pitch strike rate",
+        )
+        + _key_chip(
+            "Zone%",
+            "ark ark-avg",
+            "Pitches in the rulebook zone",
+        )
+    )
+    if avg_strike_pct is not None:
+        strike_chips += _key_chip(
+            f"slate avg {_fmt(avg_strike_pct, 1)}%",
+            "key-bip-whiff",
+            "Average Strike% across today's scored starters",
+        )
+    strike_note = (
+        "Higher Strike% / F-Strike% = more competitive pitches · "
+        "league Strike% usually ~63–65% · shown on each pitcher's Rates / form row."
+    )
     return (
         "<div class='model-keys' aria-label='Model keys'>"
         "<div class='keys-title'>Keys — what to aim for</div>"
@@ -1077,6 +1118,11 @@ def _render_model_keys() -> str:
         "<span class='key-lab'>Opp BIP</span>"
         f"<span class='key-val'><span class='key-chips'>{bip_chips}</span>"
         f"<span class='key-note'>{bip_note}</span></span>"
+        "</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Strike%</span>"
+        f"<span class='key-val'><span class='key-chips'>{strike_chips}</span>"
+        f"<span class='key-note'>{strike_note}</span></span>"
         "</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Solo grade</span>"
@@ -1134,6 +1180,12 @@ def write_interactive_html(
         if any(r.get("times_through_order") is not None for r in scored)
         else None
     )
+    strike_vals = [
+        float(r["strike_pct"])
+        for r in scored
+        if r.get("strike_pct") is not None
+    ]
+    avg_strike_pct = (sum(strike_vals) / len(strike_vals)) if strike_vals else None
 
     # Prefer scored first, then missing — same as CLI rank order already in df.
     cards = "\n".join(_render_matchup_card(r, i) for i, r in enumerate(rows))
@@ -1145,6 +1197,10 @@ def write_interactive_html(
         ("Generated", generated),
         ("Avg proj IP", _fmt(avg_ip, 1) if avg_ip is not None else "—"),
         ("Avg TTO", f"{_fmt(avg_tto)}×" if avg_tto is not None else "—"),
+        (
+            "Avg Strike%",
+            f"{_fmt(avg_strike_pct, 1)}%" if avg_strike_pct is not None else "—",
+        ),
         ("Scored", str(len(scored))),
         ("Official lineups", f"{official}/{len(scored)}"),
     ]
@@ -1163,7 +1219,7 @@ def write_interactive_html(
         f"Hard-refresh before tickets; never use old commit / htmlpreview links."
         f"</div>"
     )
-    model_keys = _render_model_keys()
+    model_keys = _render_model_keys(avg_strike_pct=avg_strike_pct)
 
     payload = {
         "generated_at": generated,
@@ -1172,6 +1228,7 @@ def write_interactive_html(
         "batters_faced_override": batters_faced,
         "avg_projected_ip": avg_ip,
         "avg_times_through": avg_tto,
+        "avg_strike_pct": avg_strike_pct,
         "row_count": len(rows),
         "official_lineups": official,
         "hits_board_count": len(hits_board or []),

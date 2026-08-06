@@ -934,6 +934,28 @@ def apply_recent_form_overlay(
     return blended, form_ks, weight
 
 
+def _fg_float(value: Any) -> float:
+    if value is None:
+        return float("nan")
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return float("nan")
+    return f if not pd.isna(f) else float("nan")
+
+
+def _strike_pct_from_counts(strikes: Any, pitches: Any) -> float:
+    """Pitches thrown for strikes / all pitches → 0–100 Strike%."""
+    try:
+        s = float(strikes)
+        p = float(pitches)
+    except (TypeError, ValueError):
+        return float("nan")
+    if pd.isna(s) or pd.isna(p) or p <= 0:
+        return float("nan")
+    return 100.0 * s / p
+
+
 def _fg_pct(value: Any) -> float:
     """FanGraphs % fields may be 0–1 proportions or 0–100."""
     if value is None:
@@ -977,6 +999,13 @@ def fetch_fangraphs_pitching(
                 "pitcher_fb_pct": _fg_pct(row.get("FB%")),
                 "pitcher_iffb_pct": _fg_pct(row.get("IFFB%")),
                 "pitcher_soft_pct": _fg_pct(row.get("Soft%")),
+                "strike_pct": _strike_pct_from_counts(
+                    row.get("Strikes"), row.get("Pitches")
+                ),
+                "f_strike_pct": _fg_pct(row.get("F-Strike%")),
+                "zone_pct": _fg_pct(row.get("Zone%")),
+                "pitches": _fg_float(row.get("Pitches")),
+                "strikes": _fg_float(row.get("Strikes")),
             }
         except (TypeError, ValueError):
             continue
@@ -1012,9 +1041,14 @@ def fetch_pitcher_rate_stats(
                     so = float(stat.get("strikeOuts") or 0)
                     go = float(stat.get("groundOuts") or 0)
                     ao = float(stat.get("airOuts") or 0)
+                    strikes = float(stat.get("strikes") or 0)
+                    pitches = float(stat.get("numberOfPitches") or 0)
                 except (TypeError, ValueError):
-                    bf = so = go = ao = 0.0
+                    bf = so = go = ao = strikes = pitches = 0.0
                 bip_outs = go + ao
+                strike_pct = _fg_pct(stat.get("strikePercentage"))
+                if pd.isna(strike_pct):
+                    strike_pct = _strike_pct_from_counts(strikes, pitches)
                 out[int(pid)] = {
                     "bb9": float(stat["walksPer9Inn"])
                     if stat.get("walksPer9Inn") not in (None, "")
@@ -1033,6 +1067,11 @@ def fetch_pitcher_rate_stats(
                     "pitcher_contact_pct": float("nan"),
                     "pitcher_iffb_pct": float("nan"),
                     "pitcher_soft_pct": float("nan"),
+                    "strike_pct": strike_pct,
+                    "f_strike_pct": float("nan"),
+                    "zone_pct": float("nan"),
+                    "pitches": pitches if pitches > 0 else float("nan"),
+                    "strikes": strikes if strikes > 0 else float("nan"),
                 }
                 break
     return out
@@ -1130,6 +1169,11 @@ def merge_risk_metrics(
         "pitcher_fb_pct": None,
         "pitcher_iffb_pct": None,
         "pitcher_soft_pct": None,
+        "strike_pct": None,
+        "f_strike_pct": None,
+        "zone_pct": None,
+        "pitches": None,
+        "strikes": None,
         "pitcher_style": "",
         "pitcher_style_flags": "",
         "risk_source": None,
@@ -1164,6 +1208,11 @@ def merge_risk_metrics(
     fb = _pick("pitcher_fb_pct")
     iffb = _pick("pitcher_iffb_pct")
     soft = _pick("pitcher_soft_pct")
+    strike_pct = _pick("strike_pct")
+    f_strike_pct = _pick("f_strike_pct")
+    zone_pct = _pick("zone_pct")
+    pitches = _pick("pitches")
+    strikes = _pick("strikes")
     style, style_flags = classify_pitcher_style(
         k_pct=pk,
         contact_pct=pc,
@@ -1184,6 +1233,11 @@ def merge_risk_metrics(
         "pitcher_fb_pct": fb,
         "pitcher_iffb_pct": iffb,
         "pitcher_soft_pct": soft,
+        "strike_pct": strike_pct,
+        "f_strike_pct": f_strike_pct,
+        "zone_pct": zone_pct,
+        "pitches": pitches,
+        "strikes": strikes,
         "pitcher_style": style,
         "pitcher_style_flags": style_flags,
         "risk_source": source,

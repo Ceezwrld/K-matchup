@@ -119,31 +119,39 @@ Confirm only — does not flip solo grade alone.
 
 If the chip vetoes → stop.
 
-### Step 5 — Strike% / Zone% (command confirm)
+### Step 5 — Strike% / Zone% (command + outs efficiency)
 Compare Rates row to slate **Avg Strike%** (~64%).
 | Read | Use |
 |------|-----|
-| Strike% **≥~65** + WHIFF/TRUST | Size **up** over confidence |
-| High Zone% + high Strike% | Attacks the plate — K script more live |
-| Low Strike% + UNDER_OK stack | Soft under OK |
-| Low Strike% + SPIKE/WHIFF | **Do not** auto-under |
+| Strike% **≥~65** + WHIFF/TRUST | Size **up** K-over confidence |
+| High Zone% + high Strike% | Attacks the plate — K script more live; **outs overs OK** |
+| Zone% **&lt;~40–41** (soft / nibble) | **Outs over caution** — pitches burn without banking outs |
+| Zone% **≥~43** + clear/low risk | Outs over efficiency confirm |
+| Low Strike% + UNDER_OK stack | Soft K under OK |
+| Low Strike% + SPIKE/WHIFF | **Do not** auto K-under |
 
-Command confirms the script. It does **not** create the side.
+**Outs efficiency (8/6 Young — always apply on outs O/U):**
+- Soft Zone% + high pitches-per-out → shortens outs even when outing risk reads “low” (Young **13 outs / 98 pitches** vs ~17 proj).
+- **Outs over:** prefer GB length; on FLY/THIN_TOTAL require Zone% ≥~43 **or** ≥~3 outs of cushion vs line. Pass thin FLY O14.5-type spots when Zone% is soft.
+- **Outs under:** soft Zone% / medium-high risk / short recent IP **helps** the under (inefficiency = fewer outs). Still need line cushion; don’t fade chalk O0.5–O2.5 promos.
+- Promo chalk (O0.5 / O2.5 outs) = length not required — separate from full-outing outs overs.
+
+Command confirms the script. It does **not** create the K side.
 
 ### Step 6 — Length & risk
 - Projected IP supports the line?
 - Outing risk / early-exit flags?
-- Exp K vs line still has edge?
+- Exp K / proj outs vs line still has edge?
 - **Cam rule:** name/SPIKE juiced ~1.0–1.5 above Exp K → under can be live on AVG/SOFT.
 
-Short IP kills TRUST overs.
+Short IP kills TRUST K overs and full-outing outs overs.
 
 ### Step 7 — Lock checklist (all must pass)
-- [ ] Official
+- [ ] Official (promo chalk O0.5 may scout on prior if starter confirmed)
 - [ ] Starter (not opener/swingman)
-- [ ] Side matches solo grade
+- [ ] Side matches solo grade (K lane) / length+efficiency (outs lane)
 - [ ] Outlook chip does not veto
-- [ ] STYLE / BIP / Strike% agree enough
+- [ ] STYLE / BIP / Strike% / **Zone% efficiency** agree enough
 - [ ] IP + line edge hold
 - [ ] Default **2-leg**; no same-game opposing K overs
 - [ ] Arm on ≤2 tickets today; one nuke/chalk pair max
@@ -152,24 +160,26 @@ Short IP kills TRUST overs.
 - **K over edge:** OFF + ELITE/STRONG + WHIFF + (TRUST or clear IP) + (whiff_prone **or** Strike% ≥~65)
 - **Attack-plate over pack (8/5 locked):** prefer arms that stack **ELITE/STRONG + WHIFF + Strike% ≥~65 / Zone% ≥~43** (Harrison 10, Rogers 9, Lopez 9, Skenes 6). Length still required (Detmers attack profile but 5 K / 4 IP). Skip THIN_TOTAL / MATCHUP_OK / BAL as nuke K overs even if Exp K is high.
 - **K under edge:** OFF + SOFT + UNDER_OK (≥2 of GB/FLY · contact_heavy · Exp K ≤~4.2) + not SPIKE · line needs real cushion (pass flat U4.0 when Exp ~3.5)
-- **Outs over edge (co-equal lane — 8/6 locked):** OFF + starter + projected IP holds (~≥5.5 → ~16.5+ outs) + outing risk **clear/low** + STYLE **GB/FLY** (or THIN_TOTAL / MATCHUP_OK / FILLER where Ks are the wrong prop). Length is the product — high risk / short IP / openers = pass outs overs.
-- **Outs efficiency check (8/6 Young):** “low risk” ≠ outs cash. Prefer **GB length** arms; on FLY/THIN_TOTAL demand **Zone% ≥~43** (or big cushion vs line). Soft Zone% / high pitches-per-out can burn ~17-proj outs downs to ~13 on a 98-pitch hook. Need ~**2+ outs** of cushion on FLY outs overs; O14.5 on a ~17 proj is not enough if command nibbles.
-- **No edge (pass):** AVG mush on Ks · THIN_TOTAL *K nukes* · FILLER K overs · openers · SPIKE soft U6 · prior lineups · outs overs on high-risk hooks · thin FLY outs overs with soft Zone%
+- **Outs over edge (co-equal lane — 8/6 locked):** OFF + starter + projected IP holds (~≥5.5 → ~16.5+ outs) + outing risk **clear/low** + STYLE **GB/FLY** (or THIN_TOTAL / MATCHUP_OK / FILLER where Ks are the wrong prop) + **Zone% efficiency** (see Step 5). Length is the product — high risk / short IP / openers / soft-Zone% FLY = pass full-outing outs overs.
+- **Outs under edge:** short/high-risk or soft Zone% inefficiency + line cushion; not vs chalk promos.
+- **No edge (pass):** AVG mush on Ks · THIN_TOTAL *K nukes* · FILLER K overs · openers · SPIKE soft U6 · prior lineups (except tiny promo chalk) · outs overs on high-risk hooks · thin FLY outs overs with soft Zone%
 
 ### Dual ticket lanes (Ks **or** outs)
 Every probable gets both reads. Chip decides the lane:
 | Chip / stack | K ticket | Outs ticket |
 |--------------|----------|-------------|
 | TRUST / attack-plate WHIFF | **K over** | usually pass (Ks are the product) |
-| THIN_TOTAL / FLY or GB + length | thin K only | **outs over** preferred |
-| MATCHUP_OK / FILLER + clear-low IP | pass / O3.5 K | **outs over** if IP holds |
-| UNDER_OK | **K under** (line cushion) | outs under only if short/high-risk |
-| SPIKE soft solo | no soft K under | outs OK if length clear |
+| THIN_TOTAL / FLY or GB + length + Zone% OK | thin K only | **outs over** preferred |
+| THIN_TOTAL / FLY + soft Zone% | thin K only | **pass** thin outs over (Young) |
+| MATCHUP_OK / FILLER + clear-low IP + Zone% OK | pass / O3.5 K | **outs over** if IP holds |
+| UNDER_OK | **K under** (line cushion) | outs under if short/high-risk or soft Zone% |
+| SPIKE soft solo | no soft K under | outs OK if length + efficiency clear |
+| Promo chalk O0.5 outs | — | **fire** if he starts (pair with real leg) |
 
-Pair across lanes freely (e.g. Ashcraft K over + Young outs over). Still default **2-leg**; no same-game opposing *K* overs.
+Pair across lanes freely (e.g. Ashcraft K over + Peterson outs over). Still default **2-leg**; no same-game opposing *K* overs.
 
 ### Fast edge test
-> Solo says over or under → does STYLE allow that total → Ks or outs lane? → does BIP agree → does the chip allow the ticket → does Strike%/IP support it?
+> Solo says over or under → does STYLE allow that total → Ks or outs lane? → Zone% efficiency OK for outs? → does BIP agree → does the chip allow the ticket → does Strike%/IP support it?
 
 Any **no** → **no edge** → pass.
 

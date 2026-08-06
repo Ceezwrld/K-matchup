@@ -135,13 +135,26 @@ def _grade_for(metric: str, value: Any) -> str | None:
     if metric == "expected_ks":
         return _grade_band(value, 4.0, 5.0, 6.0)
     if metric == "expected_k_pct":
-        return _grade_band(value, 18.0, 21.0, 24.0)
+        # Align with solo arsenal bands: SOFT <20 · AVG ≥20 · STRONG ≥22.5 · ELITE ≥24
+        return _grade_band(value, ABS_MATCHUP_AVG, ABS_MATCHUP_STRONG, ABS_MATCHUP_ELITE)
     if metric == "projected_ip":
         return _grade_band(value, 5.0, 5.75, 6.5)
     if metric == "tto":
         return _grade_band(value, 2.2, 2.6, 3.0)
     if metric == "batter_k_pct":
         return _grade_band(value, 15.0, 20.0, 25.0)
+    # Arsenal matchup strip
+    if metric in ("arsenal_vs_league", "arsenal_vs_opp"):
+        # Signed edges vs league / vs opp K% — positive helps overs
+        return _grade_band(value, -1.0, 0.5, 2.0)
+    if metric == "opp_k_pct":
+        return _grade_band(value, 20.0, 23.0, 26.0)
+    if metric == "opp_bip_pct":
+        # Lower BIP helps overs (whiff_prone); higher helps unders
+        return _grade_band_desc(value, WHIFF_PRONE_BIP, LEAGUE_BIP_PCT, CONTACT_HEAVY_BIP)
+    if metric == "opp_bb_pct":
+        # Higher BB% = patient / pitch-count risk
+        return _grade_band_desc(value, 7.0, 9.0, 10.5)
     # Rates / command — attack-plate pack thresholds from backtest-lessons.
     if metric == "strike_pct":
         # ≥66 elite · ≥65 good · ≥63 avg · <63 soft (≤62 poor for overs)
@@ -185,10 +198,11 @@ def _rate_chip(
     *,
     suffix: str = "",
     title: str = "",
+    signed: bool = False,
 ) -> str:
-    """Colored pill for one Rates / form (or style) stat."""
+    """Colored pill for one Rates / form / arsenal matchup stat."""
     band = _grade_for(metric, value)
-    shown = _fmt(value, digits)
+    shown = _fmt(value, digits, signed=signed)
     if shown == "—":
         return (
             f"<span class='rate-chip rate-na' title='{_esc(title or label)}'>"
@@ -202,6 +216,45 @@ def _rate_chip(
         f"<span class='rate-val'>{_esc(shown)}{_esc(suffix)}</span>"
         f"</span>"
     )
+
+
+def _band_chip(label: str, band: str | None, *, title: str = "", value: str = "") -> str:
+    """Colored pill from an explicit band (elite/high/mid/low)."""
+    cls = f"rate-chip grade-{band}" if band else "rate-chip rate-na"
+    val = value or label
+    lab = label if value else ""
+    if lab:
+        return (
+            f"<span class='{cls}' title='{_esc(title or label)}'>"
+            f"<span class='rate-lab'>{_esc(lab)}</span> "
+            f"<span class='rate-val'>{_esc(val)}</span>"
+            f"</span>"
+        )
+    return (
+        f"<span class='{cls}' title='{_esc(title or label)}'>"
+        f"<span class='rate-val'>{_esc(val)}</span>"
+        f"</span>"
+    )
+
+
+def _solo_grade_band(abs_grade: str | None) -> str | None:
+    g = (abs_grade or "").strip().lower()
+    return {
+        "elite": "elite",
+        "strong": "high",
+        "avg": "mid",
+        "soft": "low",
+    }.get(g)
+
+
+def _contact_grade_band(contact_grade: str | None) -> str | None:
+    """whiff_prone helps overs (green); contact_heavy helps unders (red)."""
+    g = (contact_grade or "").strip().lower()
+    return {
+        "whiff_prone": "elite",
+        "neutral": "mid",
+        "contact_heavy": "low",
+    }.get(g)
 
 def _lineup_label(src: Any) -> tuple[str, str]:
     if not src:
@@ -1049,43 +1102,138 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             )
     style_val = "".join(style_bits)
     opp = row.get("opponent") or "opp"
-    matchup_bits = []
+    matchup_bits: list[str] = []
     if abs_grade:
-        matchup_bits.append(f"<strong>{_esc(abs_grade.upper())}</strong> solo vs {_esc(opp)}")
+        matchup_bits.append(
+            _band_chip(
+                "solo",
+                _solo_grade_band(abs_grade),
+                value=f"{abs_grade.upper()} vs {opp}",
+                title=(
+                    "Solo arsenal vs this nine — picks the side "
+                    "(ELITE/STRONG over · SOFT under · AVG usually pass)"
+                ),
+            )
+        )
     if row.get("expected_k_pct") is not None:
-        matchup_bits.append(f"arsenal K% {_fmt(row.get('expected_k_pct'), 1)}")
+        matchup_bits.append(
+            _rate_chip(
+                "arsenal K%",
+                row.get("expected_k_pct"),
+                "expected_k_pct",
+                1,
+                title=(
+                    f"Arsenal-weighted K% vs lineup · "
+                    f"ELITE≥{ABS_MATCHUP_ELITE:g} STRONG≥{ABS_MATCHUP_STRONG:g} "
+                    f"AVG≥{ABS_MATCHUP_AVG:g} SOFT<{ABS_MATCHUP_AVG:g}"
+                ),
+            )
+        )
     if row.get("arsenal_vs_league") is not None:
-        matchup_bits.append(f"{_fmt(row.get('arsenal_vs_league'), 1, signed=True)} vs league")
+        matchup_bits.append(
+            _rate_chip(
+                "vs league",
+                row.get("arsenal_vs_league"),
+                "arsenal_vs_league",
+                1,
+                signed=True,
+                title="Arsenal K% minus league ~22.5% — positive helps overs",
+            )
+        )
     if row.get("arsenal_vs_opp") is not None:
-        matchup_bits.append(f"{_fmt(row.get('arsenal_vs_opp'), 1, signed=True)} vs opp K%")
+        matchup_bits.append(
+            _rate_chip(
+                "vs opp K%",
+                row.get("arsenal_vs_opp"),
+                "arsenal_vs_opp",
+                1,
+                signed=True,
+                title="Mix vs lineup raw K% — positive = mix beats the nine's tendency",
+            )
+        )
     if ark is not None:
         slate_g = (row.get("matchup_grade") or "").strip()
+        slate_band = _solo_grade_band(slate_g) if slate_g else None
+        slate_txt = f"#{ark}" + (f" {slate_g}" if slate_g else "")
         matchup_bits.append(
-            f"slate #{_esc(ark)}"
-            f"{'' if not slate_g else ' ' + _esc(slate_g)}"
+            _band_chip(
+                "slate",
+                slate_band,
+                value=slate_txt,
+                title="Slate-relative arsenal rank only — secondary to solo grade",
+            )
         )
     if row.get("lineup_k_pct") is not None:
         src = row.get("offense_source") or ""
+        tip = "Opposing lineup K%" + (f" ({src})" if src else "")
         matchup_bits.append(
-            f"opp K% {_fmt(row.get('lineup_k_pct'), 1)}"
-            f"{'' if not src else ' (' + _esc(src) + ')'}"
+            _rate_chip(
+                "opp K%",
+                row.get("lineup_k_pct"),
+                "opp_k_pct",
+                1,
+                title=tip + " — higher helps overs",
+            )
         )
     if row.get("lineup_bip_pct") is not None:
         cg = (row.get("contact_grade") or "").strip()
+        bip_band = _contact_grade_band(cg) or _grade_for(
+            "opp_bip_pct", row.get("lineup_bip_pct")
+        )
+        bip_label = "opp BIP"
+        bip_val = _fmt(row.get("lineup_bip_pct"), 1) + "%"
+        if cg:
+            bip_val += f" {cg.replace('_', ' ')}"
         matchup_bits.append(
-            f"opp BIP {_fmt(row.get('lineup_bip_pct'), 1)}%"
-            f"{'' if not cg else ' (' + _esc(cg.replace('_', ' ')) + ')'}"
+            _band_chip(
+                bip_label,
+                bip_band,
+                value=bip_val,
+                title=(
+                    "Lineup balls-in-play % — whiff_prone helps overs · "
+                    "contact_heavy helps unders"
+                ),
+            )
         )
     if row.get("lineup_bb_pct") is not None:
-        matchup_bits.append(f"opp BB% {_fmt(row.get('lineup_bb_pct'), 1)}")
+        matchup_bits.append(
+            _rate_chip(
+                "opp BB%",
+                row.get("lineup_bb_pct"),
+                "opp_bb_pct",
+                1,
+                title="Opposing lineup BB% — high = patient / pitch-count risk",
+            )
+        )
     grade = (row.get("discipline_grade") or "").strip()
     if grade:
-        matchup_bits.append(_esc(grade.replace("_", " ")))
+        disc_band = {
+            "aggressive": "high",
+            "free_swing": "elite",
+            "neutral": "mid",
+            "patient": "low",
+            "three_true": "mid",
+        }.get(grade.lower())
+        matchup_bits.append(
+            _band_chip(
+                "disc",
+                disc_band,
+                value=grade.replace("_", " "),
+                title="Plate-discipline grade for the opposing nine",
+            )
+        )
     pc = (row.get("pitch_count_risk") or "").strip()
     if pc and pc not in ("neutral", "low"):
-        matchup_bits.append(f"pitch-count {_esc(pc)}")
-    matchup_val = " · ".join(matchup_bits) if matchup_bits else "—"
-
+        pc_band = "low" if pc in ("elevated", "high") else "mid"
+        matchup_bits.append(
+            _band_chip(
+                "pitch-count",
+                pc_band,
+                value=pc,
+                title="Pitch-count risk from patient / walk-heavy nines",
+            )
+        )
+    matchup_val = "".join(matchup_bits) if matchup_bits else "—"
     vs_g = row.get("vs_team_games")
     vs_bits: list[str] = []
     if vs_g is not None and int(vs_g or 0) > 0:
@@ -1129,7 +1277,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         # Card read order: solo arsenal → style → stuff → rates → outing → history.
         "<div class='meta-cell meta-matchup'>"
         "<span class='meta-label'>Arsenal matchup</span>"
-        f"<span class='meta-value'>{matchup_val}</span>"
+        f"<span class='meta-value meta-rates'>{matchup_val}</span>"
         "</div>"
         "<div class='meta-cell meta-pstyle'>"
         "<span class='meta-label'>Pitcher style (Ks vs BIP outs)</span>"

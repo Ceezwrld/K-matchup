@@ -149,13 +149,26 @@ Short IP kills TRUST overs.
 - [ ] Arm on ≤2 tickets today; one nuke/chalk pair max
 
 ### Where the edge is
-- **Over edge:** OFF + ELITE/STRONG + WHIFF + (TRUST or clear IP) + (whiff_prone **or** Strike% ≥~65)
-- **Attack-plate over pack (8/5 locked):** prefer arms that stack **ELITE/STRONG + WHIFF + Strike% ≥~65 / Zone% ≥~43** (Harrison 10, Rogers 9, Lopez 9, Skenes 6). Length still required (Detmers attack profile but 5 K / 4 IP). Skip THIN_TOTAL / MATCHUP_OK / BAL as nuke overs even if Exp K is high.
-- **Under edge:** OFF + SOFT + UNDER_OK (≥2 of GB/FLY · contact_heavy · Exp K ≤~4.2) + not SPIKE
-- **No edge (pass):** AVG mush · THIN_TOTAL nukes · FILLER · openers · SPIKE soft U6 · prior lineups
+- **K over edge:** OFF + ELITE/STRONG + WHIFF + (TRUST or clear IP) + (whiff_prone **or** Strike% ≥~65)
+- **Attack-plate over pack (8/5 locked):** prefer arms that stack **ELITE/STRONG + WHIFF + Strike% ≥~65 / Zone% ≥~43** (Harrison 10, Rogers 9, Lopez 9, Skenes 6). Length still required (Detmers attack profile but 5 K / 4 IP). Skip THIN_TOTAL / MATCHUP_OK / BAL as nuke K overs even if Exp K is high.
+- **K under edge:** OFF + SOFT + UNDER_OK (≥2 of GB/FLY · contact_heavy · Exp K ≤~4.2) + not SPIKE · line needs real cushion (pass flat U4.0 when Exp ~3.5)
+- **Outs over edge (co-equal lane — 8/6 locked):** OFF + starter + projected IP holds (~≥5.5 → ~16.5+ outs) + outing risk **clear/low** + STYLE **GB/FLY** (or THIN_TOTAL / MATCHUP_OK / FILLER where Ks are the wrong prop). Length is the product — high risk / short IP / openers = pass outs overs.
+- **No edge (pass):** AVG mush on Ks · THIN_TOTAL *K nukes* · FILLER K overs · openers · SPIKE soft U6 · prior lineups · outs overs on high-risk hooks
+
+### Dual ticket lanes (Ks **or** outs)
+Every probable gets both reads. Chip decides the lane:
+| Chip / stack | K ticket | Outs ticket |
+|--------------|----------|-------------|
+| TRUST / attack-plate WHIFF | **K over** | usually pass (Ks are the product) |
+| THIN_TOTAL / FLY or GB + length | thin K only | **outs over** preferred |
+| MATCHUP_OK / FILLER + clear-low IP | pass / O3.5 K | **outs over** if IP holds |
+| UNDER_OK | **K under** (line cushion) | outs under only if short/high-risk |
+| SPIKE soft solo | no soft K under | outs OK if length clear |
+
+Pair across lanes freely (e.g. Ashcraft K over + Young outs over). Still default **2-leg**; no same-game opposing *K* overs.
 
 ### Fast edge test
-> Solo says over or under → does STYLE allow that total → does BIP agree → does the chip allow the ticket → does Strike%/IP support it?
+> Solo says over or under → does STYLE allow that total → Ks or outs lane? → does BIP agree → does the chip allow the ticket → does Strike%/IP support it?
 
 Any **no** → **no edge** → pass.
 

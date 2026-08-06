@@ -415,6 +415,11 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "form_ks": _json_safe(r.get("form_ks")),
                 "form_weight": _json_safe(r.get("form_weight")),
                 "lineup_k_pct": _json_safe(r.get("lineup_k_pct")),
+                "lineup_k_pct_vs_lhp": _json_safe(r.get("lineup_k_pct_vs_lhp")),
+                "lineup_k_pct_vs_rhp": _json_safe(r.get("lineup_k_pct_vs_rhp")),
+                "lineup_k_pct_vs_hand": _json_safe(r.get("lineup_k_pct_vs_hand")),
+                "lineup_k_vs_hand_side": r.get("lineup_k_vs_hand_side") or "",
+                "lineup_k_vs_hand_source": r.get("lineup_k_vs_hand_source") or "",
                 "lineup_avg": _json_safe(r.get("lineup_avg")),
                 "lineup_bb_pct": _json_safe(r.get("lineup_bb_pct")),
                 "lineup_bip_pct": _json_safe(r.get("lineup_bip_pct")),
@@ -1163,7 +1168,39 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
                 title="Slate-relative arsenal rank only — secondary to solo grade",
             )
         )
-    if row.get("lineup_k_pct") is not None:
+    # Prefer opp K% vs this pitcher's hand; keep overall as secondary chip.
+    opp_hand = row.get("lineup_k_pct_vs_hand")
+    opp_side = str(row.get("lineup_k_vs_hand_side") or "").strip().upper()
+    if opp_hand is not None:
+        side_lab = f"vs {opp_side}HP" if opp_side in ("L", "R") else "vs hand"
+        matchup_bits.append(
+            _rate_chip(
+                f"opp K% {side_lab}",
+                opp_hand,
+                "opp_k_pct",
+                1,
+                title=(
+                    f"Lineup season K% {side_lab} — primary opp-K confirm "
+                    "(higher helps overs)"
+                ),
+            )
+        )
+        if row.get("lineup_k_pct") is not None:
+            src = row.get("offense_source") or ""
+            matchup_bits.append(
+                _rate_chip(
+                    "opp K% all",
+                    row.get("lineup_k_pct"),
+                    "opp_k_pct",
+                    1,
+                    title=(
+                        "Overall lineup K%"
+                        + (f" ({src})" if src else "")
+                        + " — secondary to vs-hand"
+                    ),
+                )
+            )
+    elif row.get("lineup_k_pct") is not None:
         src = row.get("offense_source") or ""
         tip = "Opposing lineup K%" + (f" ({src})" if src else "")
         matchup_bits.append(

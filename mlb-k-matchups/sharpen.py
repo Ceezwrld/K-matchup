@@ -145,6 +145,10 @@ OFFENSE_MIN_RECENT_PA = 25
 # Contact environment labels from lineup BIP% (+ K% confirmation).
 CONTACT_HEAVY_BIP = 71.0
 WHIFF_PRONE_BIP = 64.0
+# Lineup K% vs pitcher hand (season vl/vr splits). Min sample to trust.
+HAND_K_MIN_BATTER_PA = 25.0
+HAND_K_MIN_LINEUP_PA = 80.0
+HAND_K_MIN_N = 5
 
 # Plate discipline / pitch-count layer (lineup BB% + K% shape).
 LEAGUE_BB_PCT = 8.3
@@ -1491,11 +1495,90 @@ def classify_contact_grade(
     return "neutral"
 
 
+def _empty_lineup_k_vs_hand() -> dict[str, Any]:
+    return {
+        "lineup_k_pct_vs_lhp": None,
+        "lineup_k_pct_vs_rhp": None,
+        "lineup_k_pct_vs_hand": None,
+        "lineup_k_vs_hand_side": None,
+        "lineup_k_vs_hand_pa": 0.0,
+        "lineup_k_vs_hand_n": 0,
+        "lineup_k_vs_hand_source": None,
+    }
+
+
+def summarize_lineup_k_vs_hand(
+    lineup: list[dict[str, Any]],
+    hand_rates: dict[int, dict[str, Any]] | None,
+    pitcher_hand: str | None,
+) -> dict[str, Any]:
+    """PA-weighted lineup K% vs LHP / vs RHP from season vl/vr splits.
+
+    Picks `lineup_k_pct_vs_hand` for this pitcher's hand when sample is enough
+    (≥HAND_K_MIN_N batters, ≥HAND_K_MIN_LINEUP_PA, each batter ≥HAND_K_MIN_BATTER_PA).
+    """
+    out = _empty_lineup_k_vs_hand()
+    if not lineup or not hand_rates:
+        return out
+
+    l_rows: list[tuple[float, float]] = []
+    r_rows: list[tuple[float, float]] = []
+    for slot in lineup:
+        try:
+            bid = int(slot["batter_id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        rates = hand_rates.get(bid) or {}
+        pa_l = float(rates.get("pa_vs_lhp") or 0.0)
+        k_l = rates.get("k_pct_vs_lhp")
+        if k_l is not None and pa_l >= HAND_K_MIN_BATTER_PA:
+            l_rows.append((pa_l, float(k_l)))
+        pa_r = float(rates.get("pa_vs_rhp") or 0.0)
+        k_r = rates.get("k_pct_vs_rhp")
+        if k_r is not None and pa_r >= HAND_K_MIN_BATTER_PA:
+            r_rows.append((pa_r, float(k_r)))
+
+    def _wavg(rows: list[tuple[float, float]]) -> tuple[float | None, float, int]:
+        if not rows:
+            return None, 0.0, 0
+        tw = sum(r[0] for r in rows)
+        if tw <= 0:
+            return None, 0.0, 0
+        return sum(r[0] * r[1] for r in rows) / tw, tw, len(rows)
+
+    k_l, pa_l, n_l = _wavg(l_rows)
+    k_r, pa_r, n_r = _wavg(r_rows)
+    out["lineup_k_pct_vs_lhp"] = k_l
+    out["lineup_k_pct_vs_rhp"] = k_r
+
+    hand = (pitcher_hand or "").strip().upper()
+    if hand == "L" and k_l is not None and n_l >= HAND_K_MIN_N and pa_l >= HAND_K_MIN_LINEUP_PA:
+        out["lineup_k_pct_vs_hand"] = k_l
+        out["lineup_k_vs_hand_side"] = "L"
+        out["lineup_k_vs_hand_pa"] = pa_l
+        out["lineup_k_vs_hand_n"] = n_l
+        out["lineup_k_vs_hand_source"] = "season_vs_lhp"
+    elif hand == "R" and k_r is not None and n_r >= HAND_K_MIN_N and pa_r >= HAND_K_MIN_LINEUP_PA:
+        out["lineup_k_pct_vs_hand"] = k_r
+        out["lineup_k_vs_hand_side"] = "R"
+        out["lineup_k_vs_hand_pa"] = pa_r
+        out["lineup_k_vs_hand_n"] = n_r
+        out["lineup_k_vs_hand_source"] = "season_vs_rhp"
+    return out
+
+
 def summarize_lineup_offense(
     lineup: list[dict[str, Any]],
     profiles: dict[int, dict[str, Any]],
+    *,
+    hand_rates: dict[int, dict[str, Any]] | None = None,
+    pitcher_hand: str | None = None,
 ) -> dict[str, Any]:
-    """PA-weighted lineup K% / AVG / BB% / BIP%; prefer recent when sample OK."""
+    """PA-weighted lineup K% / AVG / BB% / BIP%; prefer recent when sample OK.
+
+    Also attaches season lineup K% vs LHP / vs RHP when hand splits are provided.
+    """
+    hand_bits = summarize_lineup_k_vs_hand(lineup, hand_rates, pitcher_hand)
     # rows: pa, k, avg, bb, bip
     recent_rows: list[tuple[float, float, float, float, float]] = []
     season_rows: list[tuple[float, float, float, float, float]] = []
@@ -1570,6 +1653,7 @@ def summarize_lineup_offense(
             "offense_source": None,
             "offense_n": 0,
             "discipline_grade": None,
+            **hand_bits,
         }
 
     grade = classify_discipline_grade(bb_pct, k_pct)
@@ -1584,8 +1668,8 @@ def summarize_lineup_offense(
         "offense_source": source,
         "offense_n": n,
         "discipline_grade": grade,
+        **hand_bits,
     }
-
 
 def classify_discipline_grade(
     bb_pct: float | None, k_pct: float | None
@@ -1627,13 +1711,20 @@ def apply_lineup_offense_overlay(
         "offense_source": None,
         "offense_factor": None,
         "discipline_grade": None,
+        **_empty_lineup_k_vs_hand(),
     }
     if expected_ks is None or summary is None:
         return expected_ks, None, empty
     k_pct = summary.get("lineup_k_pct")
     avg = summary.get("lineup_avg")
     bip_pct = summary.get("lineup_bip_pct")
-    if k_pct is None:
+    # Prefer season K% vs this pitcher's hand for the K-edge when sample holds.
+    k_for_edge = summary.get("lineup_k_pct_vs_hand")
+    k_edge_source = summary.get("lineup_k_vs_hand_source")
+    if k_for_edge is None:
+        k_for_edge = k_pct
+        k_edge_source = summary.get("offense_source")
+    if k_pct is None and k_for_edge is None:
         return expected_ks, None, {
             **empty,
             "lineup_bb_pct": summary.get("lineup_bb_pct"),
@@ -1641,10 +1732,17 @@ def apply_lineup_offense_overlay(
             "contact_grade": summary.get("contact_grade") or "",
             "discipline_grade": summary.get("discipline_grade"),
             "offense_source": summary.get("offense_source"),
+            "lineup_k_pct_vs_lhp": summary.get("lineup_k_pct_vs_lhp"),
+            "lineup_k_pct_vs_rhp": summary.get("lineup_k_pct_vs_rhp"),
+            "lineup_k_pct_vs_hand": summary.get("lineup_k_pct_vs_hand"),
+            "lineup_k_vs_hand_side": summary.get("lineup_k_vs_hand_side"),
+            "lineup_k_vs_hand_pa": summary.get("lineup_k_vs_hand_pa"),
+            "lineup_k_vs_hand_n": summary.get("lineup_k_vs_hand_n"),
+            "lineup_k_vs_hand_source": summary.get("lineup_k_vs_hand_source"),
         }
 
     # Whiff-prone lineups boost Ks; contact/BIP-heavy lineups trim them.
-    k_edge = (float(k_pct) - LEAGUE_K_PCT) / 100.0
+    k_edge = (float(k_for_edge) - LEAGUE_K_PCT) / 100.0
     bip_edge = 0.0
     if bip_pct is not None:
         bip_edge = -(float(bip_pct) - LEAGUE_BIP_PCT) / 100.0
@@ -1655,11 +1753,12 @@ def apply_lineup_offense_overlay(
     delta = max(-OFFENSE_FACTOR_MAX, min(OFFENSE_FACTOR_MAX, raw))
     factor = 1.0 + delta
     blended = float(expected_ks) * factor
+    contact_k = float(k_pct) if k_pct is not None else float(k_for_edge)
     contact = summary.get("contact_grade") or classify_contact_grade(
-        float(bip_pct) if bip_pct is not None else None, float(k_pct)
+        float(bip_pct) if bip_pct is not None else None, contact_k
     )
     meta = {
-        "lineup_k_pct": float(k_pct),
+        "lineup_k_pct": None if k_pct is None else float(k_pct),
         "lineup_avg": None if avg is None else float(avg),
         "lineup_bb_pct": summary.get("lineup_bb_pct"),
         "lineup_bip_pct": None if bip_pct is None else float(bip_pct),
@@ -1669,9 +1768,16 @@ def apply_lineup_offense_overlay(
         "offense_pa": summary.get("offense_pa"),
         "offense_n": summary.get("offense_n"),
         "discipline_grade": summary.get("discipline_grade"),
+        "lineup_k_pct_vs_lhp": summary.get("lineup_k_pct_vs_lhp"),
+        "lineup_k_pct_vs_rhp": summary.get("lineup_k_pct_vs_rhp"),
+        "lineup_k_pct_vs_hand": summary.get("lineup_k_pct_vs_hand"),
+        "lineup_k_vs_hand_side": summary.get("lineup_k_vs_hand_side"),
+        "lineup_k_vs_hand_pa": summary.get("lineup_k_vs_hand_pa"),
+        "lineup_k_vs_hand_n": summary.get("lineup_k_vs_hand_n"),
+        "lineup_k_vs_hand_source": summary.get("lineup_k_vs_hand_source"),
+        "offense_k_edge_source": k_edge_source,
     }
     return blended, factor, meta
-
 
 def apply_lineup_discipline_overlay(
     expected_ks: float,
@@ -2166,13 +2272,27 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
         out.at[idx, "arsenal_abs_grade"] = abs_grade
         vs_league = kpct - LEAGUE_K_PCT
         out.at[idx, "arsenal_vs_league"] = vs_league
-        opp_k = row.get("lineup_k_pct")
+        # Prefer opp K% vs this pitcher's hand for arsenal_vs_opp confirmation.
+        opp_k_hand = row.get("lineup_k_pct_vs_hand")
+        opp_k_all = row.get("lineup_k_pct")
+        opp_side = str(row.get("lineup_k_vs_hand_side") or "").strip().upper()
         vs_opp: float | None = None
         opp_bit = ""
-        if opp_k is not None and not (isinstance(opp_k, float) and pd.isna(opp_k)):
-            vs_opp = kpct - float(opp_k)
+        opp_k_used = None
+        if opp_k_hand is not None and not (
+            isinstance(opp_k_hand, float) and pd.isna(opp_k_hand)
+        ):
+            opp_k_used = float(opp_k_hand)
+            side_lab = f" vs {opp_side}HP" if opp_side in ("L", "R") else " vs hand"
+            opp_bit = f", opp K%{side_lab} {opp_k_used:.1f}"
+        elif opp_k_all is not None and not (
+            isinstance(opp_k_all, float) and pd.isna(opp_k_all)
+        ):
+            opp_k_used = float(opp_k_all)
+            opp_bit = f", opp K% {opp_k_used:.1f}"
+        if opp_k_used is not None:
+            vs_opp = kpct - opp_k_used
             out.at[idx, "arsenal_vs_opp"] = vs_opp
-            opp_bit = f", opp K% {float(opp_k):.1f}"
         ark = int(row["arsenal_matchup_rank"]) if pd.notna(row["arsenal_matchup_rank"]) else "?"
         edge_bit = f", {vs_league:+.1f} vs lg"
         if vs_opp is not None:

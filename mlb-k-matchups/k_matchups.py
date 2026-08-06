@@ -1523,7 +1523,10 @@ def main(argv: list[str] | None = None) -> int:
         if risk["bf_risk_factor"] < 1.0 and args.ip is None and args.batters_faced is None:
             projected_ip = projected_ip * float(risk["bf_risk_factor"])
         offense_summary = summarize_lineup_offense(
-            item.get("lineup") or [], batter_offense
+            item.get("lineup") or [],
+            batter_offense,
+            hand_rates=batter_k_vs_hand,
+            pitcher_hand=pitcher_hand,
         )
         # Patient / walk-heavy lineups trim BF/IP before walking the order.
         if args.ip is None and args.batters_faced is None:
@@ -1592,6 +1595,13 @@ def main(argv: list[str] | None = None) -> int:
             "form_ks": None,
             "form_weight": None,
             "lineup_k_pct": offense_summary.get("lineup_k_pct"),
+            "lineup_k_pct_vs_lhp": offense_summary.get("lineup_k_pct_vs_lhp"),
+            "lineup_k_pct_vs_rhp": offense_summary.get("lineup_k_pct_vs_rhp"),
+            "lineup_k_pct_vs_hand": offense_summary.get("lineup_k_pct_vs_hand"),
+            "lineup_k_vs_hand_side": offense_summary.get("lineup_k_vs_hand_side"),
+            "lineup_k_vs_hand_pa": offense_summary.get("lineup_k_vs_hand_pa"),
+            "lineup_k_vs_hand_n": offense_summary.get("lineup_k_vs_hand_n"),
+            "lineup_k_vs_hand_source": offense_summary.get("lineup_k_vs_hand_source"),
             "lineup_avg": offense_summary.get("lineup_avg"),
             "lineup_bb_pct": offense_summary.get("lineup_bb_pct"),
             "lineup_bip_pct": offense_summary.get("lineup_bip_pct"),
@@ -1685,6 +1695,17 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     row["offense_factor"] = offense_factor
                     row["lineup_k_pct"] = offense_meta.get("lineup_k_pct")
+                    row["lineup_k_pct_vs_lhp"] = offense_meta.get("lineup_k_pct_vs_lhp")
+                    row["lineup_k_pct_vs_rhp"] = offense_meta.get("lineup_k_pct_vs_rhp")
+                    row["lineup_k_pct_vs_hand"] = offense_meta.get("lineup_k_pct_vs_hand")
+                    row["lineup_k_vs_hand_side"] = offense_meta.get(
+                        "lineup_k_vs_hand_side"
+                    )
+                    row["lineup_k_vs_hand_pa"] = offense_meta.get("lineup_k_vs_hand_pa")
+                    row["lineup_k_vs_hand_n"] = offense_meta.get("lineup_k_vs_hand_n")
+                    row["lineup_k_vs_hand_source"] = offense_meta.get(
+                        "lineup_k_vs_hand_source"
+                    )
                     row["lineup_avg"] = offense_meta.get("lineup_avg")
                     row["lineup_bb_pct"] = offense_meta.get("lineup_bb_pct")
                     row["lineup_bip_pct"] = offense_meta.get("lineup_bip_pct")

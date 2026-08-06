@@ -29,12 +29,13 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
    Also check **vs Team history** on each card (career K% vs that batting team + recent games with **HOME/AWAY** for the pitcher). Use history to confirm or caution the model side — not to override a clear absolute arsenal gate.  
    Mark the whole board **provisional** until official lineups post.
 
-3b. **Info lean (default on every arm — not a full essay):** stack three signals so outs-type is visible at a glance:
+3b. **Info lean (default on every arm — not a full essay):** stack signals so outs-type is visible at a glance:
    - **Solo grade** → can the mix K *this* nine?
    - **STYLE** (WHIFF / GB / FLY / BAL) → does he usually get outs via Ks or BIP?
    - **Opp BIP / contact** (whiff_prone / neutral / contact_heavy) → will the nine help or fight Ks?
+   - **Strike% / Zone%** (optional confirm) → does he attack the plate? High Strike% (≥~65) + Zone% supports WHIFF overs; low Strike% alone does **not** lock an under (SPIKE can still clear).
 
-   One-glance combos: ELITE+WHIFF+whiff-prone = strong K info · ELITE+FLY/GB = matchup OK, don’t overweight K total · SOFT+GB/FLY+contact_heavy = strong under info · SOFT+WHIFF/SPIKE = soft grade but K ceiling live · AVG+WHIFF+juiced line = Cam-rule under info.
+   One-glance combos: ELITE+WHIFF+whiff-prone = strong K info · ELITE+FLY/GB = matchup OK, don’t overweight K total · SOFT+GB/FLY+contact_heavy = strong under info · SOFT+WHIFF/SPIKE = soft grade but K ceiling live · AVG+WHIFF+juiced line = Cam-rule under info · WHIFF+Strike%≥65 = command confirms the K script.
 
 3c. **Full thesis / essay (on request only):** when asked for a specific pitcher (or a short list), expand to Littell/Skubal depth — table of arsenal / opp BIP / STYLE / stuff·SPIKE / IP·risk, then answer “can we trust the K total?” and line-sizing. Do **not** essay the whole slate unless asked. Same daily routine, deeper read on demand.
 4. **Re-refresh when lineups confirm** — same report shape, flip prior→official, re-check leans before locking tickets.
@@ -52,12 +53,14 @@ Open a pitcher card and answer **four questions in order**. Do not start at Exp 
 | 2 | **STYLE** chip (WHIFF / GB / FLY / BAL) next to name | Does he get outs via Ks or BIP? | Whether to **trust the total** |
 | 3 | **Opp BIP** (whiff_prone / contact_heavy in meta) | Will the nine help or fight Ks? | Confirmation / line size |
 | 4 | **SPIKE / THIN_TOTAL / UNDER_OK / MATCHUP_OK / FILLER** | Any veto or size cap? | Ticket legality |
+| 5 | **Strike% / Zone%** (Rates row) | Does he attack the plate? | Command confirm — **not** a side flip |
 
 **One-glance recipes**
 
 | Stack | Read | Ticket move |
 |-------|------|-------------|
 | ELITE/STRONG + **WHIFF** + Exp K ≥5.5 | **Trust total** | Soft O4.5 / O5.5 OK if IP clear |
+| ELITE/STRONG + **WHIFF** + Strike% ≥~65 | Attack-plate confirm | Size up over confidence if IP clear |
 | ELITE/STRONG + **GB/FLY** + Exp K ≥5.5 | **THIN_TOTAL** | O3.5 / thin O4.5 only |
 | ELITE/STRONG + **BAL** + Exp K ≥5.5 | Total caution | Prefer O4.5 floor; don’t juice O6.5 |
 | SOFT + **UNDER_OK** (2+ confirms) | Preferred under | Soft U6 / BIP under |
@@ -266,6 +269,50 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 3. **U4.5:** only if proj ≤ ~3.5 and non-SPIKE; otherwise **U5.5+**.
 4. **Same-game:** pitcher K over ↔ opposing bats for hits is fine; never pitcher K over + that team’s bats for hits vs him.
 5. Log misses into this file after each `backtest-YYYY-MM-DD.csv`.
+
+## 2026-08-05 lessons (MAE ~2.21, n=23 Final scored; 6 still live at grade)
+
+First night with **TRUST / UNDER_OK / THIN_TOTAL** + new **Strike%/Zone%** on the board. Model **understated** Ks (bias **+1.01**); whiff_prone nines and several soft/SPIKE arms ran hot.
+
+| Solo grade | n | mean expK → act | Notes |
+|------------|---|-----------------|-------|
+| **ELITE** | 4 | 5.42 → **7.00** | Harrison **10**, Pérez **9**; Detmers TRUST 5 / 4 IP short; Whisenhunt 4 |
+| **STRONG** | 3 | 5.25 → **7.00** | Lopez **9**, Imanaga **6**; Skenes TRUST **6** (nail) |
+| **AVG** | 6 | 4.69 → 5.50 | Rogers **9**, Gray **8**, Scott **7**; Lauer FILLER **1** |
+| **SOFT** | 10 | 4.21 → 4.90 | Bibee FILLER **10**, Cameron **9**, Brown SPIKE **8**; UNDER_OK lane held |
+
+### Ticket leans (Final)
+
+| Lean | Actual | Result |
+|------|--------|--------|
+| **TRUST Detmers** | 5 K / 4 IP | Soft miss — mix OK, length died |
+| **TRUST Skenes** | **6 K** / 5 IP | **HIT** — chalk trust total |
+| **UNDER_OK Sugano / Lowder / Irvin** | 3 / 3 / 3 | **HIT** — all ≤ Exp K, contact-heavy soft |
+| **SPIKE Brown** (no soft U6) | **8 K** | Veto **correct** — soft under would have died |
+| **SPIKE Burke** | 4 K | Soft side OK; SPIKE still right to block auto-U6 |
+| **FILLER Bibee** | **10 K** | Never soft-under FILLER; never K-over anchor |
+| **ELITE Harrison** (thin IP ~4.6) | **10 K** / 5 IP | Volume spike — Strike% 66.5 confirmed attack |
+
+### Strike% / Zone% (new layer) — did it help?
+
+Raw corr vs actual Ks was near **zero** alone (Strike% +0.07, Zone% +0.00) — **not a solo predictor**. Useful as **command confirm on WHIFF / over scripts**:
+
+| Stack | Read from 8/5 |
+|-------|----------------|
+| **WHIFF + Strike% ≥65** | Harrison 10, Detmers 5 (short), Burke 4 — ceiling live when SPIKE/ELITE; length still required |
+| **High Strike% + Zone% (attack plate)** | Rogers 68.6/44.4 → **9**; Harrison 66.5/42.8 → **10** — home-plate attack helped K conversion |
+| **Low Strike% ≠ auto under** | Brown **59.6** Zone 37.6 → **8** (SPIKE/WHIFF); Lopez **60.3** → **9** |
+| **UNDER_OK + low-mid Strike%** | Sugano/Lowder/Irvin ~61–62.5 → all **3 K** — command soft + contact-heavy stacked |
+
+**Process add:** after solo → STYLE → BIP, glance **Strike%/Zone%**. If WHIFF/TRUST over and Strike% ≥ ~65 (slate avg was **64.0%**), trust the K script more. If Strike% is soft, do **not** flip a SPIKE/WHIFF arm to under — use it only to size UNDER_OK / pass juiced overs on nibble arms.
+
+### Reinforced
+
+1. **TRUST** works when IP holds (Skenes); short outing kills Detmers-tier totals.
+2. **UNDER_OK** 3/3 — keep as preferred soft-under badge.
+3. **SPIKE veto** on Brown saved the soft-under trap.
+4. **FILLER can spike** (Bibee 10) — pass both K overs and soft unders.
+5. **Strike%/Zone% = confirm, not side** — attack-the-plate helps WHIFF overs; does not invent unders.
 
 ## 2026-08-04 lessons (MAE ~1.61, n=24 Final; 6 still live at grade)
 

@@ -178,10 +178,10 @@ Actuals: 10 / 9 / 5 / 6 / 9. Four clear cashes on soft O4.5+; Detmers only if li
 
 ## Better tickets (habit)
 
-1. **Default = 2-leg.** One clear over + one clear under, or two UNDER_OK / two TRUST overs. No 6-legs.
-2. **Build from outlook chips, not Exp K rank.** Top of board ≠ best bet (Dobbins).
-3. **Pair opposite scripts:** TRUST over (WHIFF) + UNDER_OK under (GB + contact-heavy). Avoid same-game opposing K overs.
-4. **Line sizing:** overs need IP + trust; unders need confirms or U6.5+. Cam rule: if book juices name/SPIKE above Exp K by ~1.0–1.5 on AVG/SOFT, under is live.
+1. **Default = 2-leg.** K over + K under, **or** K over + outs over, or two outs overs. No 6-legs.
+2. **Build from outlook chips, not Exp K rank.** Top of board ≠ best bet (Dobbins). Chip picks **Ks vs outs**.
+3. **Pair complementary scripts:** attack-plate K over + THIN_TOTAL/GB outs over works; also TRUST K + UNDER_OK K. Avoid same-game opposing K overs.
+4. **Line sizing:** K overs need IP + trust; K unders need confirms or U6.5+; outs overs need clear/low risk + proj outs vs line. Cam rule: if book juices name/SPIKE above Exp K by ~1.0–1.5 on AVG/SOFT, K under is live.
 5. **Accuracy lock:** run the **Ticket lock routine** above — do not skip steps.
 6. **Cap:** any arm on ≤2 tickets; one nuke/chalk pair max per day.
 

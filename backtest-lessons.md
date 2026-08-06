@@ -14,6 +14,18 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
+## Outs tickets — PAUSED (8/6)
+
+**Step away from pitcher outs tickets for now.** 8/6 full-outing outs overs missed back-to-back (Young O14.5→13, Peterson O16.5→15) on “low risk” length with thin cushions.
+
+| Do | Don’t |
+|----|--------|
+| **K lane only** for real tickets (attack-plate overs · UNDER_OK unders) | Full-outing outs overs (O14.5 / O15.5 / O16.5 style) |
+| Honor already-live chalk (e.g. Buehler O0.5) — don’t add new outs legs | Glue K promos to thin outs “anchors” |
+| Keep outs efficiency notes for a later revisit | Force dual-lane tickets tonight |
+
+Board can still *show* IP / STYLE for context. **Do not recommend new outs overs/unders** until we explicitly reopen the lane after more graded evidence.
+
 ## Every morning routine (do this first)
 
 Run this **every morning** before tickets. Goal: one clear outlook for **every** probable starter.

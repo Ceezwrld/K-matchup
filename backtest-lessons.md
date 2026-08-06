@@ -142,9 +142,10 @@ Compare Rates row to slate **Avg Strike%** (~64%).
 | Low Strike% + UNDER_OK stack | Soft K under OK |
 | Low Strike% + SPIKE/WHIFF | **Do not** auto K-under |
 
-**Outs efficiency (8/6 Young — always apply on outs O/U):**
+**Outs efficiency (8/6 Young + Peterson — always apply on outs O/U):**
 - Soft Zone% + high pitches-per-out → shortens outs even when outing risk reads “low” (Young **13 outs / 98 pitches** vs ~17 proj).
 - **Outs over:** prefer GB length; on FLY/THIN_TOTAL require Zone% ≥~43 **or** ≥~3 outs of cushion vs line. Pass thin FLY O14.5-type spots when Zone% is soft.
+- **Cushion / recent form (Peterson):** if `short_recent_ip`, elev_bb, or Zone% ≲42, demand ~**2+ outs** of cushion vs the line. ~17.3 proj vs O16.5 (= ~0.8 edge) is **too thin** — he finished **15 outs / 5.0 IP**. Weight **L3 IP**, not only season proj.
 - **Outs under:** soft Zone% / medium-high risk / short recent IP **helps** the under (inefficiency = fewer outs). Still need line cushion; don’t fade chalk O0.5–O2.5 promos.
 - Promo chalk (O0.5 / O2.5 outs) = length not required — separate from full-outing outs overs.
 

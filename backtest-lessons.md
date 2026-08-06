@@ -150,6 +150,7 @@ Short IP kills TRUST overs.
 
 ### Where the edge is
 - **Over edge:** OFF + ELITE/STRONG + WHIFF + (TRUST or clear IP) + (whiff_prone **or** Strike% ≥~65)
+- **Attack-plate over pack (8/5 locked):** prefer arms that stack **ELITE/STRONG + WHIFF + Strike% ≥~65 / Zone% ≥~43** (Harrison 10, Rogers 9, Lopez 9, Skenes 6). Length still required (Detmers attack profile but 5 K / 4 IP). Skip THIN_TOTAL / MATCHUP_OK / BAL as nuke overs even if Exp K is high.
 - **Under edge:** OFF + SOFT + UNDER_OK (≥2 of GB/FLY · contact_heavy · Exp K ≤~4.2) + not SPIKE
 - **No edge (pass):** AVG mush · THIN_TOTAL nukes · FILLER · openers · SPIKE soft U6 · prior lineups
 
@@ -157,6 +158,10 @@ Short IP kills TRUST overs.
 > Solo says over or under → does STYLE allow that total → does BIP agree → does the chip allow the ticket → does Strike%/IP support it?
 
 Any **no** → **no edge** → pass.
+
+### 8/5 attack-plate pack (remember for future cards)
+User target overs that fit the new lens: **Harrison / Rogers / Detmers / Skenes / Lopez**.
+Actuals: 10 / 9 / 5 / 6 / 9. Four clear cashes on soft O4.5+; Detmers only if line ≤4.5 (short IP). Apply this same filter on the next slate before locking overs.
 
 ## Better tickets (habit)
 

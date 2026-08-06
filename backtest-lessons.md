@@ -393,9 +393,9 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 |-----|-------|--------|--------|
 | **Young O14.5 outs** (THIN_TOTAL / FLY · proj ~17 outs · risk low · Zone% 40.1) | Length alt vs K nuke | **13 outs / 98 pitches** (~4.1 IP) | **MISS** — inefficient outing; pitch count maxed before outs |
 
-**Lesson:** outs overs need **efficiency**, not just STYLE + low risk. Soft Zone% + FLY can chew pitches without banking outs. Prefer Peterson-style **GB + length**; size FLY outs overs with extra line cushion or pass.
+**Lesson (locked into Step 5):** outs O/U must check **Zone% + pitch efficiency**. Soft Zone% + FLY can chew pitches without banking outs. Prefer GB + length for outs overs; soft Zone% / short risk can support outs *unders*; never fade O0.5 outs chalk promos.
 
-Live tickets still open: Ashcraft O4.5 K (ticket 1) · Ashcraft O2.5 promo + Peterson O16.5 outs (ticket 2).
+Live / next: Ashcraft legs · Peterson O16.5 · **Buehler O0.5 outs promo + Miller** (Miller OFF attack-plate; Buehler prior until official).
 
 ## 2026-08-05 lessons (MAE ~2.21, n=23 Final scored; 6 still live at grade)
 

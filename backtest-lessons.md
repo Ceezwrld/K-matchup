@@ -418,10 +418,14 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 | Leg | Model | Actual | Result |
 |-----|-------|--------|--------|
 | **Young O14.5 outs** (THIN_TOTAL / FLY · proj ~17 outs · risk low · Zone% 40.1) | Length alt vs K nuke | **13 outs / 98 pitches** (~4.1 IP) | **MISS** — inefficient outing; pitch count maxed before outs |
+| **Peterson O16.5 outs** (GB · proj ~17.3 · risk low · Zone% 41.8 · flags elev_bb, **short_recent_ip**) | Preferred GB outs lane | **15 outs / 5.0 IP / 89 pitches** (3 BB, 7 H, Strike% .600) | **MISS by 1** — thin cushion; L3 length warned |
 
-**Lesson (locked into Step 5):** outs O/U must check **Zone% + pitch efficiency**. Soft Zone% + FLY can chew pitches without banking outs. Prefer GB + length for outs overs; soft Zone% / short risk can support outs *unders*; never fade O0.5 outs chalk promos.
+**Lessons locked:**
+1. **Zone% + pitch efficiency** (Young) — soft Zone% / high pitches-per-out kills outs overs even when risk reads low.
+2. **Line cushion + recent IP** (Peterson) — ~17.3 proj vs **O16.5** is only ~0.8 outs of edge; need ~**2+ outs** cushion when `short_recent_ip` / elev_bb / soft-mid Zone% is on the card. Respect **L3 IP** (his was ~4.7) — don’t fully trust season IP for outs overs.
+3. Prefer GB length still, but **thin GB outs overs fail the same way** (traffic → 5.0 IP pull). Never fade O0.5 / soft promo chalk.
 
-Live / next: Ashcraft legs · Peterson O16.5 · **Buehler O0.5 outs promo + Miller** (Miller OFF attack-plate; Buehler prior until official).
+Live / next: Ashcraft O2.5 leg status · **Buehler O0.5 + Miller O3.5** · Suarez O10.5 later (non-promo pair).
 
 ## 2026-08-05 lessons (MAE ~2.21, n=23 Final scored; 6 still live at grade)
 

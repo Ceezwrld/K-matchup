@@ -70,13 +70,101 @@ Open a pitcher card and answer **four questions in order**. Do not start at Exp 
 
 Also check: **Official** vs Prior · projected IP · outing risk · vs-team history (confirm only).
 
+## Ticket lock routine (USE THIS before every card)
+
+**User-locked 8/5–8/6.** Run this full path before recommending or firing any over/under. Exp K and slate `#` come last. Goal = find edge or pass.
+
+### Step 0 — Setup
+1. Refresh board; hard-refresh the link.
+2. Filter **Official only** (prior = scouting only — do not lock).
+3. Skip **openers / swingmen / unscored**.
+4. Note the book line for that pitcher.
+
+### Step 1 — Solo arsenal (picks the side)
+| Grade | Edge bias |
+|-------|-----------|
+| ELITE / STRONG | **Over** |
+| SOFT | **Under** |
+| AVG | Usually pass / Cam-rule only |
+
+This is the edge. Everything else confirms or sizes it.
+
+### Step 2 — STYLE (trust the total?)
+| STYLE | Meaning |
+|-------|---------|
+| **WHIFF** | Outs via Ks → juiced totals OK |
+| **GB / FLY** | BIP outs → **THIN_TOTAL** (O3.5 / thin O4.5 only) |
+| **BAL** | Caution — don’t juice O6.5 |
+
+Good mix + wrong style ≠ nuke over.
+
+### Step 3 — Opp BIP / K%
+| Opp look | Helps |
+|----------|-------|
+| **whiff_prone** (BIP ≤~64%) | Overs |
+| **contact_heavy** (BIP ≥~71%) | Unders |
+| **neutral** | No extra edge |
+
+Confirm only — does not flip solo grade alone.
+
+### Step 4 — Outlook chip (legal / illegal)
+| Chip | Move |
+|------|------|
+| **TRUST** | Over live if IP clear |
+| **THIN_TOTAL** | Thin over only — not a nuke |
+| **UNDER_OK** | Preferred soft under |
+| **SPIKE** | **No soft U6** |
+| **MATCHUP_OK** | O3.5 / thin O4.5 only |
+| **FILLER** | Pass K overs **and** soft unders |
+
+If the chip vetoes → stop.
+
+### Step 5 — Strike% / Zone% (command confirm)
+Compare Rates row to slate **Avg Strike%** (~64%).
+| Read | Use |
+|------|-----|
+| Strike% **≥~65** + WHIFF/TRUST | Size **up** over confidence |
+| High Zone% + high Strike% | Attacks the plate — K script more live |
+| Low Strike% + UNDER_OK stack | Soft under OK |
+| Low Strike% + SPIKE/WHIFF | **Do not** auto-under |
+
+Command confirms the script. It does **not** create the side.
+
+### Step 6 — Length & risk
+- Projected IP supports the line?
+- Outing risk / early-exit flags?
+- Exp K vs line still has edge?
+- **Cam rule:** name/SPIKE juiced ~1.0–1.5 above Exp K → under can be live on AVG/SOFT.
+
+Short IP kills TRUST overs.
+
+### Step 7 — Lock checklist (all must pass)
+- [ ] Official
+- [ ] Starter (not opener/swingman)
+- [ ] Side matches solo grade
+- [ ] Outlook chip does not veto
+- [ ] STYLE / BIP / Strike% agree enough
+- [ ] IP + line edge hold
+- [ ] Default **2-leg**; no same-game opposing K overs
+- [ ] Arm on ≤2 tickets today; one nuke/chalk pair max
+
+### Where the edge is
+- **Over edge:** OFF + ELITE/STRONG + WHIFF + (TRUST or clear IP) + (whiff_prone **or** Strike% ≥~65)
+- **Under edge:** OFF + SOFT + UNDER_OK (≥2 of GB/FLY · contact_heavy · Exp K ≤~4.2) + not SPIKE
+- **No edge (pass):** AVG mush · THIN_TOTAL nukes · FILLER · openers · SPIKE soft U6 · prior lineups
+
+### Fast edge test
+> Solo says over or under → does STYLE allow that total → does BIP agree → does the chip allow the ticket → does Strike%/IP support it?
+
+Any **no** → **no edge** → pass.
+
 ## Better tickets (habit)
 
 1. **Default = 2-leg.** One clear over + one clear under, or two UNDER_OK / two TRUST overs. No 6-legs.
 2. **Build from outlook chips, not Exp K rank.** Top of board ≠ best bet (Dobbins).
 3. **Pair opposite scripts:** TRUST over (WHIFF) + UNDER_OK under (GB + contact-heavy). Avoid same-game opposing K overs.
 4. **Line sizing:** overs need IP + trust; unders need confirms or U6.5+. Cam rule: if book juices name/SPIKE above Exp K by ~1.0–1.5 on AVG/SOFT, under is live.
-5. **Accuracy lock:** official nine · starter not opener · side matches solo grade · outlook doesn’t veto · edge still holds.
+5. **Accuracy lock:** run the **Ticket lock routine** above — do not skip steps.
 6. **Cap:** any arm on ≤2 tickets; one nuke/chalk pair max per day.
 
 ## Core thesis — pitcher vs batter vulnerability first

@@ -377,6 +377,16 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 4. **Same-game:** pitcher K over ↔ opposing bats for hits is fine; never pitcher K over + that team’s bats for hits vs him.
 5. Log misses into this file after each `backtest-YYYY-MM-DD.csv`.
 
+## 2026-08-06 in-progress (outs lane)
+
+| Leg | Model | Actual | Result |
+|-----|-------|--------|--------|
+| **Young O14.5 outs** (THIN_TOTAL / FLY · proj ~17 outs · risk low · Zone% 40.1) | Length alt vs K nuke | **13 outs / 98 pitches** (~4.1 IP) | **MISS** — inefficient outing; pitch count maxed before outs |
+
+**Lesson:** outs overs need **efficiency**, not just STYLE + low risk. Soft Zone% + FLY can chew pitches without banking outs. Prefer Peterson-style **GB + length**; size FLY outs overs with extra line cushion or pass.
+
+Live tickets still open: Ashcraft O4.5 K (ticket 1) · Ashcraft O2.5 promo + Peterson O16.5 outs (ticket 2).
+
 ## 2026-08-05 lessons (MAE ~2.21, n=23 Final scored; 6 still live at grade)
 
 First night with **TRUST / UNDER_OK / THIN_TOTAL** + new **Strike%/Zone%** on the board. Model **understated** Ks (bias **+1.01**); whiff_prone nines and several soft/SPIKE arms ran hot.

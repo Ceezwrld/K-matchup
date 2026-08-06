@@ -158,15 +158,29 @@ Command confirms the script. It does **not** create the K side.
 
 Short IP kills TRUST K overs and full-outing outs overs.
 
-### Step 7 — Lock checklist (all must pass)
-- [ ] Official (promo chalk O0.5 may scout on prior if starter confirmed)
-- [ ] Starter (not opener/swingman)
-- [ ] Side matches solo grade (K lane) / length+efficiency (outs lane)
-- [ ] Outlook chip does not veto
-- [ ] STYLE / BIP / Strike% / **Zone% efficiency** agree enough
-- [ ] IP + line edge hold
+### Step 7 — Pre-ticket checklist (all must pass — read before every fire)
+Use this as the comfort gate. If any box fails → **no ticket**.
+
+**Setup**
+- [ ] Board refreshed; line confirmed
+- [ ] **Official** nine (promo chalk O0.5 OK on prior only if starter confirmed)
+- [ ] **Starter** (not opener / swingman)
+
+**Side / lane**
+- [ ] Solo grade picks the K side (ELITE/STRONG over · SOFT under · AVG usually pass)
+- [ ] Chip does not veto (TRUST / THIN / UNDER_OK / SPIKE / MATCHUP_OK / FILLER)
+- [ ] Lane chosen: **Ks** or **outs** (not forcing the wrong prop)
+
+**Confirms**
+- [ ] STYLE fits the total (WHIFF→K juice OK · GB/FLY→thin K / outs lane)
+- [ ] Opp BIP agrees enough (whiff_prone helps K overs · contact_heavy helps unders)
+- [ ] Strike% / **Zone% efficiency** checked (soft Zone% → caution outs *overs*; can help outs *unders*)
+- [ ] IP / risk / proj outs support the **posted line** (cushion holds)
+
+**Card rules**
 - [ ] Default **2-leg**; no same-game opposing K overs
 - [ ] Arm on ≤2 tickets today; one nuke/chalk pair max
+- [ ] Comfortable saying the lean in one sentence — if not, pass
 
 ### Where the edge is
 - **K over edge:** OFF + ELITE/STRONG + WHIFF + (TRUST or clear IP) + (whiff_prone **or** Strike% ≥~65)

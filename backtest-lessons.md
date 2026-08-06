@@ -1,6 +1,18 @@
 # K-prop process lessons (from graded slates)
 
-Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless noted.
+Living rules. Soft lines assume ~0.75+ edge unless noted.
+
+## Learn from every miss (non-negotiable)
+
+**Every mistake updates the routine before the next ticket.** Not only end-of-night grades — mid-slate misses count (Young 13 outs / 98 pitches → Zone%/efficiency now in Step 5).
+
+When a locked leg loses or a lean is clearly wrong:
+1. **What broke?** (side / total / length / efficiency / line / role)
+2. **Write the rule** into this file (ticket lock + same-day note).
+3. **Apply on the next card** — do not repeat the same miss.
+4. Full-slate grade still runs after finals (`backtest-YYYY-MM-DD.csv`) and folds into the same living rules.
+
+Hits reinforce; misses rewrite the checklist. No silent losses.
 
 ## Every morning routine (do this first)
 

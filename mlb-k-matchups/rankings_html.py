@@ -173,6 +173,15 @@ def _grade_for(metric: str, value: Any) -> str | None:
     if metric == "zone_pct":
         # ≥44 elite · ≥43 attack · ≥40 avg · <40 off-plate
         return _grade_band(value, 40.0, 43.0, 44.0)
+    if metric == "swstr_pct":
+        # League SwStr% ~11; ≥13 elite miss · ≥11.5 good · ≥10 avg
+        return _grade_band(value, 10.0, 11.5, 13.0)
+    if metric == "csw_pct":
+        # CSW (C+SwStr%) ~28–29; ≥31 elite · ≥29.5 good · ≥27.5 avg
+        return _grade_band(value, 27.5, 29.5, 31.0)
+    if metric == "pitcher_soft_pct":
+        # Higher Soft% = soft-contact arm (helps FILLER/under; soft for K overs)
+        return _grade_band_desc(value, 17.0, 20.0, 22.0)
     if metric in ("k9", "last3_k9"):
         return _grade_band(value, 7.0, 8.5, 10.0)
     if metric == "last3_ks":
@@ -459,6 +468,10 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "pitcher_fb_pct": _json_safe(r.get("pitcher_fb_pct")),
                 "pitcher_iffb_pct": _json_safe(r.get("pitcher_iffb_pct")),
                 "pitcher_soft_pct": _json_safe(r.get("pitcher_soft_pct")),
+                "swstr_pct": _json_safe(r.get("swstr_pct")),
+                "csw_pct": _json_safe(r.get("csw_pct")),
+                "stuff_ceiling_bump": _json_safe(r.get("stuff_ceiling_bump")),
+                "stuff_ceiling_note": r.get("stuff_ceiling_note") or "",
                 "pitcher_style": r.get("pitcher_style") or "",
                 "pitcher_style_flags": r.get("pitcher_style_flags") or "",
                 "ticket_outlook": r.get("ticket_outlook") or "",
@@ -1019,6 +1032,36 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
                 title="In-zone rate · ≥~43 with high Strike% = attacks the plate",
             )
         )
+    if row.get("swstr_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "SwStr%",
+                row.get("swstr_pct"),
+                "swstr_pct",
+                1,
+                title="Swinging-strike rate — miss confirm (does not flip arsenal side)",
+            )
+        )
+    if row.get("csw_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "CSW%",
+                row.get("csw_pct"),
+                "csw_pct",
+                1,
+                title="Called + swinging strike (FanGraphs C+SwStr%) — command/miss pack",
+            )
+        )
+    if row.get("pitcher_soft_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "Soft%",
+                row.get("pitcher_soft_pct"),
+                "pitcher_soft_pct",
+                1,
+                title="Soft-contact rate · ≥~20 helps FILLER / UNDER_OK confirms",
+            )
+        )
     form_chips: list[str] = []
     if row.get("last3_ks") is not None:
         form_chips.append(
@@ -1074,6 +1117,15 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"<span class='rate-chip rate-spike' title='Stuff / K9 ceiling — no soft U6'>"
             f"<span class='rate-lab'>SPIKE</span> "
             f"<span class='rate-val'>{_esc(row.get('spike_flags') or '')}</span>"
+            f"</span>"
+        )
+    bump = row.get("stuff_ceiling_bump")
+    if bump is not None and float(bump or 0) > 0:
+        tip = row.get("stuff_ceiling_note") or "Attack-plate stuff bump on Exp K"
+        stuff_bits.append(
+            f"<span class='rate-chip grade-high' title='{_esc(tip)}'>"
+            f"<span class='rate-lab'>stuff bump</span> "
+            f"<span class='rate-val'>+{_esc(_fmt(bump, 2))}</span>"
             f"</span>"
         )
     stuff_val = "".join(stuff_bits)
@@ -1480,7 +1532,8 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
         + _key_chip(
             "UNDER OK",
             "outlook outlook-under_ok",
-            f"SOFT + ≥{UNDER_CONFIRM_MIN:g} of GB/FLY · contact_heavy · Exp K ≤{UNDER_CONFIRM_EXP_KS:g}",
+            f"SOFT + ≥{UNDER_CONFIRM_MIN:g} of GB/FLY · contact_heavy · "
+            f"Exp K ≤{UNDER_CONFIRM_EXP_KS:g} · Soft%≥20",
         )
         + _key_chip("SPIKE", "outlook outlook-spike", "No soft U6")
         + _key_chip("MATCHUP OK", "outlook outlook-matchup_ok", "Thin O3.5 only")
@@ -1488,7 +1541,7 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
     )
     outlook_note = (
         f"TRUST needs Exp K ≥{TRUST_TOTAL_EXP_KS:g} · UNDER_OK needs"
-        f" ≥{UNDER_CONFIRM_MIN:g} confirms · SPIKE blocks soft U6."
+        f" ≥{UNDER_CONFIRM_MIN:g} confirms (incl Soft%) · SPIKE blocks soft U6."
     )
     strike_chips = (
         _key_chip(
@@ -1530,8 +1583,9 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
         )
     strike_note = (
         "Green = good for K scripts · amber = average · red = soft for overs. "
-        "Rates / form chips use the same colors (K9, BB/9, xFIP, L3, Strike%/Zone%). "
-        "Command confirms the script — it does not flip the side."
+        "Rates chips: Strike%/Zone%/SwStr%/CSW% (miss+command) · Soft% (elevated helps "
+        "FILLER/under). Command confirms the script — it does not flip the side. "
+        "Attack-plate + WHIFF + strong stuff can add a tiny Exp K bump."
     )
     return (
         "<div class='model-keys' aria-label='Model keys'>"

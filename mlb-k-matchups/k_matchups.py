@@ -18,6 +18,7 @@ from rankings_html import write_interactive_html  # noqa: E402
 from sharpen import (  # noqa: E402
     apply_lineup_discipline_overlay,
     apply_lineup_offense_overlay,
+    apply_attack_plate_stuff_bump,
     apply_pitcher_stuff_overlay,
     apply_recent_form_overlay,
     apply_ticket_outlook,
@@ -1578,11 +1579,15 @@ def main(argv: list[str] | None = None) -> int:
             "pitcher_fb_pct": risk_metrics.get("pitcher_fb_pct"),
             "pitcher_iffb_pct": risk_metrics.get("pitcher_iffb_pct"),
             "pitcher_soft_pct": risk_metrics.get("pitcher_soft_pct"),
+            "swstr_pct": risk_metrics.get("swstr_pct"),
+            "csw_pct": risk_metrics.get("csw_pct"),
             "strike_pct": risk_metrics.get("strike_pct"),
             "f_strike_pct": risk_metrics.get("f_strike_pct"),
             "zone_pct": risk_metrics.get("zone_pct"),
             "pitches": risk_metrics.get("pitches"),
             "strikes": risk_metrics.get("strikes"),
+            "stuff_ceiling_bump": 0.0,
+            "stuff_ceiling_note": "",
             "pitcher_style": risk_metrics.get("pitcher_style") or "",
             "pitcher_style_flags": risk_metrics.get("pitcher_style_flags") or "",
             "outing_risk": risk.get("outing_risk"),
@@ -1755,6 +1760,23 @@ def main(argv: list[str] | None = None) -> int:
 
     # Pitcher-own velo/whiff ceiling (SPIKE) — before ticket outlook notes.
     out = apply_pitcher_stuff_overlay(out, savant_pitcher_stuff, hand_mixes)
+    # Tiny Exp K bump for full attack-plate stacks only; re-rank after.
+    out = apply_attack_plate_stuff_bump(out)
+    out = out.sort_values(
+        by=["expected_ks"],
+        ascending=False,
+        na_position="last",
+        kind="mergesort",
+    ).reset_index(drop=True)
+    ranks = []
+    rank_i = 1
+    for _, r in out.iterrows():
+        if r["status"] == "ok" and pd.notna(r["expected_ks"]):
+            ranks.append(rank_i)
+            rank_i += 1
+        else:
+            ranks.append(pd.NA)
+    out["rank"] = ranks
 
     # Soft-contact FILLER gated by opposing lineup arsenal rank on this slate.
     out = apply_ticket_outlook(out)
@@ -1776,7 +1798,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"  {r.get('ticket_outlook'):<11} {r.get('pitcher')}: "
                 f"{r.get('ticket_note')}"
             )
-    # Stuff / SPIKE watch (ceiling layer — does not move expected_ks).
+    # Stuff / SPIKE watch + attack-plate bumps (tiny Exp K only on full stacks).
     if "spike_risk" in out.columns:
         spikes = out[out["status"].eq("ok") & out["spike_risk"].astype(bool)]
         if not spikes.empty:
@@ -1794,6 +1816,19 @@ def main(argv: list[str] | None = None) -> int:
                     f"  {r.get('pitcher')}: solo={r.get('arsenal_abs_grade')} "
                     f"stuff={r.get('stuff_grade') or '?'} whiff {wh_s} "
                     f"{velo_s} · {r.get('spike_flags')}"
+                )
+    if "stuff_ceiling_bump" in out.columns:
+        bumped = out[
+            out["status"].eq("ok")
+            & out["stuff_ceiling_bump"].fillna(0).astype(float).gt(0)
+        ]
+        if not bumped.empty:
+            print("\nAttack-plate stuff bump (capped Exp K add)")
+            for _, r in bumped.iterrows():
+                print(
+                    f"  {r.get('pitcher')}: +{float(r.get('stuff_ceiling_bump')):.2f} "
+                    f"→ Exp K {float(r.get('expected_ks')):.2f} · "
+                    f"{r.get('stuff_ceiling_note')}"
                 )
     # Discipline / pitch-count watch list.
     if "discipline_grade" in out.columns:

@@ -10,7 +10,10 @@
 8. Ticket outlook — soft-contact FILLER profile gated by opposing
    lineup arsenal rank (expected_k_pct vs slate)
 9. Pitcher stuff ceiling — own velo/whiff by pitch → SPIKE caution
-   (does not change expected_ks; blocks soft-under autopilot)
+   (blocks soft-under autopilot). Attack-plate stacks only get a tiny
+   capped Exp K bump (ELITE/STRONG + WHIFF + Strike%≥65 + strong stuff).
+10. Soft% → soft-contact / UNDER_OK confirms; SwStr% + CSW% = Rates confirms
+    (do not flip arsenal side alone).
 
 Hits-prop helpers (barrel / hard-hit / xwOBA) live here too but are
 display-only — they never modify expected_ks.
@@ -99,7 +102,7 @@ XFIP_WARN = 4.20
 XFIP_HIGH = 4.80
 
 # Pitcher-own stuff ceiling (usage-weighted whiff / primary FB velo).
-# Display + SPIKE gate only — never blended into expected_ks.
+# Default = display + SPIKE gate. Attack-plate stacks get a tiny Exp K bump.
 STUFF_WHIFF_ELITE = 30.0
 STUFF_WHIFF_STRONG = 26.0
 STUFF_WHIFF_AVG = 22.0
@@ -107,6 +110,14 @@ SPIKE_K9 = 10.0
 SPIKE_STUFF_WHIFF = 28.0
 SPIKE_STUFF_WHIFF_WITH_VELO = 26.0
 SPIKE_FB_VELO = 95.0
+# Tiny mean bump when the full attack-plate pack stacks (not a rebuild).
+ATTACK_PLATE_STRIKE_PCT = 65.0
+STUFF_CEILING_BUMP_STRONG = 0.25
+STUFF_CEILING_BUMP_ELITE = 0.35
+# Soft-contact / swing-miss Rates confirms (FanGraphs).
+FILLER_SOFT_PCT = 20.0  # elevated Soft% helps FILLER / under confirms
+LEAGUE_SWSTR_PCT = 11.0
+LEAGUE_CSW_PCT = 28.5
 
 # Total-trust / under-confirm gates (ticket sizing — do not move expected_ks).
 # ELITE/STRONG + high Exp K only trusts the *total* when STYLE is WHIFF (8/4 Dobbins/Tidwell).
@@ -562,7 +573,8 @@ def apply_pitcher_stuff_overlay(
 ) -> pd.DataFrame:
     """Attach usage-weighted pitcher whiff / FB velo + SPIKE flag.
 
-    Ceiling / caution layer only — does not modify expected_ks.
+    Ceiling / SPIKE caution. Exp K bump is applied separately via
+    ``apply_attack_plate_stuff_bump`` for full attack-plate stacks only.
     """
     out = df.copy()
     for col, default in (
@@ -683,6 +695,72 @@ def apply_pitcher_stuff_overlay(
         out.at[idx, "stuff_source"] = "+".join(source_bits) if source_bits else (
             "statcast_velo" if fb_velo is not None else ""
         )
+    return out
+
+
+def _finite(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        if isinstance(value, float) and pd.isna(value):
+            return None
+        x = float(value)
+    except (TypeError, ValueError):
+        return None
+    if pd.isna(x):
+        return None
+    return x
+
+
+def attack_plate_stuff_bump(row: dict[str, Any]) -> tuple[float, str]:
+    """Tiny Exp K bump when attack-plate pack + strong/elite stuff stack.
+
+    Requires: solo arsenal ELITE/STRONG · STYLE WHIFF · Strike% ≥65 ·
+    stuff whiff ≥ strong. Cap +0.25 strong / +0.35 elite. Never applied on
+    SOFT/AVG solo, GB/FLY/BAL, or soft Strike%.
+    """
+    kpct = _finite(row.get("expected_k_pct"))
+    if kpct is None or absolute_matchup_grade(kpct) not in ("elite", "strong"):
+        return 0.0, ""
+    style = str(row.get("pitcher_style") or "").strip().lower()
+    if style != "whiff":
+        return 0.0, ""
+    strike = _finite(row.get("strike_pct"))
+    if strike is None or strike < ATTACK_PLATE_STRIKE_PCT:
+        return 0.0, ""
+    stuff = _finite(row.get("stuff_whiff_pct"))
+    if stuff is None or stuff < STUFF_WHIFF_STRONG:
+        return 0.0, ""
+    if stuff >= STUFF_WHIFF_ELITE:
+        bump = STUFF_CEILING_BUMP_ELITE
+        label = "elite"
+    else:
+        bump = STUFF_CEILING_BUMP_STRONG
+        label = "strong"
+    return bump, (
+        f"attack-plate stuff bump +{bump:.2f} "
+        f"({label} whiff {stuff:.1f}%, Strike% {strike:.1f})"
+    )
+
+
+def apply_attack_plate_stuff_bump(df: pd.DataFrame) -> pd.DataFrame:
+    """Apply capped stuff-ceiling bump to expected_ks for attack-plate stacks."""
+    out = df.copy()
+    for col, default in (
+        ("stuff_ceiling_bump", 0.0),
+        ("stuff_ceiling_note", ""),
+    ):
+        if col not in out.columns:
+            out[col] = default
+
+    scored = out["status"].eq("ok") & out["expected_ks"].notna()
+    for idx in out.index[scored]:
+        row = out.loc[idx]
+        bump, note = attack_plate_stuff_bump(row.to_dict())
+        out.at[idx, "stuff_ceiling_bump"] = bump
+        out.at[idx, "stuff_ceiling_note"] = note
+        if bump > 0:
+            out.at[idx, "expected_ks"] = float(row["expected_ks"]) + bump
     return out
 
 
@@ -1003,6 +1081,9 @@ def fetch_fangraphs_pitching(
                 "pitcher_fb_pct": _fg_pct(row.get("FB%")),
                 "pitcher_iffb_pct": _fg_pct(row.get("IFFB%")),
                 "pitcher_soft_pct": _fg_pct(row.get("Soft%")),
+                "swstr_pct": _fg_pct(row.get("SwStr%")),
+                # FanGraphs labels CSW as C+SwStr% (called + swinging strike).
+                "csw_pct": _fg_pct(row.get("C+SwStr%")),
                 "strike_pct": _strike_pct_from_counts(
                     row.get("Strikes"), row.get("Pitches")
                 ),
@@ -1071,6 +1152,8 @@ def fetch_pitcher_rate_stats(
                     "pitcher_contact_pct": float("nan"),
                     "pitcher_iffb_pct": float("nan"),
                     "pitcher_soft_pct": float("nan"),
+                    "swstr_pct": float("nan"),
+                    "csw_pct": float("nan"),
                     "strike_pct": strike_pct,
                     "f_strike_pct": float("nan"),
                     "zone_pct": float("nan"),
@@ -1173,6 +1256,8 @@ def merge_risk_metrics(
         "pitcher_fb_pct": None,
         "pitcher_iffb_pct": None,
         "pitcher_soft_pct": None,
+        "swstr_pct": None,
+        "csw_pct": None,
         "strike_pct": None,
         "f_strike_pct": None,
         "zone_pct": None,
@@ -1212,6 +1297,8 @@ def merge_risk_metrics(
     fb = _pick("pitcher_fb_pct")
     iffb = _pick("pitcher_iffb_pct")
     soft = _pick("pitcher_soft_pct")
+    swstr = _pick("swstr_pct")
+    csw = _pick("csw_pct")
     strike_pct = _pick("strike_pct")
     f_strike_pct = _pick("f_strike_pct")
     zone_pct = _pick("zone_pct")
@@ -1237,6 +1324,8 @@ def merge_risk_metrics(
         "pitcher_fb_pct": fb,
         "pitcher_iffb_pct": iffb,
         "pitcher_soft_pct": soft,
+        "swstr_pct": swstr,
+        "csw_pct": csw,
         "strike_pct": strike_pct,
         "f_strike_pct": f_strike_pct,
         "zone_pct": zone_pct,
@@ -2115,6 +2204,7 @@ def build_hits_board(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 FILLER_K9_MAX = 7.2
 FILLER_L3_SOFT = 4.5
 FILLER_XFIP_SOFT = 4.3
+# Soft% already fetched; elevated soft contact confirms FILLER / under lane.
 # Arsenal matchup (slate-relative): percentile of expected_k_pct among today's arms.
 # Useful for "who's best on the slate" — NOT the solo pitcher-vs-lineup read.
 MATCHUP_STRONG_PCT = 0.65  # >= 65th pct of slate expected_k_pct
@@ -2145,34 +2235,19 @@ def absolute_matchup_grade(expected_k_pct: float | None) -> str:
 def soft_contact_profile(row: dict[str, Any]) -> tuple[bool, str]:
     """True when pitcher looks like a soft-contact / low-K volume arm.
 
-    Flags: K9 ≲ 7, soft last-3 Ks, and/or elevated xFIP. Does not look at
-    the opposing lineup — pair with arsenal matchup rank for outlook.
+    Flags: K9 ≲ 7, soft last-3 Ks, elevated xFIP, and/or elevated Soft%.
+    Does not look at the opposing lineup — pair with arsenal matchup for outlook.
     """
-    try:
-        k9 = float(row["k9"]) if row.get("k9") is not None and pd.notna(row.get("k9")) else None
-    except (TypeError, ValueError):
-        k9 = None
-    try:
-        l3 = (
-            float(row["last3_ks"])
-            if row.get("last3_ks") is not None and pd.notna(row.get("last3_ks"))
-            else None
-        )
-    except (TypeError, ValueError):
-        l3 = None
-    try:
-        xfip = (
-            float(row["xfip"])
-            if row.get("xfip") is not None and pd.notna(row.get("xfip"))
-            else None
-        )
-    except (TypeError, ValueError):
-        xfip = None
+    k9 = _finite(row.get("k9"))
+    l3 = _finite(row.get("last3_ks"))
+    xfip = _finite(row.get("xfip"))
+    soft_pct = _finite(row.get("pitcher_soft_pct"))
     flags = str(row.get("risk_flags") or "")
     elev_xfip = ("elev_xfip" in flags) or (
         xfip is not None and xfip >= FILLER_XFIP_SOFT
     )
     soft_l3 = l3 is not None and l3 <= FILLER_L3_SOFT
+    elev_soft = soft_pct is not None and soft_pct >= FILLER_SOFT_PCT
     low_k9 = k9 is not None and k9 <= FILLER_K9_MAX
     if not low_k9:
         return False, ""
@@ -2181,8 +2256,10 @@ def soft_contact_profile(row: dict[str, Any]) -> tuple[bool, str]:
         bits.append(f"soft L3 {l3:.1f}")
     if elev_xfip and xfip is not None:
         bits.append(f"elev_xFIP {xfip:.2f}")
-    # Need soft recent Ks and/or elev xFIP — pure mid-K9 with hot L3 is not FILLER.
-    if soft_l3 or elev_xfip:
+    if elev_soft and soft_pct is not None:
+        bits.append(f"Soft% {soft_pct:.1f}")
+    # Soft Ks, elev xFIP, or elev Soft% — pure mid-K9 with hot L3 is not FILLER.
+    if soft_l3 or elev_xfip or elev_soft:
         return True, ", ".join(bits)
     if k9 <= 7.0 and (l3 is None or l3 <= 5.5):
         return True, ", ".join(bits + ["low-K volume"])
@@ -2194,12 +2271,15 @@ def _under_confirm_bits(row: dict[str, Any], exp_ks: float | None) -> tuple[int,
     bits: list[str] = []
     pstyle = str(row.get("pitcher_style") or "").strip().lower()
     contact = str(row.get("contact_grade") or "").strip().lower()
+    soft_pct = _finite(row.get("pitcher_soft_pct"))
     if pstyle in ("contact_gb", "fly_popup"):
         bits.append("GB/FLY style")
     if contact == "contact_heavy":
         bits.append("opp contact-heavy BIP")
     if exp_ks is not None and exp_ks <= UNDER_CONFIRM_EXP_KS:
         bits.append(f"Exp K ≤{UNDER_CONFIRM_EXP_KS:g}")
+    if soft_pct is not None and soft_pct >= FILLER_SOFT_PCT:
+        bits.append(f"Soft% {soft_pct:.1f}")
     return len(bits), bits
 
 
@@ -2396,7 +2476,8 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
                 under_cue = (
                     f"; weak under — only {under_n}/{UNDER_CONFIRM_MIN} confirms "
                     f"({have}); need {need} more of GB/FLY · contact-heavy · "
-                    f"Exp K ≤{UNDER_CONFIRM_EXP_KS:g} (or take U6.5+ / pass)"
+                    f"Exp K ≤{UNDER_CONFIRM_EXP_KS:g} · Soft%≥{FILLER_SOFT_PCT:g} "
+                    f"(or take U6.5+ / pass)"
                 )
 
         role = str(row.get("outing_role") or "starter")

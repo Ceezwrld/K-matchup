@@ -427,19 +427,42 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 4. **Same-game:** pitcher K over ↔ opposing bats for hits is fine; never pitcher K over + that team’s bats for hits vs him.
 5. Log misses into this file after each `backtest-YYYY-MM-DD.csv`.
 
-## 2026-08-06 in-progress (outs lane)
+## 2026-08-06 early lessons (n=14 Final; 8 still live — full grade later)
 
-| Leg | Model | Actual | Result |
-|-----|-------|--------|--------|
-| **Young O14.5 outs** (THIN_TOTAL / FLY · proj ~17 outs · risk low · Zone% 40.1) | Length alt vs K nuke | **13 outs / 98 pitches** (~4.1 IP) | **MISS** — inefficient outing; pitch count maxed before outs |
-| **Peterson O16.5 outs** (GB · proj ~17.3 · risk low · Zone% 41.8 · flags elev_bb, **short_recent_ip**) | Preferred GB outs lane | **15 outs / 5.0 IP / 89 pitches** (3 BB, 7 H, Strike% .600) | **MISS by 1** — thin cushion; L3 length warned |
+MAE ~**1.92**, bias **+0.34** (model slightly under). WHIFF arms ran hot; FLY/THIN K totals stayed soft.
 
-**Lessons locked:**
-1. **Zone% + pitch efficiency** (Young) — soft Zone% / high pitches-per-out kills outs overs even when risk reads low.
-2. **Line cushion + recent IP** (Peterson) — ~17.3 proj vs **O16.5** is only ~0.8 outs of edge; need ~**2+ outs** cushion when `short_recent_ip` / elev_bb / soft-mid Zone% is on the card. Respect **L3 IP** (his was ~4.7) — don’t fully trust season IP for outs overs.
-3. Prefer GB length still, but **thin GB outs overs fail the same way** (traffic → 5.0 IP pull). Never fade O0.5 / soft promo chalk.
+### Ticket scorecard (early)
 
-Live / next: Ashcraft O2.5 leg status · **Buehler O0.5 + Miller O3.5** · Suarez O10.5 later (non-promo pair).
+| Ticket | Result | Note |
+|--------|--------|------|
+| Young O14.5 outs + Ashcraft O4.5 K | **MISS** | Ashcraft **5 K HIT**; Young **13 outs** killed it |
+| Ashcraft O2.5 promo + Peterson O16.5 outs | **MISS** | Ashcraft **5 K HIT**; Peterson **15 outs** |
+| Buehler O0.5 outs + Miller O3.5 K | **on track** | Miller **5 K HIT**; Buehler **2 outs** (live chalk) |
+
+### What worked (keep)
+1. **K lane > outs lane** — every Ashcraft/Miller K leg cashed; both full-outing outs overs missed.
+2. **SPIKE veto** — McLean **8**, Sánchez **6**. Never soft-under those.
+3. **UNDER_OK** — Johnson **1**, Mikolas **1**.
+4. **THIN_TOTAL / MATCHUP_OK as K fade** — Young **4 K**, Abbott **4 K** (not nuke overs).
+5. **Attack-plate sizing** — Ashcraft/Miller O4.5 / O3.5 OK; do **not** juice Ashcraft to O5.5 (exactly 5).
+6. **Soft Zone% ≠ auto under** — Cease Z% 36 → **10 K**.
+
+### What failed (fix)
+1. **Full-outing outs overs** — Young/Peterson. “Low risk” + season IP proj lied; soft Zone% / `short_recent_ip` were the tells.
+2. **Pairing good K chalk with thin outs anchors** — tickets died on the outs leg.
+3. **Thin outs cushions** — O16.5 on ~17.3 proj (~0.8 edge) is not enough.
+
+### Improvements locked for next slate
+| Change | Rule |
+|--------|------|
+| **Outs paused** | No new pitcher outs tickets until explicitly reopened |
+| **K-only 2-legs** | Attack-plate / TRUST over + UNDER_OK under (or two K overs with real edge) |
+| **O5.5 bar** | Need Exp K ≥ ~6.3–6.5 **or** clear TRUST + length — Ashcraft 5.6→5 is the ceiling warning |
+| **Checklist first** | Official · solo · chip · STYLE · BIP · Strike%/Zone% · IP/line — pass if any box fails |
+| **Vs-hand opp K%** | Use as confirm (now on board); not a side flip alone |
+| **SPIKE / UNDER_OK** | Highest-confidence chip lanes today — size tickets from those first |
+
+Full final review + `backtest-2026-08-06.csv` after the last eight finish.
 
 ## 2026-08-05 lessons (MAE ~2.21, n=23 Final scored; 6 still live at grade)
 

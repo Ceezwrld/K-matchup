@@ -81,13 +81,21 @@ def _fmt(value: Any, digits: int = 2, *, signed: bool = False) -> str:
 
 
 def _heat_style(k: Any) -> str:
+    """Arsenal bar fill: green helps pitcher (high K%), red helps batters (low K%)."""
     v = _json_safe(k)
     if v is None:
         return "background:transparent;color:var(--muted)"
-    t = max(0.0, min(1.0, (float(v) - 8.0) / 32.0))
-    alpha = 0.12 + t * 0.55
-    color = "#063828" if t > 0.55 else "var(--ink)"
-    return f"background:rgba(15,106,77,{alpha:.3f});color:{color}"
+    band = _grade_for("batter_k_pct", v)
+    # Match rate-chip palette so bars and % chips read the same.
+    if band == "low":
+        return "background:rgba(140,40,40,0.62)"
+    if band == "mid":
+        return "background:rgba(154,91,18,0.58)"
+    if band == "high":
+        return "background:rgba(15,106,77,0.58)"
+    if band == "elite":
+        return "background:rgba(15,106,77,0.82)"
+    return "background:rgba(20,32,26,0.15)"
 
 
 def _grade_band(value: Any, low: float, mid: float, high: float) -> str | None:
@@ -599,8 +607,14 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         pt = p.get("pitch_type")
         pname = p.get("pitch_name") or pt
         avg_k = p.get("lineup_k_pct")
-        avg_txt = (
-            f"{_fmt(avg_k, 1)}% lineup avg" if avg_k is not None else "no lineup avg"
+        avg_grade = _grade_class("batter_k_pct", avg_k)
+        avg_html = (
+            f"<span class='kchip{avg_grade}' title='"
+            "Lineup-average K% vs this pitch — green helps the pitcher, "
+            "red helps the batters, amber is medium'>"
+            f"{_fmt(avg_k, 1)}% lineup avg</span>"
+            if avg_k is not None
+            else "<span class='kchip rate-na'>no lineup avg</span>"
         )
         vs_l = p.get("usage_vs_lhb")
         vs_r = p.get("usage_vs_rhb")
@@ -638,6 +652,10 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             pa = hit.get("pa")
             pa_txt = "—" if pa is None else _fmt(pa, 0)
             k_grade = _grade_class("batter_k_pct", k)
+            tip = (
+                f"source {_esc(src or 'pitch')} · PA {_esc(pa_txt)} — "
+                "green helps pitcher · amber medium · red helps batters"
+            )
             rows_html.append(
                 "<div class='pitch-row'>"
                 "<div class='who'>"
@@ -647,21 +665,20 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
                 "<div class='meter'>"
                 f"<span class='bar' style='width:{width:.0f}%;{_heat_style(k)}'></span>"
                 "</div>"
-                f"<div class='kval{k_grade}' "
-                f"title='source {_esc(src or 'pitch')} · PA {_esc(pa_txt)}'>"
+                f"<div class='kval{k_grade}' title='{tip}'>"
                 f"{k_txt}</div>"
                 "</div>"
             )
 
         width_avg = 0 if avg_k is None else max(4, min(100, float(avg_k)))
-        avg_grade = _grade_class("batter_k_pct", avg_k)
         rows_html.append(
             "<div class='pitch-row avg'>"
             "<div class='who'><span class='name'>Lineup avg</span></div>"
             "<div class='meter'>"
             f"<span class='bar' style='width:{width_avg:.0f}%;{_heat_style(avg_k)}'></span>"
             "</div>"
-            f"<div class='kval{avg_grade}'>"
+            f"<div class='kval{avg_grade}' "
+            "title='Lineup avg — green helps pitcher · amber medium · red helps batters'>"
             f"{'—' if avg_k is None else _fmt(avg_k, 1) + '%'}</div>"
             "</div>"
         )
@@ -670,7 +687,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             "<summary>"
             f"<span class='pname'>{_esc(pname)}</span>"
             f"<span class='pmeta'>{_fmt(p.get('usage_pct'), 1)}% overall"
-            f"{_esc(hand_txt)}{stuff_txt} · {_esc(avg_txt)}</span>"
+            f"{_esc(hand_txt)}{stuff_txt} · {avg_html}</span>"
             "</summary>"
             f"<div class='pitch-list'>{''.join(rows_html)}</div>"
             "</details>"
@@ -681,12 +698,14 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         f"{''.join(blocks)}"
         "<p class='hint'>"
         "Open a pitch to see each batter’s K% vs that pitch. "
+        "<strong>Green</strong> = high K% (helps the pitcher) · "
+        "<strong class='hint-amber'>amber</strong> = medium · "
+        "<strong class='hint-red'>red</strong> = low K% (helps the batters). "
         "Rates prefer true K% vs this pitcher’s hand when sample ≥15 PA; "
         "else overall pitch K%; "
         "<code>†</code> = same-handed league average. "
         "Pitcher <em>his whiff / mph</em> is own-stuff (ceiling) — "
-        "does not change Exp K. "
-        "Longer/darker bar = more K-prone."
+        "does not change Exp K."
         "</p>"
         "</div>"
     )
@@ -712,11 +731,17 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
                 f"{'' if b.get('hard_hit_pct') is None else ' · hh ' + _fmt(b.get('hard_hit_pct'), 1) + '%'}"
                 f"</span>"
             )
+        tip = (
+            ""
+            if miss
+            else " title='Arsenal-weighted K% — green helps pitcher · "
+            "amber medium · red helps batters'"
+        )
         cards.append(
             f"<div class='batter {'missing' if miss else ''}'>"
             f"<span><span class='slot'>{_esc(b.get('slot'))}.</span> "
             f"{_esc(b.get('batter') or '—')}{side_html}{hits_html}</span>"
-            f"<span class='k{k_grade}'>{k}</span>"
+            f"<span class='k{k_grade}'{tip}>{k}</span>"
             "</div>"
         )
     if not cards:
@@ -724,7 +749,10 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
     return (
         f"<div class='batter-grid'>{''.join(cards)}</div>"
         "<p class='hint'>Right-side values are arsenal-weighted <strong>K%</strong> vs this "
-        "starter. Hits / barrel / hard-hit scores are a separate Hits-prop layer and "
+        "starter — <strong>green</strong> helps the pitcher, "
+        "<strong class='hint-amber'>amber</strong> medium, "
+        "<strong class='hint-red'>red</strong> helps the batters. "
+        "Hits / barrel / hard-hit scores are a separate Hits-prop layer and "
         "<strong>do not</strong> change expected strikeouts.</p>"
     )
 
@@ -1878,8 +1906,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     white-space: nowrap;
   }
   .ks .nval { font-size: 1.05rem; }
-  .grade-low { color: #6a7a72; }
-  .grade-mid { color: var(--ink); }
+  .grade-low { color: #8c2828; }
+  .grade-mid { color: #8a4b0f; }
   .grade-high { color: #0f6a4d; }
   .grade-elite {
     color: #064832;
@@ -2382,7 +2410,61 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .batter.missing { opacity: 0.55; }
   .batter .slot { color: var(--muted); min-width: 1.2rem; }
-  .batter .k { font-weight: 700; }
+  .batter .k {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.86rem;
+    padding: 0.14rem 0.42rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .batter .k.grade-elite,
+  .kval.grade-elite,
+  .kchip.grade-elite {
+    background: rgba(15, 106, 77, 0.18);
+    color: #064832;
+    border-color: rgba(15, 106, 77, 0.32);
+  }
+  .batter .k.grade-high,
+  .kval.grade-high,
+  .kchip.grade-high {
+    background: rgba(15, 106, 77, 0.11);
+    color: #0f6a4d;
+    border-color: rgba(15, 106, 77, 0.24);
+  }
+  .batter .k.grade-mid,
+  .kval.grade-mid,
+  .kchip.grade-mid {
+    background: rgba(154, 91, 18, 0.12);
+    color: #8a4b0f;
+    border-color: rgba(154, 91, 18, 0.26);
+  }
+  .batter .k.grade-low,
+  .kval.grade-low,
+  .kchip.grade-low {
+    background: rgba(140, 40, 40, 0.12);
+    color: #8c2828;
+    border-color: rgba(140, 40, 40, 0.26);
+  }
+  .kchip {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    padding: 0.08rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .kchip.rate-na {
+    background: rgba(20, 32, 26, 0.05);
+    color: var(--muted);
+    border-color: rgba(20, 32, 26, 0.12);
+    font-weight: 600;
+  }
+  .hint-amber { color: #8a4b0f; }
+  .hint-red { color: #8c2828; }
   .pitch-stack {
     display: grid;
     gap: 0.45rem;
@@ -2434,7 +2516,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .pitch-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 36%) 3.6rem;
+    grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 36%) 4.4rem;
     gap: 0.55rem;
     align-items: center;
     padding: 0.5rem 0.15rem;
@@ -2472,8 +2554,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .kval {
     text-align: right;
     font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    font-size: 0.88rem;
+    font-weight: 800;
+    font-size: 0.82rem;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    justify-self: end;
   }
   @media (max-width: 560px) {
     .tab {
@@ -2611,11 +2698,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       __FRESHNESS__
       <div class="grade-legend" aria-label="Number color scale">
         Scale
-        <span class="swatch grade-low">low</span>
+        <span class="swatch grade-low">low / batter-friendly</span>
         <span class="swatch grade-mid">mid</span>
-        <span class="swatch grade-high">high</span>
+        <span class="swatch grade-high">high / pitcher-friendly</span>
         <span class="swatch grade-elite">elite</span>
-        <span>Exp K · IP · Arsenal K%</span>
+        <span>Exp K · IP · Arsenal %s</span>
       </div>
       __MODEL_KEYS__
     </header>

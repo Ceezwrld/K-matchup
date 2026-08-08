@@ -14,6 +14,35 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
+## 2026-08-07 grade — what went wrong
+
+Full slate in `backtest-2026-08-07.csv` (n=30, mean Exp K 4.43 → act 4.60, bias +0.17).
+
+### Anchor miss
+| Leg | Actual | Result | Break |
+|-----|--------|--------|-------|
+| **Eovaldi oK** (process Tier 1 — ELITE+WHIFF+TRUST+Strike%67+stuff bump · Exp **6.40**) | **2 K / 5.1 IP / 22 BF / 16 outs** | **MISS** (O5.5 & O6.5) | **Script collapse**, not length — stayed deep enough (outs chalk would cash) but K% cratered (~9% vs 25.5% arsenal). Medium risk + three-true BAL were the pre-flagged flaws; still fired as sole Tier 1. |
+| Messick O4.5 / O5.5 | **8 K / 7.0 IP** | **HIT** | Soft Zone% caution was real but arm cleared |
+| Cavalli / Fried O2.5 (promo chalk) | 8 / 7 K | **HIT** | Promo floor worked |
+| Gausman O4.5 promo | **4 K / 7.0 IP** | **MISS** | Thin AVG/BAL chalk — need 5, got 4 |
+| Montero U6.5 (UNDER_OK late OFF) | **5 K** | **HIT** | Soft under lane OK when chip live |
+| Tolle O5.5 promo (we said pass anchor) | **14 K** | would HIT | SPIKE ceiling warning was the right read on upside |
+
+### Pattern
+1. **The model already printed the cash ticket** — Messick (#2 STRONG/WHIFF/clear Exp ~5.74 → 8), Cavalli (AVG/WHIFF floor → 8), Tolle (SOFT+SPIKE ceiling → 14). We demoted them under Eovaldi’s “perfect” attack-plate pack. Soft Zone% / AVG / SOFT labels were *sizing notes*, not vetoes — and we treated them like vetoes.
+2. **Attack-plate pack ≠ immune** — Eovaldi had every confirm and still posted a 2-K night. Size / don’t nuke the whole ticket on one “perfect” stack; medium + three-true on the anchor is a real haircut.
+3. **ELITE solo group failed as a bucket** (n=5, 5.44→3.60): Eovaldi 2, Mlodzinski 1 (3 IP hook), Blanco 1 — while Mahle 9 / Sasaki 5. Elite mix still needs length + non-collapse.
+4. **SOFT SPIKE lane did its job** — Tolle 14, Rasmussen 8, Gilbert 6, Wheeler 6: no soft U6 was correct; soft≠locked under. SPIKE also means **promo over is live** as a secondary leg — don’t only use SPIKE as an under veto.
+5. **Kelly OFF flip AVG/FILLER** before late tickets saved a bad under; Montero UNDER_OK was the live under.
+6. **Outs pause stayed right for process** even though Eovaldi O12.5 outs promo would have cashed — don’t reopen outs on one chalk night.
+
+### Process updates from 8/7
+- **Trust the board first.** When the model stacks **STRONG/ELITE + WHIFF + clear/low + Exp K ≥ ~5.5** in the top ranks, that *is* a ticket lean — do not demote it to “Tier 2 soft” because Zone% is a hair soft or Strike% is 64 instead of 65. Attack-plate (Strike%≥65 / Zone%≥43 / stuff bump) is a **boost**, not a monopoly that erases everyone else.
+- Build the multi from **what the board already cleared** (Messick-type) + **independent chalk the model supports** (Cavalli O2.5 / SPIKE promo floors). Never let one attack-plate arm be the only lean.
+- When Tier 1 has **medium risk or three-true/elevated BB**, prefer **smaller K number** (O4.5/O5.5) or pair with those board clears — same rule, sharper reason.
+- Promo **O4.5 on AVG/BAL** (Gausman) = filler only; promo **O2.5 on AVG/WHIFF** (Cavalli) = fine chalk leg.
+- Keep SPIKE veto on soft unders; also allow SPIKE as **secondary over chalk** when Exp K / line edge is there. Keep UNDER_OK gate for unders.
+
 ## Outs tickets — PAUSED (8/6)
 
 **Step away from pitcher outs tickets for now.** 8/6 full-outing outs overs missed back-to-back (Young O14.5→13, Peterson O16.5→15) on “low risk” length with thin cushions.
@@ -225,16 +254,17 @@ Any **no** → **no edge** → pass.
 
 ### 8/5 attack-plate pack (remember for future cards)
 User target overs that fit the new lens: **Harrison / Rogers / Detmers / Skenes / Lopez**.
-Actuals: 10 / 9 / 5 / 6 / 9. Four clear cashes on soft O4.5+; Detmers only if line ≤4.5 (short IP). Apply this same filter on the next slate before locking overs.
+Actuals: 10 / 9 / 5 / 6 / 9. Four clear cashes on soft O4.5+; Detmers only if line ≤4.5 (short IP). Use attack-plate as a **confidence boost** on next slates — not as a filter that drops STRONG/WHIFF/clear board answers (8/7 Messick lesson).
 
 ## Better tickets (habit)
 
 1. **Default = 2-leg.** K over + K under, or two K overs / two UNDER_OK. **No new outs legs while outs lane is paused (8/6).** No 6-legs.
-2. **Build from outlook chips, not Exp K rank.** Top of board ≠ best bet (Dobbins). Chip picks K side / pass (outs paused).
-3. **Pair opposite K scripts:** attack-plate / TRUST over + UNDER_OK under. Avoid same-game opposing K overs.
-4. **Line sizing:** K overs need IP + trust; K unders need confirms or U6.5+. Cam rule: if book juices name/SPIKE above Exp K by ~1.0–1.5 on AVG/SOFT, K under is live.
-5. **Accuracy lock:** run the **Ticket lock routine** above — do not skip steps.
-6. **Cap:** any arm on ≤2 tickets; one nuke/chalk pair max per day.
+2. **Read the model answers, then size.** Start from board clears: solo grade + STYLE + outing risk + Exp K + outlook chip. Top of board ≠ auto-bet when the chip says THIN/FILLER (Dobbins) — but when chips **agree** with a top rank (Messick STRONG/WHIFF/clear), **take that lean**. Do not invent extra vetoes (soft Zone% alone, missing stuff bump) that demote a clear model answer under one prettier attack-plate stack.
+3. **Attack-plate is a boost, not the only door.** Pair board clears with independent chalk; never sole-nuke a medium/three-true “perfect” arm.
+4. **Pair opposite K scripts:** TRUST / board-clear over + UNDER_OK under. Avoid same-game opposing K overs.
+5. **Line sizing:** K overs need IP + trust; K unders need confirms or U6.5+. Cam rule: if book juices name/SPIKE above Exp K by ~1.0–1.5 on AVG/SOFT, K under is live. SPIKE promo overs OK as secondary legs.
+6. **Accuracy lock:** run the **Ticket lock routine** above — do not skip steps.
+7. **Cap:** any arm on ≤2 tickets; one nuke/chalk pair max per day.
 
 ## Core thesis — pitcher vs batter vulnerability first
 

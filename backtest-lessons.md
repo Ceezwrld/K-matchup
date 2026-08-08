@@ -87,7 +87,8 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
    - **STYLE** (WHIFF / GB / FLY / BAL) → does he usually get outs via Ks or BIP?
    - **Opp BIP / contact** (whiff_prone / neutral / contact_heavy) → will the nine help or fight Ks?
    - **Opp K% vs hand** (vs LHP / vs RHP matching the starter) → primary opp-K confirm; overall opp K% is secondary
-   - **Strike% / Zone%** (optional confirm) → does he attack the plate? High Strike% (≥~65) + Zone% supports WHIFF overs; low Strike% alone does **not** lock an under (SPIKE can still clear).
+   - **Strike% / Zone% / O-Swing%** (optional confirm) → does he attack the plate / induce chase? High Strike% (≥~65) + Zone% supports WHIFF overs; O-Swing% confirms chase; low Strike% alone does **not** lock an under (SPIKE can still clear).
+   - **L3 K/9 adj** → recent form scaled by opponent-team K% faced (juiced L3 opps haircut hot form; soft-K L3 opps boost it). Use adj for sizing, raw L3 for SPIKE ceiling.
 
    One-glance combos: ELITE+WHIFF+whiff-prone = strong K info · ELITE+FLY/GB = matchup OK, don’t overweight K total · SOFT+GB/FLY+contact_heavy = strong under info · SOFT+WHIFF/SPIKE = soft grade but K ceiling live · AVG+WHIFF+juiced line = Cam-rule under info · WHIFF+Strike%≥65 = command confirms the K script.
 

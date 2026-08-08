@@ -179,13 +179,19 @@ def _grade_for(metric: str, value: Any) -> str | None:
     if metric == "csw_pct":
         # CSW (C+SwStr%) ~28–29; ≥31 elite · ≥29.5 good · ≥27.5 avg
         return _grade_band(value, 27.5, 29.5, 31.0)
+    if metric == "o_swing_pct":
+        # Pitcher O-Swing% (chase induced) ~33; ≥35 elite · ≥33 good · ≥30 avg
+        return _grade_band(value, 30.0, 33.0, 35.0)
     if metric == "pitcher_soft_pct":
         # Higher Soft% = soft-contact arm (helps FILLER/under; soft for K overs)
         return _grade_band_desc(value, 17.0, 20.0, 22.0)
-    if metric in ("k9", "last3_k9"):
+    if metric in ("k9", "last3_k9", "last3_k9_adj"):
         return _grade_band(value, 7.0, 8.5, 10.0)
-    if metric == "last3_ks":
+    if metric in ("last3_ks", "last3_ks_adj"):
         return _grade_band(value, 3.5, 5.0, 6.5)
+    if metric == "last3_opp_k_pct":
+        # Higher = L3 faced juiced K clubs (form may be inflated)
+        return _grade_band_desc(value, 20.5, 22.5, 24.5)
     if metric == "bb9":
         return _grade_band_desc(value, 2.2, 2.8, 3.5)
     if metric == "hr9":
@@ -421,6 +427,7 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "strike_pct": _json_safe(r.get("strike_pct")),
                 "f_strike_pct": _json_safe(r.get("f_strike_pct")),
                 "zone_pct": _json_safe(r.get("zone_pct")),
+                "o_swing_pct": _json_safe(r.get("o_swing_pct")),
                 "pitches": _json_safe(r.get("pitches")),
                 "strikes": _json_safe(r.get("strikes")),
                 "outing_risk": r.get("outing_risk"),
@@ -429,6 +436,11 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "survival_flags": r.get("survival_flags") or "",
                 "last3_ks": _json_safe(r.get("last3_ks")),
                 "last3_k9": _json_safe(r.get("last3_k9")),
+                "last3_ks_adj": _json_safe(r.get("last3_ks_adj")),
+                "last3_k9_adj": _json_safe(r.get("last3_k9_adj")),
+                "last3_opp_k_pct": _json_safe(r.get("last3_opp_k_pct")),
+                "form_opp_factor": _json_safe(r.get("form_opp_factor")),
+                "form_opp_note": r.get("form_opp_note") or "",
                 "form_ks": _json_safe(r.get("form_ks")),
                 "form_weight": _json_safe(r.get("form_weight")),
                 "lineup_k_pct": _json_safe(r.get("lineup_k_pct")),
@@ -1042,6 +1054,16 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
                 title="Swinging-strike rate — miss confirm (does not flip arsenal side)",
             )
         )
+    if row.get("o_swing_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "O-Swing%",
+                row.get("o_swing_pct"),
+                "o_swing_pct",
+                1,
+                title="Chase rate induced (FanGraphs O-Swing%) — higher = more chase; Rates confirm only",
+            )
+        )
     if row.get("csw_pct") is not None:
         rates_chips.append(
             _rate_chip(
@@ -1070,7 +1092,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
                 row.get("last3_ks"),
                 "last3_ks",
                 1,
-                title="Avg strikeouts over last 3 starts",
+                title="Avg strikeouts over last 3 starts (raw)",
             )
         )
     if row.get("last3_k9") is not None:
@@ -1080,7 +1102,34 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
                 row.get("last3_k9"),
                 "last3_k9",
                 1,
-                title="K/9 over last 3 starts",
+                title="K/9 over last 3 starts (raw)",
+            )
+        )
+    if row.get("last3_k9_adj") is not None:
+        tip = "L3 K/9 scaled by league K% ÷ mean opponent-team K% faced"
+        note = (row.get("form_opp_note") or "").strip()
+        if note:
+            tip = f"{tip} · {note}"
+        form_chips.append(
+            _rate_chip(
+                "L3 K/9 adj",
+                row.get("last3_k9_adj"),
+                "last3_k9_adj",
+                1,
+                title=tip,
+            )
+        )
+    if row.get("last3_opp_k_pct") is not None:
+        form_chips.append(
+            _rate_chip(
+                "L3 opp K%",
+                row.get("last3_opp_k_pct"),
+                "last3_opp_k_pct",
+                1,
+                title=(
+                    row.get("form_opp_note")
+                    or "Mean season K% of teams faced in last 3 starts"
+                ),
             )
         )
     form_html = (
@@ -1583,8 +1632,9 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
         )
     strike_note = (
         "Green = good for K scripts · amber = average · red = soft for overs. "
-        "Rates chips: Strike%/Zone%/SwStr%/CSW% (miss+command) · Soft% (elevated helps "
-        "FILLER/under). Command confirms the script — it does not flip the side. "
+        "Rates chips: Strike%/Zone%/SwStr%/O-Swing%/CSW% (miss+chase+command) · Soft% "
+        "(elevated helps FILLER/under). L3 K/9 adj = form scaled for opponent K% faced. "
+        "Command/chase confirms the script — they do not flip the side. "
         "Attack-plate + WHIFF + strong stuff can add a tiny Exp K bump."
     )
     return (

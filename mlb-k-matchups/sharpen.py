@@ -12,8 +12,10 @@
 9. Pitcher stuff ceiling — own velo/whiff by pitch → SPIKE caution
    (blocks soft-under autopilot). Attack-plate stacks only get a tiny
    capped Exp K bump (ELITE/STRONG + WHIFF + Strike%≥65 + strong stuff).
-10. Soft% → soft-contact / UNDER_OK confirms; SwStr% + CSW% = Rates confirms
-    (do not flip arsenal side alone).
+10. Soft% → soft-contact / UNDER_OK confirms; SwStr% + CSW% + O-Swing% =
+    Rates confirms (do not flip arsenal side alone).
+11. Opponent-adjusted recent form — L3 K/9 scaled by league K% /
+    mean opponent-team K% faced (hot L3 vs juiced K clubs gets haircut).
 
 Hits-prop helpers (barrel / hard-hit / xwOBA) live here too but are
 display-only — they never modify expected_ks.
@@ -65,6 +67,11 @@ PEOPLE_SEASON_PITCHING_URL = (
     "&hydrate=stats(group=[pitching],type=[season],season={year})"
 )
 
+TEAM_SEASON_HITTING_URL = (
+    "https://statsapi.mlb.com/api/v1/teams/stats"
+    "?season={year}&group=hitting&stats=season&sportIds=1"
+)
+
 PEOPLE_HITTING_OFFENSE_URL = (
     "https://statsapi.mlb.com/api/v1/people"
     "?personIds={ids}"
@@ -93,6 +100,11 @@ MIN_HAND_SPLIT_PITCHES = 80
 MIN_PA_PITCH_VS_HAND = 15
 FORM_BLEND = 0.30
 FORM_MIN_STARTS = 2
+# Bound opponent-quality haircut/boost on L3 K/9 so thin samples don't explode.
+FORM_OPP_FACTOR_MIN = 0.85
+FORM_OPP_FACTOR_MAX = 1.15
+FORM_OPP_JUICED_K = 24.5
+FORM_OPP_SOFT_K = 20.5
 PLATOON_FULL_PA = 80
 BB9_WARN = 3.5
 BB9_HIGH = 4.0
@@ -946,6 +958,74 @@ def platoon_adjust_k_pct(
     return arsenal_k_pct * factor, factor, label
 
 
+def fetch_team_season_k_pct(
+    year: int, verbose: bool, log: Callable[[bool, str], None]
+) -> dict[int, float]:
+    """Season team batting K% (SO/PA) keyed by Stats API team id."""
+    url = TEAM_SEASON_HITTING_URL.format(year=year)
+    try:
+        payload = _get(url, verbose, log).json()
+    except Exception as exc:  # noqa: BLE001
+        log(verbose, f"Team season K% fetch failed: {exc}")
+        return {}
+    out: dict[int, float] = {}
+    for block in payload.get("stats") or []:
+        for split in block.get("splits") or []:
+            team = split.get("team") or {}
+            tid = team.get("id")
+            if tid is None:
+                continue
+            stat = split.get("stat") or {}
+            try:
+                pa = float(stat.get("plateAppearances") or 0)
+                so = float(stat.get("strikeOuts") or 0)
+            except (TypeError, ValueError):
+                continue
+            if pa <= 0:
+                continue
+            out[int(tid)] = 100.0 * so / pa
+    return out
+
+
+def _apply_opp_adjust_to_form(
+    form: dict[str, Any],
+    team_k_pct: dict[int, float],
+) -> None:
+    """Mutate form with opponent-adjusted L3 K/9 (league K% / mean opp K%)."""
+    starts = form.get("last3_starts") or []
+    opp_ks: list[float] = []
+    for s in starts:
+        tid = s.get("opp_team_id")
+        if tid is None:
+            continue
+        k = team_k_pct.get(int(tid))
+        if k is None:
+            continue
+        opp_ks.append(float(k))
+    if not opp_ks:
+        form["last3_opp_k_pct"] = None
+        form["last3_k9_adj"] = form.get("last3_k9")
+        form["last3_ks_adj"] = form.get("last3_ks")
+        form["form_opp_factor"] = None
+        form["form_opp_note"] = ""
+        return
+    opp_avg = sum(opp_ks) / len(opp_ks)
+    form["last3_opp_k_pct"] = opp_avg
+    raw_factor = LEAGUE_K_PCT / opp_avg if opp_avg > 0 else 1.0
+    factor = max(FORM_OPP_FACTOR_MIN, min(FORM_OPP_FACTOR_MAX, raw_factor))
+    form["form_opp_factor"] = factor
+    k9 = form.get("last3_k9")
+    ks = form.get("last3_ks")
+    form["last3_k9_adj"] = (float(k9) * factor) if k9 is not None else None
+    form["last3_ks_adj"] = (float(ks) * factor) if ks is not None else None
+    if opp_avg >= FORM_OPP_JUICED_K:
+        form["form_opp_note"] = f"L3 vs juiced K opps ({opp_avg:.1f}%)"
+    elif opp_avg <= FORM_OPP_SOFT_K:
+        form["form_opp_note"] = f"L3 vs soft K opps ({opp_avg:.1f}%)"
+    else:
+        form["form_opp_note"] = f"L3 opp K% {opp_avg:.1f}"
+
+
 def fetch_pitcher_recent_form(
     pitcher_ids: list[int],
     year: int,
@@ -953,7 +1033,7 @@ def fetch_pitcher_recent_form(
     log: Callable[[bool, str], None],
     last_n: int = 3,
 ) -> dict[int, dict[str, Any]]:
-    """Last-N starts: avg Ks, K/9, IP."""
+    """Last-N starts: avg Ks, K/9, IP + opponent-adjusted K/9."""
     ids = sorted({int(x) for x in pitcher_ids if x is not None})
     out: dict[int, dict[str, Any]] = {}
     for i in range(0, len(ids), 30):
@@ -974,12 +1054,20 @@ def fetch_pitcher_recent_form(
                         continue
                     ip = parse_innings_pitched(stat.get("inningsPitched")) or 0.0
                     so = float(stat.get("strikeOuts") or 0)
+                    opp = split.get("opponent") or {}
+                    opp_id = opp.get("id")
+                    try:
+                        opp_team_id = int(opp_id) if opp_id is not None else None
+                    except (TypeError, ValueError):
+                        opp_team_id = None
                     starts.append(
                         {
                             "date": split.get("date"),
                             "ip": ip,
                             "so": so,
                             "k9": (so * 9.0 / ip) if ip > 0 else None,
+                            "opp_team_id": opp_team_id,
+                            "is_home": bool(split.get("isHome")),
                         }
                     )
             # API returns newest last for some payloads; sort by date.
@@ -994,7 +1082,23 @@ def fetch_pitcher_recent_form(
                 "last3_ks": so_sum / len(recent),
                 "last3_ip": ip_sum / len(recent),
                 "last3_k9": (so_sum * 9.0 / ip_sum) if ip_sum > 0 else None,
+                "last3_starts": recent,
+                "last3_opp_k_pct": None,
+                "last3_k9_adj": None,
+                "last3_ks_adj": None,
+                "form_opp_factor": None,
+                "form_opp_note": "",
             }
+
+    if out:
+        team_k = fetch_team_season_k_pct(year, verbose, log)
+        if team_k:
+            for form in out.values():
+                _apply_opp_adjust_to_form(form, team_k)
+        else:
+            for form in out.values():
+                form["last3_k9_adj"] = form.get("last3_k9")
+                form["last3_ks_adj"] = form.get("last3_ks")
     return out
 
 
@@ -1003,11 +1107,16 @@ def apply_recent_form_overlay(
     projected_ip: float,
     form: dict[str, Any] | None,
 ) -> tuple[float, float | None, float | None]:
-    """Blend model Ks with last-3 K/9 run rate. Returns (blended, form_ks, weight)."""
+    """Blend model Ks with opp-adjusted L3 K/9 (raw fallback).
+
+    Returns (blended, form_ks, weight).
+    """
     if not form or expected_ks is None:
         return expected_ks, None, None
     gs = int(form.get("last3_gs") or 0)
-    k9 = form.get("last3_k9")
+    k9 = form.get("last3_k9_adj")
+    if k9 is None:
+        k9 = form.get("last3_k9")
     if gs < FORM_MIN_STARTS or k9 is None or not projected_ip:
         return expected_ks, None, None
     form_ks = float(k9) / 9.0 * float(projected_ip)
@@ -1084,6 +1193,7 @@ def fetch_fangraphs_pitching(
                 "swstr_pct": _fg_pct(row.get("SwStr%")),
                 # FanGraphs labels CSW as C+SwStr% (called + swinging strike).
                 "csw_pct": _fg_pct(row.get("C+SwStr%")),
+                "o_swing_pct": _fg_pct(row.get("O-Swing%")),
                 "strike_pct": _strike_pct_from_counts(
                     row.get("Strikes"), row.get("Pitches")
                 ),
@@ -1154,6 +1264,7 @@ def fetch_pitcher_rate_stats(
                     "pitcher_soft_pct": float("nan"),
                     "swstr_pct": float("nan"),
                     "csw_pct": float("nan"),
+                    "o_swing_pct": float("nan"),
                     "strike_pct": strike_pct,
                     "f_strike_pct": float("nan"),
                     "zone_pct": float("nan"),
@@ -1258,6 +1369,7 @@ def merge_risk_metrics(
         "pitcher_soft_pct": None,
         "swstr_pct": None,
         "csw_pct": None,
+        "o_swing_pct": None,
         "strike_pct": None,
         "f_strike_pct": None,
         "zone_pct": None,
@@ -1299,6 +1411,7 @@ def merge_risk_metrics(
     soft = _pick("pitcher_soft_pct")
     swstr = _pick("swstr_pct")
     csw = _pick("csw_pct")
+    o_swing = _pick("o_swing_pct")
     strike_pct = _pick("strike_pct")
     f_strike_pct = _pick("f_strike_pct")
     zone_pct = _pick("zone_pct")
@@ -1326,6 +1439,7 @@ def merge_risk_metrics(
         "pitcher_soft_pct": soft,
         "swstr_pct": swstr,
         "csw_pct": csw,
+        "o_swing_pct": o_swing,
         "strike_pct": strike_pct,
         "f_strike_pct": f_strike_pct,
         "zone_pct": zone_pct,

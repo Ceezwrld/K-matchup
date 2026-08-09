@@ -1,6 +1,89 @@
 # K-prop process lessons (from graded slates)
 
-Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless noted.
+Living rules. Soft lines assume ~0.75+ edge unless noted.
+
+## Learn from every miss (non-negotiable)
+
+**Every mistake updates the routine before the next ticket.** Not only end-of-night grades — mid-slate misses count (Young 13 outs / 98 pitches → Zone%/efficiency now in Step 5).
+
+When a locked leg loses or a lean is clearly wrong:
+1. **What broke?** (side / total / length / efficiency / line / role)
+2. **Write the rule** into this file (ticket lock + same-day note).
+3. **Apply on the next card** — do not repeat the same miss.
+4. Full-slate grade still runs after finals (`backtest-YYYY-MM-DD.csv`) and folds into the same living rules.
+
+Hits reinforce; misses rewrite the checklist. No silent losses.
+
+## 2026-08-08 grade — board clears cashed; under lane mixed
+
+Full slate in `backtest-2026-08-08.csv` (n=29 scored, mean Exp K 4.81 → act 4.83, bias **+0.02**).
+
+### Ticket leans
+| Leg | Actual | Result | Break |
+|-----|--------|--------|-------|
+| **Sale oK** (ELITE/WHIFF/clear Exp ~7.8) | **8 K / 6.0 IP** | **HIT** O4.5/O5.5 | Board clear + attack-plate — trusted correctly |
+| **Williams oK** (STRONG/WHIFF/low Exp ~7.1) | **7 K / 5.7 IP** | **HIT** O4.5/O5.5 | #2 clear; three-true sizing OK |
+| **Burns oK** (STRONG/WHIFF/clear Exp ~5.4) | **6 K / 5.3 IP** | **HIT** O4.5/O5.5 | Cleanest risk over on the card |
+| **deGrom oK** (ELITE/WHIFF/low Exp ~6.5) | **9 K / 5.0 IP** | **HIT** O4.5/O5.5 | Zone soft didn’t kill the script |
+| **Nola U6.5** (UNDER_OK OFF Exp ~3.5) | **8 K / 5.0 IP** | **MISS** | Soft+BAL UNDER_OK without GB/FLY — spike killed preferred multis |
+| **Gasser U6.5** (UNDER_OK) | **3 K / 4.7 IP** | **HIT** | FLY + contact-heavy confirm held |
+| **Pfaadt U6.5** (UNDER_OK) | **2 K / 7.0 IP** | **HIT** | GB + contact-heavy + length |
+| **Kirby U6.5** (prior most of day) | **1 K / 4.0 IP** | would HIT | Short outing; under still cashed |
+| Alvarez / Liberatore thin O3.5 | 2 / 3 K | **MISS** | ELITE/**BAL**/medium — THIN_TOTAL caution was right; even O3.5 failed |
+
+### Pattern
+1. **Trust-the-board (8/7) validated** — WHIFF clears Sale/Williams/Burns/deGrom all cashed soft O4.5+. Style bucket: **whiff 6.12→8.14** vs **balanced 4.44→4.06**.
+2. **Preferred multi died on Nola** — Burns/Williams overs were right; UNDER_OK without GB/FLY (soft+BAL+contact-heavy only) spiked. Gasser/Pfaadt were the safer under legs.
+3. **ELITE+BAL ≠ ELITE+WHIFF** — Alvarez 2 / Liberatore 3 with length still there = script collapse on BIP styles, not hooks.
+4. **Jump 11 K** (ELITE/WHIFF/medium) — medium short-IP lean can still spike; floor O3.5 was process-correct sizing, not a veto on the side.
+5. **Cole 9 K** as AVG/WHIFF pass — left money, but early OFF contact-heavy read correctly blocked him as Tier 1 co-anchor.
+
+### Process updates from 8/8
+- Prefer UNDER_OK legs that include **GB/FLY style** (Gasser/Pfaadt), not only contact-heavy + low Exp on **BAL** soft (Nola).
+- Keep pairing board-clear WHIFF overs; do not sole-nuke three-true anchors.
+- ELITE/STRONG + **BAL** → pass juiced totals; O3.5 still optional only — tonight even that missed.
+- WHIFF board clears with clear/low risk remain the primary over edge.
+
+## 2026-08-07 grade — what went wrong
+
+Full slate in `backtest-2026-08-07.csv` (n=30, mean Exp K 4.43 → act 4.60, bias +0.17).
+
+### Anchor miss
+| Leg | Actual | Result | Break |
+|-----|--------|--------|-------|
+| **Eovaldi oK** (process Tier 1 — ELITE+WHIFF+TRUST+Strike%67+stuff bump · Exp **6.40**) | **2 K / 5.1 IP / 22 BF / 16 outs** | **MISS** (O5.5 & O6.5) | **Script collapse**, not length — stayed deep enough (outs chalk would cash) but K% cratered (~9% vs 25.5% arsenal). Medium risk + three-true BAL were the pre-flagged flaws; still fired as sole Tier 1. |
+| Messick O4.5 / O5.5 | **8 K / 7.0 IP** | **HIT** | Soft Zone% caution was real but arm cleared |
+| Cavalli / Fried O2.5 (promo chalk) | 8 / 7 K | **HIT** | Promo floor worked |
+| Gausman O4.5 promo | **4 K / 7.0 IP** | **MISS** | Thin AVG/BAL chalk — need 5, got 4 |
+| Montero U6.5 (UNDER_OK late OFF) | **5 K** | **HIT** | Soft under lane OK when chip live |
+| Tolle O5.5 promo (we said pass anchor) | **14 K** | would HIT | SPIKE ceiling warning was the right read on upside |
+
+### Pattern
+1. **The model already printed the cash ticket** — Messick (#2 STRONG/WHIFF/clear Exp ~5.74 → 8), Cavalli (AVG/WHIFF floor → 8), Tolle (SOFT+SPIKE ceiling → 14). We demoted them under Eovaldi’s “perfect” attack-plate pack. Soft Zone% / AVG / SOFT labels were *sizing notes*, not vetoes — and we treated them like vetoes.
+2. **Attack-plate pack ≠ immune** — Eovaldi had every confirm and still posted a 2-K night. Size / don’t nuke the whole ticket on one “perfect” stack; medium + three-true on the anchor is a real haircut.
+3. **ELITE solo group failed as a bucket** (n=5, 5.44→3.60): Eovaldi 2, Mlodzinski 1 (3 IP hook), Blanco 1 — while Mahle 9 / Sasaki 5. Elite mix still needs length + non-collapse.
+4. **SOFT SPIKE lane did its job** — Tolle 14, Rasmussen 8, Gilbert 6, Wheeler 6: no soft U6 was correct; soft≠locked under. SPIKE also means **promo over is live** as a secondary leg — don’t only use SPIKE as an under veto.
+5. **Kelly OFF flip AVG/FILLER** before late tickets saved a bad under; Montero UNDER_OK was the live under.
+6. **Outs pause stayed right for process** even though Eovaldi O12.5 outs promo would have cashed — don’t reopen outs on one chalk night.
+
+### Process updates from 8/7
+- **Trust the board first.** When the model stacks **STRONG/ELITE + WHIFF + clear/low + Exp K ≥ ~5.5** in the top ranks, that *is* a ticket lean — do not demote it to “Tier 2 soft” because Zone% is a hair soft or Strike% is 64 instead of 65. Attack-plate (Strike%≥65 / Zone%≥43 / stuff bump) is a **boost**, not a monopoly that erases everyone else.
+- Build the multi from **what the board already cleared** (Messick-type) + **independent chalk the model supports** (Cavalli O2.5 / SPIKE promo floors). Never let one attack-plate arm be the only lean.
+- When Tier 1 has **medium risk or three-true/elevated BB**, prefer **smaller K number** (O4.5/O5.5) or pair with those board clears — same rule, sharper reason.
+- Promo **O4.5 on AVG/BAL** (Gausman) = filler only; promo **O2.5 on AVG/WHIFF** (Cavalli) = fine chalk leg.
+- Keep SPIKE veto on soft unders; also allow SPIKE as **secondary over chalk** when Exp K / line edge is there. Keep UNDER_OK gate for unders.
+
+## Outs tickets — PAUSED (8/6)
+
+**Step away from pitcher outs tickets for now.** 8/6 full-outing outs overs missed back-to-back (Young O14.5→13, Peterson O16.5→15) on “low risk” length with thin cushions.
+
+| Do | Don’t |
+|----|--------|
+| **K lane only** for real tickets (attack-plate overs · UNDER_OK unders) | Full-outing outs overs (O14.5 / O15.5 / O16.5 style) |
+| Honor already-live chalk (e.g. Buehler O0.5) — don’t add new outs legs | Glue K promos to thin outs “anchors” |
+| Keep outs efficiency notes for a later revisit | Force dual-lane tickets tonight |
+
+Board can still *show* IP / STYLE for context. **Do not recommend new outs overs/unders** until we explicitly reopen the lane after more graded evidence.
 
 ## Every morning routine (do this first)
 
@@ -29,12 +112,15 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
    Also check **vs Team history** on each card (career K% vs that batting team + recent games with **HOME/AWAY** for the pitcher). Use history to confirm or caution the model side — not to override a clear absolute arsenal gate.  
    Mark the whole board **provisional** until official lineups post.
 
-3b. **Info lean (default on every arm — not a full essay):** stack three signals so outs-type is visible at a glance:
+3b. **Info lean (default on every arm — not a full essay):** stack signals so outs-type is visible at a glance:
    - **Solo grade** → can the mix K *this* nine?
    - **STYLE** (WHIFF / GB / FLY / BAL) → does he usually get outs via Ks or BIP?
    - **Opp BIP / contact** (whiff_prone / neutral / contact_heavy) → will the nine help or fight Ks?
+   - **Opp K% vs hand** (vs LHP / vs RHP matching the starter) → primary opp-K confirm; overall opp K% is secondary
+   - **Strike% / Zone% / O-Swing%** (optional confirm) → does he attack the plate / induce chase? High Strike% (≥~65) + Zone% supports WHIFF overs; O-Swing% confirms chase; low Strike% alone does **not** lock an under (SPIKE can still clear).
+   - **L3 K/9 adj** → recent form scaled by opponent-team K% faced (juiced L3 opps haircut hot form; soft-K L3 opps boost it). Use adj for sizing, raw L3 for SPIKE ceiling.
 
-   One-glance combos: ELITE+WHIFF+whiff-prone = strong K info · ELITE+FLY/GB = matchup OK, don’t overweight K total · SOFT+GB/FLY+contact_heavy = strong under info · SOFT+WHIFF/SPIKE = soft grade but K ceiling live · AVG+WHIFF+juiced line = Cam-rule under info.
+   One-glance combos: ELITE+WHIFF+whiff-prone = strong K info · ELITE+FLY/GB = matchup OK, don’t overweight K total · SOFT+GB/FLY+contact_heavy = strong under info · SOFT+WHIFF/SPIKE = soft grade but K ceiling live · AVG+WHIFF+juiced line = Cam-rule under info · WHIFF+Strike%≥65 = command confirms the K script.
 
 3c. **Full thesis / essay (on request only):** when asked for a specific pitcher (or a short list), expand to Littell/Skubal depth — table of arsenal / opp BIP / STYLE / stuff·SPIKE / IP·risk, then answer “can we trust the K total?” and line-sizing. Do **not** essay the whole slate unless asked. Same daily routine, deeper read on demand.
 4. **Re-refresh when lineups confirm** — same report shape, flip prior→official, re-check leans before locking tickets.
@@ -52,12 +138,14 @@ Open a pitcher card and answer **four questions in order**. Do not start at Exp 
 | 2 | **STYLE** chip (WHIFF / GB / FLY / BAL) next to name | Does he get outs via Ks or BIP? | Whether to **trust the total** |
 | 3 | **Opp BIP** (whiff_prone / contact_heavy in meta) | Will the nine help or fight Ks? | Confirmation / line size |
 | 4 | **SPIKE / THIN_TOTAL / UNDER_OK / MATCHUP_OK / FILLER** | Any veto or size cap? | Ticket legality |
+| 5 | **Strike% / Zone%** (Rates row) | Does he attack the plate? | Command confirm — **not** a side flip |
 
 **One-glance recipes**
 
 | Stack | Read | Ticket move |
 |-------|------|-------------|
 | ELITE/STRONG + **WHIFF** + Exp K ≥5.5 | **Trust total** | Soft O4.5 / O5.5 OK if IP clear |
+| ELITE/STRONG + **WHIFF** + Strike% ≥~65 | Attack-plate confirm | Size up over confidence if IP clear |
 | ELITE/STRONG + **GB/FLY** + Exp K ≥5.5 | **THIN_TOTAL** | O3.5 / thin O4.5 only |
 | ELITE/STRONG + **BAL** + Exp K ≥5.5 | Total caution | Prefer O4.5 floor; don’t juice O6.5 |
 | SOFT + **UNDER_OK** (2+ confirms) | Preferred under | Soft U6 / BIP under |
@@ -67,14 +155,147 @@ Open a pitcher card and answer **four questions in order**. Do not start at Exp 
 
 Also check: **Official** vs Prior · projected IP · outing risk · vs-team history (confirm only).
 
+## Ticket lock routine (USE THIS before every card)
+
+**User-locked 8/5–8/6.** Run this full path before recommending or firing any over/under. Exp K and slate `#` come last. Goal = find edge or pass.
+
+### Step 0 — Setup
+1. Refresh board; hard-refresh the link.
+2. Filter **Official only** (prior = scouting only — do not lock).
+3. Skip **openers / swingmen / unscored**.
+4. Note the book line for that pitcher.
+
+### Step 1 — Solo arsenal (picks the side)
+| Grade | Edge bias |
+|-------|-----------|
+| ELITE / STRONG | **Over** |
+| SOFT | **Under** |
+| AVG | Usually pass / Cam-rule only |
+
+This is the edge. Everything else confirms or sizes it.
+
+### Step 2 — STYLE (trust the total?)
+| STYLE | Meaning |
+|-------|---------|
+| **WHIFF** | Outs via Ks → juiced totals OK |
+| **GB / FLY** | BIP outs → **THIN_TOTAL** (O3.5 / thin O4.5 only) |
+| **BAL** | Caution — don’t juice O6.5 |
+
+Good mix + wrong style ≠ nuke over.
+
+### Step 3 — Opp BIP / K%
+| Opp look | Helps |
+|----------|-------|
+| **whiff_prone** (BIP ≤~64%) | Overs |
+| **contact_heavy** (BIP ≥~71%) | Unders |
+| **neutral** | No extra edge |
+
+Confirm only — does not flip solo grade alone.
+
+### Step 4 — Outlook chip (legal / illegal)
+| Chip | Move |
+|------|------|
+| **TRUST** | Over live if IP clear |
+| **THIN_TOTAL** | Thin over only — not a nuke |
+| **UNDER_OK** | Preferred soft under |
+| **SPIKE** | **No soft U6** |
+| **MATCHUP_OK** | O3.5 / thin O4.5 only |
+| **FILLER** | Pass K overs **and** soft unders |
+
+If the chip vetoes → stop.
+
+### Step 5 — Strike% / Zone% (command + outs efficiency)
+Compare Rates row to slate **Avg Strike%** (~64%).
+| Read | Use |
+|------|-----|
+| Strike% **≥~65** + WHIFF/TRUST | Size **up** K-over confidence |
+| High Zone% + high Strike% | Attacks the plate — K script more live; **outs overs OK** |
+| Zone% **&lt;~40–41** (soft / nibble) | **Outs over caution** — pitches burn without banking outs |
+| Zone% **≥~43** + clear/low risk | Outs over efficiency confirm |
+| Low Strike% + UNDER_OK stack | Soft K under OK |
+| Low Strike% + SPIKE/WHIFF | **Do not** auto K-under |
+
+**Outs efficiency (8/6 Young + Peterson — always apply on outs O/U):**
+- Soft Zone% + high pitches-per-out → shortens outs even when outing risk reads “low” (Young **13 outs / 98 pitches** vs ~17 proj).
+- **Outs over:** prefer GB length; on FLY/THIN_TOTAL require Zone% ≥~43 **or** ≥~3 outs of cushion vs line. Pass thin FLY O14.5-type spots when Zone% is soft.
+- **Cushion / recent form (Peterson):** if `short_recent_ip`, elev_bb, or Zone% ≲42, demand ~**2+ outs** of cushion vs the line. ~17.3 proj vs O16.5 (= ~0.8 edge) is **too thin** — he finished **15 outs / 5.0 IP**. Weight **L3 IP**, not only season proj.
+- **Outs under:** soft Zone% / medium-high risk / short recent IP **helps** the under (inefficiency = fewer outs). Still need line cushion; don’t fade chalk O0.5–O2.5 promos.
+- Promo chalk (O0.5 / O2.5 outs) = length not required — separate from full-outing outs overs.
+
+Command confirms the script. It does **not** create the K side.
+
+### Step 6 — Length & risk
+- Projected IP supports the line?
+- Outing risk / early-exit flags?
+- Exp K / proj outs vs line still has edge?
+- **Cam rule:** name/SPIKE juiced ~1.0–1.5 above Exp K → under can be live on AVG/SOFT.
+
+Short IP kills TRUST K overs and full-outing outs overs.
+
+### Step 7 — Pre-ticket checklist (all must pass — read before every fire)
+Use this as the comfort gate. If any box fails → **no ticket**.
+
+**Setup**
+- [ ] Board refreshed; line confirmed
+- [ ] **Official** nine (promo chalk O0.5 OK on prior only if starter confirmed)
+- [ ] **Starter** (not opener / swingman)
+
+**Side / lane**
+- [ ] Solo grade picks the K side (ELITE/STRONG over · SOFT under · AVG usually pass)
+- [ ] Chip does not veto (TRUST / THIN / UNDER_OK / SPIKE / MATCHUP_OK / FILLER)
+- [ ] Lane chosen: **Ks** or **outs** (not forcing the wrong prop)
+
+**Confirms**
+- [ ] STYLE fits the total (WHIFF→K juice OK · GB/FLY→thin K / outs lane)
+- [ ] Opp BIP agrees enough (whiff_prone helps K overs · contact_heavy helps unders)
+- [ ] Strike% / **Zone% efficiency** checked (soft Zone% → caution outs *overs*; can help outs *unders*)
+- [ ] IP / risk / proj outs support the **posted line** (cushion holds)
+
+**Card rules**
+- [ ] Default **2-leg**; no same-game opposing K overs
+- [ ] Arm on ≤2 tickets today; one nuke/chalk pair max
+- [ ] Comfortable saying the lean in one sentence — if not, pass
+
+### Where the edge is
+- **K over edge:** OFF + ELITE/STRONG + WHIFF + (TRUST or clear IP) + (whiff_prone **or** Strike% ≥~65)
+- **Attack-plate over pack (8/5 locked):** prefer arms that stack **ELITE/STRONG + WHIFF + Strike% ≥~65 / Zone% ≥~43** (Harrison 10, Rogers 9, Lopez 9, Skenes 6). Length still required (Detmers attack profile but 5 K / 4 IP). Skip THIN_TOTAL / MATCHUP_OK / BAL as nuke K overs even if Exp K is high.
+- **K under edge:** OFF + SOFT + UNDER_OK (≥2 of GB/FLY · contact_heavy · Exp K ≤~4.2) + not SPIKE · line needs real cushion (pass flat U4.0 when Exp ~3.5)
+- **Outs over edge (co-equal lane — 8/6 locked):** OFF + starter + projected IP holds (~≥5.5 → ~16.5+ outs) + outing risk **clear/low** + STYLE **GB/FLY** (or THIN_TOTAL / MATCHUP_OK / FILLER where Ks are the wrong prop) + **Zone% efficiency** (see Step 5). Length is the product — high risk / short IP / openers / soft-Zone% FLY = pass full-outing outs overs.
+- **Outs under edge:** short/high-risk or soft Zone% inefficiency + line cushion; not vs chalk promos.
+- **No edge (pass):** AVG mush on Ks · THIN_TOTAL *K nukes* · FILLER K overs · openers · SPIKE soft U6 · prior lineups (except tiny promo chalk) · outs overs on high-risk hooks · thin FLY outs overs with soft Zone%
+
+### Dual ticket lanes (Ks **or** outs)
+Every probable gets both reads. Chip decides the lane:
+| Chip / stack | K ticket | Outs ticket |
+|--------------|----------|-------------|
+| TRUST / attack-plate WHIFF | **K over** | usually pass (Ks are the product) |
+| THIN_TOTAL / FLY or GB + length + Zone% OK | thin K only | **outs over** preferred |
+| THIN_TOTAL / FLY + soft Zone% | thin K only | **pass** thin outs over (Young) |
+| MATCHUP_OK / FILLER + clear-low IP + Zone% OK | pass / O3.5 K | **outs over** if IP holds |
+| UNDER_OK | **K under** (line cushion) | outs under if short/high-risk or soft Zone% |
+| SPIKE soft solo | no soft K under | outs OK if length + efficiency clear |
+| Promo chalk O0.5 outs | — | **fire** if he starts (pair with real leg) |
+
+Pair across lanes freely (e.g. Ashcraft K over + Peterson outs over). Still default **2-leg**; no same-game opposing *K* overs.
+
+### Fast edge test
+> Solo says over or under → does STYLE allow that total → Ks or outs lane? → Zone% efficiency OK for outs? → does BIP agree → does the chip allow the ticket → does Strike%/IP support it?
+
+Any **no** → **no edge** → pass.
+
+### 8/5 attack-plate pack (remember for future cards)
+User target overs that fit the new lens: **Harrison / Rogers / Detmers / Skenes / Lopez**.
+Actuals: 10 / 9 / 5 / 6 / 9. Four clear cashes on soft O4.5+; Detmers only if line ≤4.5 (short IP). Use attack-plate as a **confidence boost** on next slates — not as a filter that drops STRONG/WHIFF/clear board answers (8/7 Messick lesson).
+
 ## Better tickets (habit)
 
-1. **Default = 2-leg.** One clear over + one clear under, or two UNDER_OK / two TRUST overs. No 6-legs.
-2. **Build from outlook chips, not Exp K rank.** Top of board ≠ best bet (Dobbins).
-3. **Pair opposite scripts:** TRUST over (WHIFF) + UNDER_OK under (GB + contact-heavy). Avoid same-game opposing K overs.
-4. **Line sizing:** overs need IP + trust; unders need confirms or U6.5+. Cam rule: if book juices name/SPIKE above Exp K by ~1.0–1.5 on AVG/SOFT, under is live.
-5. **Accuracy lock:** official nine · starter not opener · side matches solo grade · outlook doesn’t veto · edge still holds.
-6. **Cap:** any arm on ≤2 tickets; one nuke/chalk pair max per day.
+1. **Default = 2-leg.** K over + K under, or two K overs / two UNDER_OK. **No new outs legs while outs lane is paused (8/6).** No 6-legs.
+2. **Read the model answers, then size.** Start from board clears: solo grade + STYLE + outing risk + Exp K + outlook chip. Top of board ≠ auto-bet when the chip says THIN/FILLER (Dobbins) — but when chips **agree** with a top rank (Messick STRONG/WHIFF/clear), **take that lean**. Do not invent extra vetoes (soft Zone% alone, missing stuff bump) that demote a clear model answer under one prettier attack-plate stack.
+3. **Attack-plate is a boost, not the only door.** Pair board clears with independent chalk; never sole-nuke a medium/three-true “perfect” arm.
+4. **Pair opposite K scripts:** TRUST / board-clear over + UNDER_OK under. Avoid same-game opposing K overs.
+5. **Line sizing:** K overs need IP + trust; K unders need confirms or U6.5+. Cam rule: if book juices name/SPIKE above Exp K by ~1.0–1.5 on AVG/SOFT, K under is live. SPIKE promo overs OK as secondary legs.
+6. **Accuracy lock:** run the **Ticket lock routine** above — do not skip steps.
+7. **Cap:** any arm on ≤2 tickets; one nuke/chalk pair max per day.
 
 ## Core thesis — pitcher vs batter vulnerability first
 
@@ -266,6 +487,87 @@ Early Final: TEX@TB, KC@MIN, NYY@CWS, CHC@STL. Also Final: MIA@NYM (McLean/Pére
 3. **U4.5:** only if proj ≤ ~3.5 and non-SPIKE; otherwise **U5.5+**.
 4. **Same-game:** pitcher K over ↔ opposing bats for hits is fine; never pitcher K over + that team’s bats for hits vs him.
 5. Log misses into this file after each `backtest-YYYY-MM-DD.csv`.
+
+## 2026-08-06 early lessons (n=14 Final; 8 still live — full grade later)
+
+MAE ~**1.92**, bias **+0.34** (model slightly under). WHIFF arms ran hot; FLY/THIN K totals stayed soft.
+
+### Ticket scorecard (early)
+
+| Ticket | Result | Note |
+|--------|--------|------|
+| Young O14.5 outs + Ashcraft O4.5 K | **MISS** | Ashcraft **5 K HIT**; Young **13 outs** killed it |
+| Ashcraft O2.5 promo + Peterson O16.5 outs | **MISS** | Ashcraft **5 K HIT**; Peterson **15 outs** |
+| Buehler O0.5 outs + Miller O3.5 K | **on track** | Miller **5 K HIT**; Buehler **2 outs** (live chalk) |
+
+### What worked (keep)
+1. **K lane > outs lane** — every Ashcraft/Miller K leg cashed; both full-outing outs overs missed.
+2. **SPIKE veto** — McLean **8**, Sánchez **6**. Never soft-under those.
+3. **UNDER_OK** — Johnson **1**, Mikolas **1**.
+4. **THIN_TOTAL / MATCHUP_OK as K fade** — Young **4 K**, Abbott **4 K** (not nuke overs).
+5. **Attack-plate sizing** — Ashcraft/Miller O4.5 / O3.5 OK; do **not** juice Ashcraft to O5.5 (exactly 5).
+6. **Soft Zone% ≠ auto under** — Cease Z% 36 → **10 K**.
+
+### What failed (fix)
+1. **Full-outing outs overs** — Young/Peterson. “Low risk” + season IP proj lied; soft Zone% / `short_recent_ip` were the tells.
+2. **Pairing good K chalk with thin outs anchors** — tickets died on the outs leg.
+3. **Thin outs cushions** — O16.5 on ~17.3 proj (~0.8 edge) is not enough.
+
+### Improvements locked for next slate
+| Change | Rule |
+|--------|------|
+| **Outs paused** | No new pitcher outs tickets until explicitly reopened |
+| **K-only 2-legs** | Attack-plate / TRUST over + UNDER_OK under (or two K overs with real edge) |
+| **O5.5 bar** | Need Exp K ≥ ~6.3–6.5 **or** clear TRUST + length — Ashcraft 5.6→5 is the ceiling warning |
+| **Checklist first** | Official · solo · chip · STYLE · BIP · Strike%/Zone% · IP/line — pass if any box fails |
+| **Vs-hand opp K%** | Use as confirm (now on board); not a side flip alone |
+| **SPIKE / UNDER_OK** | Highest-confidence chip lanes today — size tickets from those first |
+
+Full final review + `backtest-2026-08-06.csv` after the last eight finish.
+
+## 2026-08-05 lessons (MAE ~2.21, n=23 Final scored; 6 still live at grade)
+
+First night with **TRUST / UNDER_OK / THIN_TOTAL** + new **Strike%/Zone%** on the board. Model **understated** Ks (bias **+1.01**); whiff_prone nines and several soft/SPIKE arms ran hot.
+
+| Solo grade | n | mean expK → act | Notes |
+|------------|---|-----------------|-------|
+| **ELITE** | 4 | 5.42 → **7.00** | Harrison **10**, Pérez **9**; Detmers TRUST 5 / 4 IP short; Whisenhunt 4 |
+| **STRONG** | 3 | 5.25 → **7.00** | Lopez **9**, Imanaga **6**; Skenes TRUST **6** (nail) |
+| **AVG** | 6 | 4.69 → 5.50 | Rogers **9**, Gray **8**, Scott **7**; Lauer FILLER **1** |
+| **SOFT** | 10 | 4.21 → 4.90 | Bibee FILLER **10**, Cameron **9**, Brown SPIKE **8**; UNDER_OK lane held |
+
+### Ticket leans (Final)
+
+| Lean | Actual | Result |
+|------|--------|--------|
+| **TRUST Detmers** | 5 K / 4 IP | Soft miss — mix OK, length died |
+| **TRUST Skenes** | **6 K** / 5 IP | **HIT** — chalk trust total |
+| **UNDER_OK Sugano / Lowder / Irvin** | 3 / 3 / 3 | **HIT** — all ≤ Exp K, contact-heavy soft |
+| **SPIKE Brown** (no soft U6) | **8 K** | Veto **correct** — soft under would have died |
+| **SPIKE Burke** | 4 K | Soft side OK; SPIKE still right to block auto-U6 |
+| **FILLER Bibee** | **10 K** | Never soft-under FILLER; never K-over anchor |
+| **ELITE Harrison** (thin IP ~4.6) | **10 K** / 5 IP | Volume spike — Strike% 66.5 confirmed attack |
+
+### Strike% / Zone% (new layer) — did it help?
+
+Raw corr vs actual Ks was near **zero** alone (Strike% +0.07, Zone% +0.00) — **not a solo predictor**. Useful as **command confirm on WHIFF / over scripts**:
+
+| Stack | Read from 8/5 |
+|-------|----------------|
+| **WHIFF + Strike% ≥65** | Harrison 10, Detmers 5 (short), Burke 4 — ceiling live when SPIKE/ELITE; length still required |
+| **High Strike% + Zone% (attack plate)** | Rogers 68.6/44.4 → **9**; Harrison 66.5/42.8 → **10** — home-plate attack helped K conversion |
+| **Low Strike% ≠ auto under** | Brown **59.6** Zone 37.6 → **8** (SPIKE/WHIFF); Lopez **60.3** → **9** |
+| **UNDER_OK + low-mid Strike%** | Sugano/Lowder/Irvin ~61–62.5 → all **3 K** — command soft + contact-heavy stacked |
+
+**Process add:** after solo → STYLE → BIP, glance **Strike%/Zone%**. If WHIFF/TRUST over and Strike% ≥ ~65 (slate avg was **64.0%**), trust the K script more. If Strike% is soft, do **not** flip a SPIKE/WHIFF arm to under — use it only to size UNDER_OK / pass juiced overs on nibble arms.
+
+### Reinforced
+
+1. **TRUST** works when IP holds (Skenes); short outing kills Detmers-tier totals.
+2. **UNDER_OK** 3/3 — keep as preferred soft-under badge.
+3. **SPIKE veto** on Brown saved the soft-under trap.
+4. **FILLER can spike** (Bibee 10) — pass both K overs and soft unders.
+5. **Strike%/Zone% = confirm, not side** — attack-the-plate helps WHIFF overs; does not invent unders.
 
 ## 2026-08-04 lessons (MAE ~1.61, n=24 Final; 6 still live at grade)
 

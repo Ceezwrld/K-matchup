@@ -839,7 +839,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         "<p class='hint'>"
         "Pitch header chips are green/amber/red by whether the number helps the "
         "pitcher: <strong>overall</strong> (featured vs sparse) · "
-        "<strong>vs L / vs R</strong> (platoon usage weight; L amber edge / R green edge) · "
+        "<strong>vs L / vs R</strong> (platoon usage weight) · "
         "<strong>whiff</strong> (miss%) · <strong>velo</strong> (FB heat only) · "
         "<strong>lineup avg</strong> (K% vs this pitch). "
         "Open a pitch for each batter’s K% — same green = helps pitcher / "

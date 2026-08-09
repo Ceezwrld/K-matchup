@@ -14,6 +14,36 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
+## 2026-08-08 grade — board clears cashed; under lane mixed
+
+Full slate in `backtest-2026-08-08.csv` (n=29 scored, mean Exp K 4.81 → act 4.83, bias **+0.02**).
+
+### Ticket leans
+| Leg | Actual | Result | Break |
+|-----|--------|--------|-------|
+| **Sale oK** (ELITE/WHIFF/clear Exp ~7.8) | **8 K / 6.0 IP** | **HIT** O4.5/O5.5 | Board clear + attack-plate — trusted correctly |
+| **Williams oK** (STRONG/WHIFF/low Exp ~7.1) | **7 K / 5.7 IP** | **HIT** O4.5/O5.5 | #2 clear; three-true sizing OK |
+| **Burns oK** (STRONG/WHIFF/clear Exp ~5.4) | **6 K / 5.3 IP** | **HIT** O4.5/O5.5 | Cleanest risk over on the card |
+| **deGrom oK** (ELITE/WHIFF/low Exp ~6.5) | **9 K / 5.0 IP** | **HIT** O4.5/O5.5 | Zone soft didn’t kill the script |
+| **Nola U6.5** (UNDER_OK OFF Exp ~3.5) | **8 K / 5.0 IP** | **MISS** | Soft+BAL UNDER_OK without GB/FLY — spike killed preferred multis |
+| **Gasser U6.5** (UNDER_OK) | **3 K / 4.7 IP** | **HIT** | FLY + contact-heavy confirm held |
+| **Pfaadt U6.5** (UNDER_OK) | **2 K / 7.0 IP** | **HIT** | GB + contact-heavy + length |
+| **Kirby U6.5** (prior most of day) | **1 K / 4.0 IP** | would HIT | Short outing; under still cashed |
+| Alvarez / Liberatore thin O3.5 | 2 / 3 K | **MISS** | ELITE/**BAL**/medium — THIN_TOTAL caution was right; even O3.5 failed |
+
+### Pattern
+1. **Trust-the-board (8/7) validated** — WHIFF clears Sale/Williams/Burns/deGrom all cashed soft O4.5+. Style bucket: **whiff 6.12→8.14** vs **balanced 4.44→4.06**.
+2. **Preferred multi died on Nola** — Burns/Williams overs were right; UNDER_OK without GB/FLY (soft+BAL+contact-heavy only) spiked. Gasser/Pfaadt were the safer under legs.
+3. **ELITE+BAL ≠ ELITE+WHIFF** — Alvarez 2 / Liberatore 3 with length still there = script collapse on BIP styles, not hooks.
+4. **Jump 11 K** (ELITE/WHIFF/medium) — medium short-IP lean can still spike; floor O3.5 was process-correct sizing, not a veto on the side.
+5. **Cole 9 K** as AVG/WHIFF pass — left money, but early OFF contact-heavy read correctly blocked him as Tier 1 co-anchor.
+
+### Process updates from 8/8
+- Prefer UNDER_OK legs that include **GB/FLY style** (Gasser/Pfaadt), not only contact-heavy + low Exp on **BAL** soft (Nola).
+- Keep pairing board-clear WHIFF overs; do not sole-nuke three-true anchors.
+- ELITE/STRONG + **BAL** → pass juiced totals; O3.5 still optional only — tonight even that missed.
+- WHIFF board clears with clear/low risk remain the primary over edge.
+
 ## 2026-08-07 grade — what went wrong
 
 Full slate in `backtest-2026-08-07.csv` (n=30, mean Exp K 4.43 → act 4.60, bias +0.17).

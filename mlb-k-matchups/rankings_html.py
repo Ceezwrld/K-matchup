@@ -2139,12 +2139,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: #4a554e;
     border-color: #b7c0bb;
   }
-  /* Platoon usage chips keep good/bad fill + L/R edge for separation */
-  .pitch-stack .pmeta .rate-chip.hand-l {
-    box-shadow: inset 3px 0 0 #c47a1a;
-  }
+  /* No L/R edge tint — chips stay a single good/bad fill color */
+  .pitch-stack .pmeta .rate-chip.hand-l,
   .pitch-stack .pmeta .rate-chip.hand-r {
-    box-shadow: inset 3px 0 0 #0f6a4d;
+    box-shadow: none;
   }
   .sub { color: var(--muted); font-size: 0.8rem; margin-top: 0.12rem; }
   .game {

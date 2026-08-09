@@ -344,11 +344,12 @@ def _hand_side_class(code: Any) -> str:
 
 
 def _hand_chip_html(code: Any, role: str, *, title: str = "") -> str:
-    """Colored LHB/RHB (or LHP/RHP) chip for arsenal / lineup separation."""
+    """Hand chip — colored for pitchers (LHP/RHP); plain for batters (LHB/RHB)."""
     label = _hand_label(code, role)
     if not label:
         return ""
-    side = _hand_side_class(code)
+    # Color only pitcher hands; batter LHB/RHB stay neutral.
+    side = _hand_side_class(code) if role == "P" else ""
     tip = title or (
         "Left-handed batter"
         if label == "LHB"

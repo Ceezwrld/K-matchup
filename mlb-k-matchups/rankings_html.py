@@ -2109,6 +2109,35 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .pitch-stack .pmeta .rate-chip {
     margin: 0;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.55rem;
+  }
+  /* Stronger fills in Arsenal headers so good/bad reads on htmlpreview */
+  .pitch-stack .pmeta .rate-chip.grade-elite {
+    background: #c8ebd9;
+    color: #064832;
+    border-color: #2f8a5f;
+  }
+  .pitch-stack .pmeta .rate-chip.grade-high {
+    background: #d9f0e4;
+    color: #0f6a4d;
+    border-color: #4a9a72;
+  }
+  .pitch-stack .pmeta .rate-chip.grade-mid {
+    background: #f3e0c4;
+    color: #8a4b0f;
+    border-color: #c47a1a;
+  }
+  .pitch-stack .pmeta .rate-chip.grade-low {
+    background: #f0d0d0;
+    color: #8c2828;
+    border-color: #c45a5a;
+  }
+  .pitch-stack .pmeta .rate-chip.rate-na,
+  .pitch-stack .pmeta .rate-chip:not([class*="grade-"]) {
+    background: #e8ebe9;
+    color: #4a554e;
+    border-color: #b7c0bb;
   }
   /* Platoon usage chips keep good/bad fill + L/R edge for separation */
   .pitch-stack .pmeta .rate-chip.hand-l {

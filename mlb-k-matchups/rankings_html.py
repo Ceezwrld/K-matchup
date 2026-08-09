@@ -776,6 +776,38 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
                 ),
             )
         )
+        # Trial: pitcher arsenal usage vs LHB/RHB (season mix) — separate from vs L/R K%.
+        usage_l = p.get("usage_vs_lhb")
+        usage_r = p.get("usage_vs_rhb")
+        if usage_l is not None or usage_r is not None:
+            meta_chips.append(
+                _rate_chip(
+                    "use L",
+                    usage_l,
+                    "pitch_usage_vs_hand",
+                    0,
+                    suffix="%",
+                    extra_class="hand-l",
+                    title=(
+                        "Pitcher's usage of this pitch vs LHB (season mix) — "
+                        "green = throws it a lot to lefties. Not lineup K%."
+                    ),
+                )
+            )
+            meta_chips.append(
+                _rate_chip(
+                    "use R",
+                    usage_r,
+                    "pitch_usage_vs_hand",
+                    0,
+                    suffix="%",
+                    extra_class="hand-r",
+                    title=(
+                        "Pitcher's usage of this pitch vs RHB (season mix) — "
+                        "green = throws it a lot to righties. Not lineup K%."
+                    ),
+                )
+            )
         p_whiff = p.get("pitcher_whiff_pct")
         p_velo = p.get("pitcher_velo")
         if p_whiff is not None:
@@ -884,7 +916,9 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         "Pitch header chips are green/amber/red by whether the number helps the "
         "pitcher: <strong>overall</strong> (featured vs sparse) · "
         "<strong>vs L / vs R</strong> (this opposing lineup’s LHB/RHB K% vs this "
-        "pitch only — not pitcher season stats; green helps pitcher) · "
+        "pitch — green helps pitcher) · "
+        "<strong>use L / use R</strong> (pitcher’s season usage vs that hand — "
+        "green = throws it more; trial chips) · "
         "<strong>whiff</strong> (miss%) · <strong>velo</strong> (FB heat only) · "
         "<strong>lineup avg</strong> (K% vs this pitch). "
         "Open a pitch for each batter’s K% — same green = helps pitcher / "

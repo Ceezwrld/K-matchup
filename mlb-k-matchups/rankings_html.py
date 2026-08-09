@@ -151,6 +151,9 @@ def _grade_for(metric: str, value: Any) -> str | None:
         return _grade_band(value, 2.2, 2.6, 3.0)
     if metric == "batter_k_pct":
         return _grade_band(value, 15.0, 20.0, 25.0)
+    if metric == "pitch_usage_vs_hand":
+        # Platoon usage share for a pitch — high = that hand sees it a lot
+        return _grade_band(value, 20.0, 35.0, 50.0)
     # Arsenal matchup strip
     if metric in ("arsenal_vs_league", "arsenal_vs_opp"):
         # Signed edges vs league / vs opp K% — positive helps overs
@@ -302,6 +305,43 @@ def _hand_label(code: Any, role: str) -> str:
     if c == "S":
         return "SHB"
     return f"{c}HB"
+
+
+def _hand_side_class(code: Any) -> str:
+    """CSS side class for L/R/S hand chips (green / amber / muted)."""
+    c = str(code or "").upper()
+    if c == "L":
+        return "hand-l"
+    if c == "R":
+        return "hand-r"
+    if c == "S":
+        return "hand-s"
+    return ""
+
+
+def _hand_chip_html(code: Any, role: str, *, title: str = "") -> str:
+    """Colored LHB/RHB (or LHP/RHP) chip for arsenal / lineup separation."""
+    label = _hand_label(code, role)
+    if not label:
+        return ""
+    side = _hand_side_class(code)
+    tip = title or (
+        "Left-handed batter"
+        if label == "LHB"
+        else "Right-handed batter"
+        if label == "RHB"
+        else "Switch-hitter"
+        if label == "SHB"
+        else "Left-handed pitcher"
+        if label == "LHP"
+        else "Right-handed pitcher"
+        if label == "RHP"
+        else "Handedness"
+    )
+    cls = f"hand {side}".strip()
+    return (
+        f" <span class='{cls}' title='{_esc(tip)}'>{_esc(label)}</span>"
+    )
 
 
 def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
@@ -643,11 +683,27 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         )
         vs_l = p.get("usage_vs_lhb")
         vs_r = p.get("usage_vs_rhb")
-        hand_txt = ""
+        hand_chips = ""
         if vs_l is not None or vs_r is not None:
-            hand_txt = (
-                f" · vs L {_fmt(vs_l, 0) if vs_l is not None else '—'}%"
-                f" / vs R {_fmt(vs_r, 0) if vs_r is not None else '—'}%"
+            hand_chips = (
+                " "
+                + _rate_chip(
+                    "vs LHB",
+                    vs_l,
+                    "pitch_usage_vs_hand",
+                    0,
+                    suffix="%",
+                    title="Pitch usage vs left-handed batters — green = throws it a lot to LHB",
+                )
+                + " "
+                + _rate_chip(
+                    "vs RHB",
+                    vs_r,
+                    "pitch_usage_vs_hand",
+                    0,
+                    suffix="%",
+                    title="Pitch usage vs right-handed batters — green = throws it a lot to RHB",
+                )
             )
         stuff_txt = ""
         p_whiff = p.get("pitcher_whiff_pct")
@@ -663,8 +719,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
 
         rows_html: list[str] = []
         for b in batters:
-            side = _hand_label(b.get("bat_side"), "B")
-            side_html = f" <span class='hand'>{_esc(side)}</span>" if side else ""
+            side_html = _hand_chip_html(b.get("bat_side"), "B")
             hit = next(
                 (x for x in (b.get("pitches") or []) if x.get("pitch_type") == pt),
                 {},
@@ -712,7 +767,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             "<summary>"
             f"<span class='pname'>{_esc(pname)}</span>"
             f"<span class='pmeta'>{_fmt(p.get('usage_pct'), 1)}% overall"
-            f"{_esc(hand_txt)}{stuff_txt} · {avg_html}</span>"
+            f"{hand_chips}{stuff_txt} · {avg_html}</span>"
             "</summary>"
             f"<div class='pitch-list'>{''.join(rows_html)}</div>"
             "</details>"
@@ -726,6 +781,9 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         "<strong>Green</strong> = high K% (helps the pitcher) · "
         "<strong class='hint-amber'>amber</strong> = medium · "
         "<strong class='hint-red'>red</strong> = low K% (helps the batters). "
+        "<span class='hand hand-l'>LHB</span> amber · "
+        "<span class='hand hand-r'>RHB</span> green for hand separation; "
+        "vs LHB / vs RHB chips use the same green/amber/red scale for usage share. "
         "Rates prefer true K% vs this pitcher’s hand when sample ≥15 PA; "
         "else overall pitch K%; "
         "<code>†</code> = same-handed league average. "
@@ -744,8 +802,7 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
         k_raw = None if miss else b.get("expected_k_pct")
         k = "n/a" if miss else f"{_fmt(k_raw, 1)}%"
         k_grade = "" if miss else _grade_class("batter_k_pct", k_raw)
-        side = _hand_label(b.get("bat_side"), "B")
-        side_html = f" <span class='hand'>{_esc(side)}</span>" if side else ""
+        side_html = _hand_chip_html(b.get("bat_side"), "B")
         hits = b.get("hits_score")
         hits_html = ""
         if hits is not None:
@@ -826,9 +883,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     status = row.get("status") or ""
     scored = status == "ok" and row.get("expected_ks") is not None
     pitcher_hand = _hand_label(row.get("pitch_hand"), "P")
-    hand_html = (
-        f" <span class='hand'>{_esc(pitcher_hand)}</span>" if pitcher_hand else ""
-    )
+    hand_html = _hand_chip_html(row.get("pitch_hand"), "P")
     outlook = (row.get("ticket_outlook") or "").strip()
     search = " ".join(
         str(x)
@@ -1970,6 +2025,31 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-weight: 700;
     letter-spacing: 0.02em;
     vertical-align: middle;
+  }
+  /* Arsenal / lineup hand separation — L amber · R green · S muted */
+  .hand.hand-l {
+    background: rgba(154, 91, 18, 0.14);
+    border-color: rgba(154, 91, 18, 0.35);
+    color: #8a4b0f;
+  }
+  .hand.hand-r {
+    background: rgba(15, 106, 77, 0.14);
+    border-color: rgba(15, 106, 77, 0.32);
+    color: #0f6a4d;
+  }
+  .hand.hand-s {
+    background: rgba(20, 32, 26, 0.08);
+    border-color: rgba(20, 32, 26, 0.18);
+    color: var(--muted);
+  }
+  .pitch-stack .pmeta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.35rem;
+  }
+  .pitch-stack .pmeta .rate-chip {
+    margin: 0;
   }
   .sub { color: var(--muted); font-size: 0.8rem; margin-top: 0.12rem; }
   .game {

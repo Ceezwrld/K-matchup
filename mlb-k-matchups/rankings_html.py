@@ -268,6 +268,31 @@ def _is_fastball_pitch(pitch_type: Any, pitch_name: Any = None) -> bool:
     return any(tok in name for tok in ("4-seam", "four-seam", "sinker", "cutter", "fastball"))
 
 
+def _lineup_pitch_k_by_hand(
+    batters: list[dict[str, Any]], pitch_type: Any, bat_side: str
+) -> float | None:
+    """Mean K% vs one pitch for lineup batters of a given stand (L or R)."""
+    side = str(bat_side or "").upper()
+    vals: list[float] = []
+    for b in batters:
+        if str(b.get("bat_side") or "").upper() != side:
+            continue
+        hit = next(
+            (x for x in (b.get("pitches") or []) if x.get("pitch_type") == pitch_type),
+            {},
+        )
+        k = hit.get("k_percent")
+        if k is None:
+            continue
+        try:
+            vals.append(float(k))
+        except (TypeError, ValueError):
+            continue
+    if not vals:
+        return None
+    return sum(vals) / len(vals)
+
+
 def _band_chip(label: str, band: str | None, *, title: str = "", value: str = "") -> str:
     """Colored pill from an explicit band (elite/high/mid/low)."""
     cls = f"rate-chip grade-{band}" if band else "rate-chip rate-na"
@@ -708,29 +733,41 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
                 title="Pitch usage overall — green = featured pitch, red = sparse",
             )
         ]
-        vs_l = p.get("usage_vs_lhb")
-        vs_r = p.get("usage_vs_rhb")
-        if vs_l is not None or vs_r is not None:
+        # Trial: vs L / vs R = lineup K% production by batter hand (not usage).
+        # Usage stays in the tooltip; revert to pitch_usage_vs_hand if disliked.
+        k_vs_l = _lineup_pitch_k_by_hand(batters, pt, "L")
+        k_vs_r = _lineup_pitch_k_by_hand(batters, pt, "R")
+        usage_l = p.get("usage_vs_lhb")
+        usage_r = p.get("usage_vs_rhb")
+        if k_vs_l is not None or k_vs_r is not None or usage_l is not None or usage_r is not None:
+            usage_l_txt = _fmt(usage_l, 0)
+            usage_r_txt = _fmt(usage_r, 0)
             meta_chips.append(
                 _rate_chip(
                     "vs L",
-                    vs_l,
-                    "pitch_usage_vs_hand",
-                    0,
+                    k_vs_l,
+                    "batter_k_pct",
+                    1,
                     suffix="%",
                     extra_class="hand-l",
-                    title="Usage vs LHB — green = throws it a lot to lefties (platoon weight)",
+                    title=(
+                        "Lineup LHB K% vs this pitch — green helps pitcher, red helps bats"
+                        f" (usage vs LHB {usage_l_txt}%)"
+                    ),
                 )
             )
             meta_chips.append(
                 _rate_chip(
                     "vs R",
-                    vs_r,
-                    "pitch_usage_vs_hand",
-                    0,
+                    k_vs_r,
+                    "batter_k_pct",
+                    1,
                     suffix="%",
                     extra_class="hand-r",
-                    title="Usage vs RHB — green = throws it a lot to righties (platoon weight)",
+                    title=(
+                        "Lineup RHB K% vs this pitch — green helps pitcher, red helps bats"
+                        f" (usage vs RHB {usage_r_txt}%)"
+                    ),
                 )
             )
         p_whiff = p.get("pitcher_whiff_pct")
@@ -840,7 +877,8 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         "<p class='hint'>"
         "Pitch header chips are green/amber/red by whether the number helps the "
         "pitcher: <strong>overall</strong> (featured vs sparse) · "
-        "<strong>vs L / vs R</strong> (platoon usage weight) · "
+        "<strong>vs L / vs R</strong> (lineup K% vs this pitch by batter hand — "
+        "green helps pitcher; hover for usage%) · "
         "<strong>whiff</strong> (miss%) · <strong>velo</strong> (FB heat only) · "
         "<strong>lineup avg</strong> (K% vs this pitch). "
         "Open a pitch for each batter’s K% — same green = helps pitcher / "

@@ -151,9 +151,21 @@ def _grade_for(metric: str, value: Any) -> str | None:
         return _grade_band(value, 2.2, 2.6, 3.0)
     if metric == "batter_k_pct":
         return _grade_band(value, 15.0, 20.0, 25.0)
+    if metric == "pitch_usage_pct":
+        # Featured pitch weight — higher = more of the outing / more trustworthy
+        return _grade_band(value, 12.0, 20.0, 30.0)
     if metric == "pitch_usage_vs_hand":
         # Platoon usage share for a pitch — high = that hand sees it a lot
         return _grade_band(value, 20.0, 35.0, 50.0)
+    if metric == "pitch_whiff_pct":
+        # Per-pitch pitcher whiff — high helps Ks (good)
+        return _grade_band(value, 18.0, 26.0, 34.0)
+    if metric == "pitch_velo_fb":
+        # Fastball velo — higher = better stuff ceiling
+        return _grade_band(value, 92.0, 94.5, 96.5)
+    if metric == "pitch_velo_offspeed":
+        # Offspeed/breaking velo is not a good/bad K signal — leave ungraded
+        return None
     # Arsenal matchup strip
     if metric in ("arsenal_vs_league", "arsenal_vs_opp"):
         # Signed edges vs league / vs opp K% — positive helps overs
@@ -225,16 +237,18 @@ def _rate_chip(
     suffix: str = "",
     title: str = "",
     signed: bool = False,
+    extra_class: str = "",
 ) -> str:
     """Colored pill for one Rates / form / arsenal matchup stat."""
     band = _grade_for(metric, value)
     shown = _fmt(value, digits, signed=signed)
+    extra = f" {extra_class.strip()}" if extra_class else ""
     if shown == "—":
         return (
-            f"<span class='rate-chip rate-na' title='{_esc(title or label)}'>"
+            f"<span class='rate-chip rate-na{extra}' title='{_esc(title or label)}'>"
             f"{_esc(label)} —</span>"
         )
-    cls = f"rate-chip grade-{band}" if band else "rate-chip"
+    cls = f"rate-chip grade-{band}{extra}" if band else f"rate-chip{extra}"
     tip = title or label
     return (
         f"<span class='{cls}' title='{_esc(tip)}'>"
@@ -242,6 +256,16 @@ def _rate_chip(
         f"<span class='rate-val'>{_esc(shown)}{_esc(suffix)}</span>"
         f"</span>"
     )
+
+
+def _is_fastball_pitch(pitch_type: Any, pitch_name: Any = None) -> bool:
+    pt = str(pitch_type or "").upper()
+    if pt in {"FF", "FA", "SI", "FC", "FT"}:
+        return True
+    if pt in {"FS", "CH", "CU", "SL", "ST", "SV", "KC", "EP", "SC"}:
+        return False
+    name = str(pitch_name or "").lower()
+    return any(tok in name for tok in ("4-seam", "four-seam", "sinker", "cutter", "fastball"))
 
 
 def _band_chip(label: str, band: str | None, *, title: str = "", value: str = "") -> str:
@@ -672,49 +696,85 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         pt = p.get("pitch_type")
         pname = p.get("pitch_name") or pt
         avg_k = p.get("lineup_k_pct")
-        avg_grade = _grade_class("batter_k_pct", avg_k)
-        avg_html = (
-            f"<span class='kchip{avg_grade}' title='"
-            "Lineup-average K% vs this pitch — green helps the pitcher, "
-            "red helps the batters, amber is medium'>"
-            f"{_fmt(avg_k, 1)}% lineup avg</span>"
-            if avg_k is not None
-            else "<span class='kchip rate-na'>no lineup avg</span>"
-        )
+        # Full pitch-header line as green/amber/red chips (good vs bad).
+        meta_chips: list[str] = [
+            _rate_chip(
+                "overall",
+                p.get("usage_pct"),
+                "pitch_usage_pct",
+                1,
+                suffix="%",
+                title="Pitch usage overall — green = featured pitch, red = sparse",
+            )
+        ]
         vs_l = p.get("usage_vs_lhb")
         vs_r = p.get("usage_vs_rhb")
-        hand_chips = ""
         if vs_l is not None or vs_r is not None:
-            hand_chips = (
-                " "
-                + _rate_chip(
-                    "vs LHB",
+            meta_chips.append(
+                _rate_chip(
+                    "vs L",
                     vs_l,
                     "pitch_usage_vs_hand",
                     0,
                     suffix="%",
-                    title="Pitch usage vs left-handed batters — green = throws it a lot to LHB",
+                    extra_class="hand-l",
+                    title="Usage vs LHB — green = throws it a lot to lefties (platoon weight)",
                 )
-                + " "
-                + _rate_chip(
-                    "vs RHB",
+            )
+            meta_chips.append(
+                _rate_chip(
+                    "vs R",
                     vs_r,
                     "pitch_usage_vs_hand",
                     0,
                     suffix="%",
-                    title="Pitch usage vs right-handed batters — green = throws it a lot to RHB",
+                    extra_class="hand-r",
+                    title="Usage vs RHB — green = throws it a lot to righties (platoon weight)",
                 )
             )
-        stuff_txt = ""
         p_whiff = p.get("pitcher_whiff_pct")
         p_velo = p.get("pitcher_velo")
-        if p_whiff is not None or p_velo is not None:
-            bits = []
-            if p_whiff is not None:
-                bits.append(f"his whiff {_fmt(p_whiff, 1)}%")
-            if p_velo is not None:
-                bits.append(f"{_fmt(p_velo, 1)} mph")
-            stuff_txt = " · " + " · ".join(bits)
+        if p_whiff is not None:
+            meta_chips.append(
+                _rate_chip(
+                    "whiff",
+                    p_whiff,
+                    "pitch_whiff_pct",
+                    1,
+                    suffix="%",
+                    title="Pitcher's whiff% on this pitch — green = miss / K helper, red = soft",
+                )
+            )
+        if p_velo is not None:
+            velo_metric = (
+                "pitch_velo_fb"
+                if _is_fastball_pitch(pt, pname)
+                else "pitch_velo_offspeed"
+            )
+            meta_chips.append(
+                _rate_chip(
+                    "velo",
+                    p_velo,
+                    velo_metric,
+                    1,
+                    suffix=" mph",
+                    title=(
+                        "Fastball velo — green = plus heat"
+                        if velo_metric == "pitch_velo_fb"
+                        else "Offspeed/breaking velo (informational — not a good/bad K grade)"
+                    ),
+                )
+            )
+        meta_chips.append(
+            _rate_chip(
+                "lineup avg",
+                avg_k,
+                "batter_k_pct",
+                1,
+                suffix="%",
+                title="Lineup-average K% vs this pitch — green helps the pitcher, red helps the batters",
+            )
+        )
         open_attr = " open" if i == 0 else ""
 
         rows_html: list[str] = []
@@ -751,6 +811,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             )
 
         width_avg = 0 if avg_k is None else max(4, min(100, float(avg_k)))
+        avg_grade = _grade_class("batter_k_pct", avg_k)
         rows_html.append(
             "<div class='pitch-row avg'>"
             "<div class='who'><span class='name'>Lineup avg</span></div>"
@@ -766,8 +827,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             f"<details class='pitch-block'{open_attr}>"
             "<summary>"
             f"<span class='pname'>{_esc(pname)}</span>"
-            f"<span class='pmeta'>{_fmt(p.get('usage_pct'), 1)}% overall"
-            f"{hand_chips}{stuff_txt} · {avg_html}</span>"
+            f"<span class='pmeta'>{''.join(meta_chips)}</span>"
             "</summary>"
             f"<div class='pitch-list'>{''.join(rows_html)}</div>"
             "</details>"
@@ -777,18 +837,17 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         "<div class='pitch-stack'>"
         f"{''.join(blocks)}"
         "<p class='hint'>"
-        "Open a pitch to see each batter’s K% vs that pitch. "
-        "<strong>Green</strong> = high K% (helps the pitcher) · "
-        "<strong class='hint-amber'>amber</strong> = medium · "
-        "<strong class='hint-red'>red</strong> = low K% (helps the batters). "
-        "<span class='hand hand-l'>LHB</span> amber · "
-        "<span class='hand hand-r'>RHB</span> green for hand separation; "
-        "vs LHB / vs RHB chips use the same green/amber/red scale for usage share. "
+        "Pitch header chips are green/amber/red by whether the number helps the "
+        "pitcher: <strong>overall</strong> (featured vs sparse) · "
+        "<strong>vs L / vs R</strong> (platoon usage weight; L amber edge / R green edge) · "
+        "<strong>whiff</strong> (miss%) · <strong>velo</strong> (FB heat only) · "
+        "<strong>lineup avg</strong> (K% vs this pitch). "
+        "Open a pitch for each batter’s K% — same green = helps pitcher / "
+        "<strong class='hint-red'>red</strong> = helps batters scale. "
         "Rates prefer true K% vs this pitcher’s hand when sample ≥15 PA; "
         "else overall pitch K%; "
         "<code>†</code> = same-handed league average. "
-        "Pitcher <em>his whiff / mph</em> is own-stuff (ceiling) — "
-        "does not change Exp K."
+        "Whiff / velo are own-stuff ceiling — do not change Exp K."
         "</p>"
         "</div>"
     )
@@ -2046,10 +2105,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.25rem 0.35rem;
+    gap: 0.28rem 0.35rem;
   }
   .pitch-stack .pmeta .rate-chip {
     margin: 0;
+  }
+  /* Platoon usage chips keep good/bad fill + L/R edge for separation */
+  .pitch-stack .pmeta .rate-chip.hand-l {
+    box-shadow: inset 3px 0 0 #c47a1a;
+  }
+  .pitch-stack .pmeta .rate-chip.hand-r {
+    box-shadow: inset 3px 0 0 #0f6a4d;
   }
   .sub { color: var(--muted); font-size: 0.8rem; margin-top: 0.12rem; }
   .game {

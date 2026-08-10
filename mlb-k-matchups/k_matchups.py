@@ -1575,6 +1575,7 @@ def main(argv: list[str] | None = None) -> int:
             "xfip": risk_metrics.get("xfip"),
             "pitcher_k_pct": risk_metrics.get("pitcher_k_pct"),
             "pitcher_contact_pct": risk_metrics.get("pitcher_contact_pct"),
+            "z_contact_pct": risk_metrics.get("z_contact_pct"),
             "pitcher_gb_pct": risk_metrics.get("pitcher_gb_pct"),
             "pitcher_fb_pct": risk_metrics.get("pitcher_fb_pct"),
             "pitcher_iffb_pct": risk_metrics.get("pitcher_iffb_pct"),

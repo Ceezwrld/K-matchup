@@ -218,6 +218,10 @@ def _grade_for(metric: str, value: Any) -> str | None:
     if metric == "pitcher_contact_pct":
         # Lower contact% = more whiff
         return _grade_band_desc(value, 72.0, 76.0, 80.0)
+    if metric == "z_contact_pct":
+        # In-zone contact allowed — lower = zone whiff (helps K overs)
+        # League Z-Contact% typically ~80–83 for pitchers.
+        return _grade_band_desc(value, 76.0, 80.0, 83.0)
     if metric == "stuff_whiff_pct":
         return _grade_band(value, 20.0, 24.0, 28.0)
     return None
@@ -612,6 +616,7 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "spike_flags": r.get("spike_flags") or "",
                 "pitcher_k_pct": _json_safe(r.get("pitcher_k_pct")),
                 "pitcher_contact_pct": _json_safe(r.get("pitcher_contact_pct")),
+                "z_contact_pct": _json_safe(r.get("z_contact_pct")),
                 "pitcher_gb_pct": _json_safe(r.get("pitcher_gb_pct")),
                 "pitcher_fb_pct": _json_safe(r.get("pitcher_fb_pct")),
                 "pitcher_iffb_pct": _json_safe(r.get("pitcher_iffb_pct")),
@@ -1265,6 +1270,19 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
                 "zone_pct",
                 1,
                 title="In-zone rate · ≥~43 with high Strike% = attacks the plate",
+            )
+        )
+    if row.get("z_contact_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "Z-Contact%",
+                row.get("z_contact_pct"),
+                "z_contact_pct",
+                1,
+                title=(
+                    "In-zone contact allowed (FanGraphs Z-Contact%) — "
+                    "lower = zone whiff / K confirm; Rates confirm only"
+                ),
             )
         )
     if row.get("swstr_pct") is not None:

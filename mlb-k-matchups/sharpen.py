@@ -1165,7 +1165,7 @@ def _fg_pct(value: Any) -> float:
 def fetch_fangraphs_pitching(
     year: int, verbose: bool, log: Callable[[bool, str], None]
 ) -> dict[int, dict[str, float]]:
-    """xFIP / rates / contact profile (K%, Contact%, GB%, FB%, IFFB%) by MLBAM id."""
+    """xFIP / rates / contact profile (K%, Contact%, Z-Contact%, GB%, FB%, IFFB%) by MLBAM id."""
     url = FANGRAPHS_PITCHING_URL.format(year=year)
     try:
         payload = _get(url, verbose, log).json()
@@ -1186,6 +1186,7 @@ def fetch_fangraphs_pitching(
                 "k9": float(row["K/9"]) if row.get("K/9") is not None else float("nan"),
                 "pitcher_k_pct": _fg_pct(row.get("K%")),
                 "pitcher_contact_pct": _fg_pct(row.get("Contact%")),
+                "z_contact_pct": _fg_pct(row.get("Z-Contact%")),
                 "pitcher_gb_pct": _fg_pct(row.get("GB%")),
                 "pitcher_fb_pct": _fg_pct(row.get("FB%")),
                 "pitcher_iffb_pct": _fg_pct(row.get("IFFB%")),
@@ -1260,6 +1261,7 @@ def fetch_pitcher_rate_stats(
                     "pitcher_gb_pct": (100.0 * go / bip_outs) if bip_outs > 0 else float("nan"),
                     "pitcher_fb_pct": (100.0 * ao / bip_outs) if bip_outs > 0 else float("nan"),
                     "pitcher_contact_pct": float("nan"),
+                    "z_contact_pct": float("nan"),
                     "pitcher_iffb_pct": float("nan"),
                     "pitcher_soft_pct": float("nan"),
                     "swstr_pct": float("nan"),
@@ -1363,6 +1365,7 @@ def merge_risk_metrics(
         "xfip": None,
         "pitcher_k_pct": None,
         "pitcher_contact_pct": None,
+        "z_contact_pct": None,
         "pitcher_gb_pct": None,
         "pitcher_fb_pct": None,
         "pitcher_iffb_pct": None,
@@ -1405,6 +1408,7 @@ def merge_risk_metrics(
     xfip = _pick("xfip")
     pk = _pick("pitcher_k_pct")
     pc = _pick("pitcher_contact_pct")
+    zc = _pick("z_contact_pct")
     gb = _pick("pitcher_gb_pct")
     fb = _pick("pitcher_fb_pct")
     iffb = _pick("pitcher_iffb_pct")
@@ -1433,6 +1437,7 @@ def merge_risk_metrics(
         "xfip": xfip,
         "pitcher_k_pct": pk,
         "pitcher_contact_pct": pc,
+        "z_contact_pct": zc,
         "pitcher_gb_pct": gb,
         "pitcher_fb_pct": fb,
         "pitcher_iffb_pct": iffb,

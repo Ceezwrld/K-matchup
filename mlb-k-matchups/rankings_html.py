@@ -731,18 +731,17 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         pt = p.get("pitch_type")
         pname = p.get("pitch_name") or pt
         avg_k = p.get("lineup_k_pct")
-        # Full pitch-header line as green/amber/red chips (good vs bad).
-        meta_chips: list[str] = [
-            _rate_chip(
-                "overall",
-                p.get("usage_pct"),
-                "pitch_usage_pct",
-                1,
-                suffix="%",
-                title="Pitch usage overall — green = featured pitch, red = sparse",
-            )
-        ]
-        # Pitcher usage vs LHB/RHB — informational, uncolored; sits right after overall.
+        # Overall sits beside the pitch name; remaining chips follow in pmeta.
+        overall_chip = _rate_chip(
+            "overall",
+            p.get("usage_pct"),
+            "pitch_usage_pct",
+            1,
+            suffix="%",
+            title="Pitch usage overall — green = featured pitch, red = sparse",
+        )
+        meta_chips: list[str] = []
+        # Pitcher usage vs LHB/RHB — informational, uncolored.
         usage_l = p.get("usage_vs_lhb")
         usage_r = p.get("usage_vs_rhb")
         if usage_l is not None or usage_r is not None:
@@ -894,7 +893,10 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         blocks.append(
             f"<details class='pitch-block'{open_attr}>"
             "<summary>"
+            f"<span class='pname-row'>"
             f"<span class='pname'>{_esc(pname)}</span>"
+            f"{overall_chip}"
+            f"</span>"
             f"<span class='pmeta'>{''.join(meta_chips)}</span>"
             "</summary>"
             f"<div class='pitch-list'>{''.join(rows_html)}</div>"
@@ -908,7 +910,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         "Pitch header chips are green/amber/red by whether the number helps the "
         "pitcher: <strong>overall</strong> (featured vs sparse) · "
         "<strong>use L / use R</strong> (pitcher’s season usage vs that hand — "
-        "uncolored, after overall) · "
+        "uncolored) · "
         "<strong>vs L / vs R</strong> (this opposing lineup’s LHB/RHB K% vs this "
         "pitch — green helps pitcher) · "
         "<strong>whiff</strong> (miss%) · <strong>velo</strong> (FB heat only) · "
@@ -2178,32 +2180,39 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     align-items: center;
     gap: 0.28rem 0.35rem;
   }
+  .pitch-stack .pname-row .rate-chip,
   .pitch-stack .pmeta .rate-chip {
     margin: 0;
     font-size: 0.8rem;
     padding: 0.2rem 0.55rem;
   }
   /* Stronger fills in Arsenal headers so good/bad reads on htmlpreview */
+  .pitch-stack .pname-row .rate-chip.grade-elite,
   .pitch-stack .pmeta .rate-chip.grade-elite {
     background: #c8ebd9;
     color: #064832;
     border-color: #2f8a5f;
   }
+  .pitch-stack .pname-row .rate-chip.grade-high,
   .pitch-stack .pmeta .rate-chip.grade-high {
     background: #d9f0e4;
     color: #0f6a4d;
     border-color: #4a9a72;
   }
+  .pitch-stack .pname-row .rate-chip.grade-mid,
   .pitch-stack .pmeta .rate-chip.grade-mid {
     background: #f3e0c4;
     color: #8a4b0f;
     border-color: #c47a1a;
   }
+  .pitch-stack .pname-row .rate-chip.grade-low,
   .pitch-stack .pmeta .rate-chip.grade-low {
     background: #f0d0d0;
     color: #8c2828;
     border-color: #c45a5a;
   }
+  .pitch-stack .pname-row .rate-chip.rate-na,
+  .pitch-stack .pname-row .rate-chip:not([class*="grade-"]),
   .pitch-stack .pmeta .rate-chip.rate-na,
   .pitch-stack .pmeta .rate-chip:not([class*="grade-"]) {
     background: #e8ebe9;
@@ -2843,10 +2852,20 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     margin-right: 0.15rem;
   }
   .pitch-block[open] > summary::before { content: "▾"; color: var(--accent); }
+  .pitch-block > summary .pname-row {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+  }
   .pitch-block > summary .pname {
     font-weight: 700;
     font-size: 0.92rem;
     color: var(--ink);
+  }
+  .pitch-block > summary .pname-row .rate-chip {
+    margin: 0;
   }
   .pitch-block > summary .pmeta {
     color: var(--muted);

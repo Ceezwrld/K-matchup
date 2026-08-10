@@ -258,6 +258,43 @@ def _rate_chip(
     )
 
 
+_SHORT_PITCH_NAMES = {
+    "4-seam fastball": "4-Seam FB",
+    "four-seam fastball": "4-Seam FB",
+    "4-seamer": "4-Seam FB",
+    "two-seam fastball": "2-Seam FB",
+    "2-seam fastball": "2-Seam FB",
+    "sinker": "Sinker",
+    "cutter": "Cutter",
+    "changeup": "Changeup",
+    "change-up": "Changeup",
+    "slider": "Slider",
+    "sweeper": "Sweeper",
+    "curveball": "Curve",
+    "knuckle curve": "Curve",
+    "eephus": "Eephus",
+    "splitter": "Splitter",
+    "forkball": "Forkball",
+    "screwball": "Screwball",
+    "slurve": "Slurve",
+    "slow curve": "Curve",
+}
+
+
+def _short_pitch_name(pitch_name: Any, pitch_type: Any = None) -> str:
+    """Compact Arsenal header label so chips stay on one line."""
+    raw = str(pitch_name or pitch_type or "").strip()
+    if not raw:
+        return "—"
+    short = _SHORT_PITCH_NAMES.get(raw.lower())
+    if short:
+        return short
+    # Generic "X Fastball" → "X FB"
+    if raw.lower().endswith(" fastball"):
+        return raw[: -len(" Fastball")] + " FB"
+    return raw
+
+
 def _is_fastball_pitch(pitch_type: Any, pitch_name: Any = None) -> bool:
     pt = str(pitch_type or "").upper()
     if pt in {"FF", "FA", "SI", "FC", "FT"}:
@@ -265,7 +302,10 @@ def _is_fastball_pitch(pitch_type: Any, pitch_name: Any = None) -> bool:
     if pt in {"FS", "CH", "CU", "SL", "ST", "SV", "KC", "EP", "SC"}:
         return False
     name = str(pitch_name or "").lower()
-    return any(tok in name for tok in ("4-seam", "four-seam", "sinker", "cutter", "fastball"))
+    return any(
+        tok in name
+        for tok in ("4-seam", "four-seam", "2-seam", "two-seam", "sinker", "cutter", "fastball")
+    ) or name.endswith(" fb")
 
 
 def _lineup_pitch_k_by_hand(
@@ -729,7 +769,8 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
 
     for i, p in enumerate(arsenal):
         pt = p.get("pitch_type")
-        pname = p.get("pitch_name") or pt
+        pname_full = p.get("pitch_name") or pt
+        pname = _short_pitch_name(pname_full, pt)
         avg_k = p.get("lineup_k_pct")
         # Line 1: pitch name · overall · lineup avg · whiff · (velo)
         # Line 2: use vs LHB · use vs RHB · vs L · vs R
@@ -824,7 +865,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         if p_velo is not None:
             velo_metric = (
                 "pitch_velo_fb"
-                if _is_fastball_pitch(pt, pname)
+                if _is_fastball_pitch(pt, pname_full)
                 else "pitch_velo_offspeed"
             )
             line2_chips.append(
@@ -894,7 +935,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             "<summary>"
             f"<span class='pmeta-lines'>"
             f"<span class='pmeta-line pmeta-line1'>"
-            f"<span class='pname'>{_esc(pname)}</span>"
+            f"<span class='pname' title='{_esc(pname_full)}'>{_esc(pname)}</span>"
             f"{''.join(line1_chips)}"
             f"</span>"
             f"<span class='pmeta-line pmeta-line2'>{''.join(line2_chips)}</span>"

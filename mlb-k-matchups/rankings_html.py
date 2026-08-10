@@ -270,14 +270,11 @@ _SHORT_PITCH_NAMES = {
     "change-up": "Changeup",
     "slider": "Slider",
     "sweeper": "Sweeper",
-    "curveball": "Curve",
-    "knuckle curve": "Curve",
     "eephus": "Eephus",
     "splitter": "Splitter",
     "forkball": "Forkball",
     "screwball": "Screwball",
     "slurve": "Slurve",
-    "slow curve": "Curve",
 }
 
 

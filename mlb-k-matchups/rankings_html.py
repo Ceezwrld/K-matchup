@@ -178,6 +178,15 @@ def _grade_for(metric: str, value: Any) -> str | None:
     if metric == "opp_bb_pct":
         # Higher BB% = patient / pitch-count risk
         return _grade_band_desc(value, 7.0, 9.0, 10.5)
+    if metric == "opp_woba":
+        # Lower offense quality helps pitcher Ks / length (lg ~.315)
+        return _grade_band_desc(value, 0.300, 0.315, 0.330)
+    if metric == "opp_wrc_plus":
+        # wRC+ 100 = league; lower = softer offense / longer leash OK
+        return _grade_band_desc(value, 90.0, 100.0, 110.0)
+    if metric == "opp_iso":
+        # Lower ISO = less power / crooked-number risk (lg ~.155)
+        return _grade_band_desc(value, 0.130, 0.155, 0.180)
     # Rates / command — attack-plate pack thresholds from backtest-lessons.
     if metric == "strike_pct":
         # ≥66 elite · ≥65 good · ≥63 avg · <63 soft (≤62 poor for overs)
@@ -592,6 +601,9 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "lineup_avg": _json_safe(r.get("lineup_avg")),
                 "lineup_bb_pct": _json_safe(r.get("lineup_bb_pct")),
                 "lineup_bip_pct": _json_safe(r.get("lineup_bip_pct")),
+                "lineup_woba": _json_safe(r.get("lineup_woba")),
+                "lineup_wrc_plus": _json_safe(r.get("lineup_wrc_plus")),
+                "lineup_iso": _json_safe(r.get("lineup_iso")),
                 "contact_grade": r.get("contact_grade") or "",
                 "offense_source": r.get("offense_source"),
                 "offense_factor": _json_safe(r.get("offense_factor")),
@@ -1612,6 +1624,45 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
                 title="Opposing lineup BB% — high = patient / pitch-count risk",
             )
         )
+    if row.get("lineup_woba") is not None:
+        matchup_bits.append(
+            _rate_chip(
+                "opp wOBA",
+                row.get("lineup_woba"),
+                "opp_woba",
+                3,
+                title=(
+                    "Lineup PA-weighted FanGraphs wOBA — lower = softer offense "
+                    "(helps length / K comfort); leash confirm only"
+                ),
+            )
+        )
+    if row.get("lineup_wrc_plus") is not None:
+        matchup_bits.append(
+            _rate_chip(
+                "opp wRC+",
+                row.get("lineup_wrc_plus"),
+                "opp_wrc_plus",
+                0,
+                title=(
+                    "Lineup PA-weighted FanGraphs wRC+ (100=lg) — lower = softer "
+                    "offense / longer leash OK; does not flip solo grade"
+                ),
+            )
+        )
+    if row.get("lineup_iso") is not None:
+        matchup_bits.append(
+            _rate_chip(
+                "opp ISO",
+                row.get("lineup_iso"),
+                "opp_iso",
+                3,
+                title=(
+                    "Lineup PA-weighted FanGraphs ISO — lower = less power / "
+                    "crooked-number risk; leash confirm only"
+                ),
+            )
+        )
     grade = (row.get("discipline_grade") or "").strip()
     if grade:
         disc_band = {
@@ -1800,6 +1851,39 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
         "Low BIP helps overs · high BIP helps unders.",
         "contact_heavy also if BIP ≥69% with K% ≤19.5.",
     )
+    offense_chips = (
+        _key_chip(
+            "wRC+ ≤90",
+            "rate-chip grade-elite",
+            "Soft offense — longer leash / K comfort",
+        )
+        + _key_chip(
+            "~100 lg",
+            "rate-chip grade-mid",
+            "League-average offense quality",
+        )
+        + _key_chip(
+            "wRC+ ≥110",
+            "rate-chip grade-low",
+            "Good offense — shorter leash risk",
+        )
+        + _key_chip(
+            "low wOBA/ISO",
+            "rate-chip grade-high",
+            "Softer damage / less power",
+        )
+        + _key_chip(
+            "high wOBA/ISO",
+            "rate-chip grade-low",
+            "Damage + power — caution clear-IP",
+        )
+    )
+    offense_notes = _key_notes(
+        "Lineup PA-weighted FanGraphs wOBA / wRC+ / ISO (season).",
+        "Lower = softer offense → longer leash OK with WHIFF scripts.",
+        "Higher = good offense → size down overs / don’t trust clear IP alone.",
+        "Confirm only — does not flip solo grade. Pitch-type Ks stay on Arsenal.",
+    )
     solo_chips = (
         _key_chip(f"ELITE ≥{ABS_MATCHUP_ELITE:g}%", "ark ark-elite")
         + _key_chip(f"STRONG ≥{ABS_MATCHUP_STRONG:g}%", "ark ark-strong")
@@ -1900,6 +1984,11 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
         "<span class='key-lab'>Opp BIP</span>"
         f"<span class='key-val'><span class='key-chips'>{bip_chips}</span>"
         f"{bip_notes}</span>"
+        "</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Opp offense</span>"
+        f"<span class='key-val'><span class='key-chips'>{offense_chips}</span>"
+        f"{offense_notes}</span>"
         "</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Strike%</span>"

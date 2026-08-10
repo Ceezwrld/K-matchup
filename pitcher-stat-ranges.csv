@@ -26,6 +26,9 @@ Form,L3 K/9,">=8.5 (elite >=10)",7-8.5,<7,Raw or opp-adjusted
 Matchup / board,Solo arsenal K%,">=22.5 (elite >=24)",20-22.5,<20,Vs this lineup; league ~22.5
 Matchup / board,Exp K,">=5.5 (elite >=6)",4-5.5,<4,TRUST needs >=5.5
 Matchup / board,Opp BIP,<=64,~68,">=71",whiff_prone <=64; contact_heavy >=71
+Matchup / board,Opp wOBA (lineup),<=0.300 (best),0.300-0.330,">=0.330",PA-weighted FG season; lower = softer offense / longer leash
+Matchup / board,Opp wRC+ (lineup),<=90 (best); <=100 good,90-110,">=110",100 = league; leash confirm — does not flip solo
+Matchup / board,Opp ISO (lineup),<=0.130 (best),0.130-0.180,">=0.180",Lower = less power / crooked-number risk
 Outlook,TRUST,"ELITE/STRONG + WHIFF + Exp K >=5.5",,,Trust soft O4.5 / O5.5 if IP clear
 Outlook,UNDER_OK,"SOFT + >=2 confirms (GB/FLY; contact_heavy; Exp K <=4.2; Soft% >=20)",,,Not SPIKE
 Outlook,SPIKE,"K9/L3 K9 >=10; or stuff whiff >=28; or stuff >=26 + FB >=95",,,No soft U6

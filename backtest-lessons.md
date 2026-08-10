@@ -116,14 +116,25 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
    - **Solo grade** → can the mix K *this* nine?
    - **STYLE** (WHIFF / GB / FLY / BAL) → does he usually get outs via Ks or BIP?
    - **Opp BIP / contact** (whiff_prone / neutral / contact_heavy) → will the nine help or fight Ks?
+   - **Opp offense quality** (lineup PA-weighted **wOBA / wRC+ / ISO**) → soft/avg/good offense for **length/leash** (lower = longer leash OK; higher = size down overs). Confirm only — does **not** flip solo grade. Pitch-type vulnerability stays on **Arsenal lineup K%**, not per-pitch wOBA.
    - **Opp K% vs hand** (vs LHP / vs RHP matching the starter) → primary opp-K confirm; overall opp K% is secondary
-   - **Strike% / Zone% / O-Swing%** (optional confirm) → does he attack the plate / induce chase? High Strike% (≥~65) + Zone% supports WHIFF overs; O-Swing% confirms chase; low Strike% alone does **not** lock an under (SPIKE can still clear).
+   - **Strike% / Zone% / Z-Contact% / O-Swing%** (optional confirm) → does he attack the plate / induce chase / miss in-zone? High Strike% (≥~65) + Zone% supports WHIFF overs; O-Swing% confirms chase; low Strike% alone does **not** lock an under (SPIKE can still clear).
    - **L3 K/9 adj** → recent form scaled by opponent-team K% faced (juiced L3 opps haircut hot form; soft-K L3 opps boost it). Use adj for sizing, raw L3 for SPIKE ceiling.
 
-   One-glance combos: ELITE+WHIFF+whiff-prone = strong K info · ELITE+FLY/GB = matchup OK, don’t overweight K total · SOFT+GB/FLY+contact_heavy = strong under info · SOFT+WHIFF/SPIKE = soft grade but K ceiling live · AVG+WHIFF+juiced line = Cam-rule under info · WHIFF+Strike%≥65 = command confirms the K script.
+   One-glance combos: ELITE+WHIFF+whiff-prone = strong K info · ELITE+FLY/GB = matchup OK, don’t overweight K total · SOFT+GB/FLY+contact_heavy = strong under info · SOFT+WHIFF/SPIKE = soft grade but K ceiling live · AVG+WHIFF+juiced line = Cam-rule under info · WHIFF+Strike%≥65 = command confirms the K script · soft offense (low wRC+) + WHIFF + clear IP = length confirms the over.
 
 3c. **Full thesis / essay (on request only):** when asked for a specific pitcher (or a short list), expand to Littell/Skubal depth — table of arsenal / opp BIP / STYLE / stuff·SPIKE / IP·risk, then answer “can we trust the K total?” and line-sizing. Do **not** essay the whole slate unless asked. Same daily routine, deeper read on demand.
-4. **Re-refresh when lineups confirm** — same report shape, flip prior→official, re-check leans before locking tickets.
+
+3d. **Full-metric slate essay (locked process — OFF confirm + when asked “what stands out”):**
+   When official lineups post (or when asked for a full-metric pass), re-run the board and deliver **this exact shape** — not the short morning lean alone:
+   1. **Slate status** — n starters · official vs prior count · games still on prior.
+   2. **Prior → OFF callouts** — which arms flipped, any starter/role change, BIP/K%/wRC+ moves that change the lean.
+   3. **Every-metric scan** per notable arm: solo · STYLE · stuff/SPIKE · SwStr/Contact/Z-Contact · Strike%/Zone%/O-Swing · Soft% · K9/L3 · BB9/xFIP/IP/risk · opp K%/BIP/BB% · **opp wOBA/wRC+/ISO** · TRUST/UNDER_OK/FILLER/SPIKE.
+   4. **What stands out** — TRUST stacks, ceiling/SPIKE traps, dead-matchup elite miss, attack-plate without WHIFF, thin under lane, pass/trap names.
+   5. **Ticket lean table** — Tier 1 / co-anchor / ceiling / pass juiced / FILLER / no soft U6, with the metric reason on each.
+   Explain **pitcher + opposing lineup** expectations in plain language (what the prior/OFF nine implies for Ks and leash). Better explained → clearer ticket.
+
+4. **Re-refresh when lineups confirm** — same report shape **plus** the full-metric essay in **3d**; flip prior→official; re-check leans before locking tickets.
 5. **Accuracy lock before firing** — official nine in, starter not opener, side matches arsenal vulnerability, line edge still holds.
 
 This morning pack is the daily starting point — not optional.
@@ -137,8 +148,9 @@ Open a pitcher card and answer **four questions in order**. Do not start at Exp 
 | 1 | **ELITE / STRONG / AVG / SOFT** chip | Can his mix K *this* nine? | **Side** (over vs under bias) |
 | 2 | **STYLE** chip (WHIFF / GB / FLY / BAL) next to name | Does he get outs via Ks or BIP? | Whether to **trust the total** |
 | 3 | **Opp BIP** (whiff_prone / contact_heavy in meta) | Will the nine help or fight Ks? | Confirmation / line size |
+| 3b | **Opp wOBA / wRC+ / ISO** | Soft / avg / good offense? | **Length / leash** confirm — not a side flip |
 | 4 | **SPIKE / THIN_TOTAL / UNDER_OK / MATCHUP_OK / FILLER** | Any veto or size cap? | Ticket legality |
-| 5 | **Strike% / Zone%** (Rates row) | Does he attack the plate? | Command confirm — **not** a side flip |
+| 5 | **Strike% / Zone% / Z-Contact%** (Rates row) | Does he attack the plate / miss in-zone? | Command confirm — **not** a side flip |
 
 **One-glance recipes**
 

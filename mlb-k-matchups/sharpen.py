@@ -49,6 +49,19 @@ FANGRAPHS_PITCHING_URL = (
     "&postseason=&sortdir=default&sortstat=WAR"
 )
 
+FANGRAPHS_BATTING_URL = (
+    "https://www.fangraphs.com/api/leaders/major-league/data"
+    "?age=&pos=all&stats=bat&lg=all&qual=0&season={year}&season1={year}"
+    "&startdate={year}-01-01&enddate={year}-12-31&month=0&hand=&team=0"
+    "&pageitems=2000&pagenum=1&ind=0&rost=0&players=&type=8"
+    "&postseason=&sortdir=default&sortstat=WAR"
+)
+
+# Lineup offense-quality baselines (FanGraphs; leash / damage confirm).
+LEAGUE_WOBA = 0.315
+LEAGUE_WRC_PLUS = 100.0
+LEAGUE_ISO = 0.155
+
 PEOPLE_HITTING_SPLITS_URL = (
     "https://statsapi.mlb.com/api/v1/people"
     "?personIds={ids}"
@@ -1162,6 +1175,35 @@ def _fg_pct(value: Any) -> float:
     return f
 
 
+def fetch_fangraphs_batting(
+    year: int, verbose: bool, log: Callable[[bool, str], None]
+) -> dict[int, dict[str, float]]:
+    """Season wOBA / wRC+ / ISO by MLBAM id (lineup offense-quality chips)."""
+    url = FANGRAPHS_BATTING_URL.format(year=year)
+    try:
+        payload = _get(url, verbose, log).json()
+    except Exception as exc:  # noqa: BLE001
+        log(verbose, f"FanGraphs batting fetch failed: {exc}")
+        return {}
+    out: dict[int, dict[str, float]] = {}
+    for row in payload.get("data") or []:
+        pid = row.get("xMLBAMID")
+        if pid is None:
+            continue
+        try:
+            out[int(pid)] = {
+                "woba": float(row["wOBA"]) if row.get("wOBA") is not None else float("nan"),
+                "wrc_plus": (
+                    float(row["wRC+"]) if row.get("wRC+") is not None else float("nan")
+                ),
+                "iso": float(row["ISO"]) if row.get("ISO") is not None else float("nan"),
+                "pa": float(row["PA"]) if row.get("PA") is not None else float("nan"),
+            }
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
 def fetch_fangraphs_pitching(
     year: int, verbose: bool, log: Callable[[bool, str], None]
 ) -> dict[int, dict[str, float]]:
@@ -1775,18 +1817,81 @@ def summarize_lineup_k_vs_hand(
     return out
 
 
+def _lineup_fg_quality(
+    lineup: list[dict[str, Any]],
+    fangraphs_batting: dict[int, dict[str, float]] | None,
+    profiles: dict[int, dict[str, Any]],
+) -> dict[str, Any]:
+    """PA-weighted lineup wOBA / wRC+ / ISO from FanGraphs season batting."""
+    empty = {
+        "lineup_woba": None,
+        "lineup_wrc_plus": None,
+        "lineup_iso": None,
+        "lineup_quality_n": 0,
+        "lineup_quality_pa": 0.0,
+        "lineup_quality_source": None,
+    }
+    if not fangraphs_batting:
+        return empty
+    rows: list[tuple[float, float, float, float]] = []
+    for slot in lineup:
+        try:
+            bid = int(slot["batter_id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        fg = fangraphs_batting.get(bid) or {}
+        woba = fg.get("woba")
+        wrc = fg.get("wrc_plus")
+        iso = fg.get("iso")
+        try:
+            woba_f = float(woba) if woba is not None and not pd.isna(woba) else None
+            wrc_f = float(wrc) if wrc is not None and not pd.isna(wrc) else None
+            iso_f = float(iso) if iso is not None and not pd.isna(iso) else None
+        except (TypeError, ValueError):
+            continue
+        if woba_f is None and wrc_f is None and iso_f is None:
+            continue
+        pa = float(fg.get("pa") or 0.0)
+        if pa <= 0 or pd.isna(pa):
+            pa = float((profiles.get(bid) or {}).get("season_pa") or 0.0) or 1.0
+        rows.append(
+            (
+                pa,
+                woba_f if woba_f is not None else LEAGUE_WOBA,
+                wrc_f if wrc_f is not None else LEAGUE_WRC_PLUS,
+                iso_f if iso_f is not None else LEAGUE_ISO,
+            )
+        )
+    if not rows:
+        return empty
+    tw = sum(r[0] for r in rows)
+    if tw <= 0:
+        return empty
+    return {
+        "lineup_woba": sum(r[0] * r[1] for r in rows) / tw,
+        "lineup_wrc_plus": sum(r[0] * r[2] for r in rows) / tw,
+        "lineup_iso": sum(r[0] * r[3] for r in rows) / tw,
+        "lineup_quality_n": len(rows),
+        "lineup_quality_pa": tw,
+        "lineup_quality_source": "fangraphs",
+    }
+
+
 def summarize_lineup_offense(
     lineup: list[dict[str, Any]],
     profiles: dict[int, dict[str, Any]],
     *,
     hand_rates: dict[int, dict[str, Any]] | None = None,
     pitcher_hand: str | None = None,
+    fangraphs_batting: dict[int, dict[str, float]] | None = None,
 ) -> dict[str, Any]:
     """PA-weighted lineup K% / AVG / BB% / BIP%; prefer recent when sample OK.
 
-    Also attaches season lineup K% vs LHP / vs RHP when hand splits are provided.
+    Also attaches season lineup K% vs LHP / vs RHP when hand splits are provided,
+    plus FanGraphs lineup wOBA / wRC+ / ISO (leash / damage confirm).
     """
     hand_bits = summarize_lineup_k_vs_hand(lineup, hand_rates, pitcher_hand)
+    quality = _lineup_fg_quality(lineup, fangraphs_batting, profiles)
     # rows: pa, k, avg, bb, bip
     recent_rows: list[tuple[float, float, float, float, float]] = []
     season_rows: list[tuple[float, float, float, float, float]] = []
@@ -1861,6 +1966,7 @@ def summarize_lineup_offense(
             "offense_source": None,
             "offense_n": 0,
             "discipline_grade": None,
+            **quality,
             **hand_bits,
         }
 
@@ -1876,6 +1982,7 @@ def summarize_lineup_offense(
         "offense_source": source,
         "offense_n": n,
         "discipline_grade": grade,
+        **quality,
         **hand_bits,
     }
 
@@ -1919,8 +2026,34 @@ def apply_lineup_offense_overlay(
         "offense_source": None,
         "offense_factor": None,
         "discipline_grade": None,
+        "lineup_woba": None,
+        "lineup_wrc_plus": None,
+        "lineup_iso": None,
+        "lineup_quality_n": 0,
+        "lineup_quality_pa": 0.0,
+        "lineup_quality_source": None,
         **_empty_lineup_k_vs_hand(),
     }
+
+    def _quality_bits(src: dict[str, Any] | None) -> dict[str, Any]:
+        if not src:
+            return {
+                "lineup_woba": None,
+                "lineup_wrc_plus": None,
+                "lineup_iso": None,
+                "lineup_quality_n": 0,
+                "lineup_quality_pa": 0.0,
+                "lineup_quality_source": None,
+            }
+        return {
+            "lineup_woba": src.get("lineup_woba"),
+            "lineup_wrc_plus": src.get("lineup_wrc_plus"),
+            "lineup_iso": src.get("lineup_iso"),
+            "lineup_quality_n": src.get("lineup_quality_n") or 0,
+            "lineup_quality_pa": src.get("lineup_quality_pa") or 0.0,
+            "lineup_quality_source": src.get("lineup_quality_source"),
+        }
+
     if expected_ks is None or summary is None:
         return expected_ks, None, empty
     k_pct = summary.get("lineup_k_pct")
@@ -1947,6 +2080,7 @@ def apply_lineup_offense_overlay(
             "lineup_k_vs_hand_pa": summary.get("lineup_k_vs_hand_pa"),
             "lineup_k_vs_hand_n": summary.get("lineup_k_vs_hand_n"),
             "lineup_k_vs_hand_source": summary.get("lineup_k_vs_hand_source"),
+            **_quality_bits(summary),
         }
 
     # Whiff-prone lineups boost Ks; contact/BIP-heavy lineups trim them.
@@ -1984,6 +2118,7 @@ def apply_lineup_offense_overlay(
         "lineup_k_vs_hand_n": summary.get("lineup_k_vs_hand_n"),
         "lineup_k_vs_hand_source": summary.get("lineup_k_vs_hand_source"),
         "offense_k_edge_source": k_edge_source,
+        **_quality_bits(summary),
     }
     return blended, factor, meta
 

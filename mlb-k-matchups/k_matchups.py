@@ -32,6 +32,7 @@ from sharpen import (  # noqa: E402
     fetch_batter_hand_k_rates,
     fetch_batter_offense_profiles,
     fetch_batter_pitch_k_vs_hand,
+    fetch_fangraphs_batting,
     fetch_fangraphs_pitching,
     fetch_pitcher_hand_mixes,
     fetch_pitcher_rate_stats,
@@ -1483,6 +1484,7 @@ def main(argv: list[str] | None = None) -> int:
         pitcher_ids, year, args.verbose, log
     )
     fangraphs = fetch_fangraphs_pitching(year, args.verbose, log)
+    fangraphs_batting = fetch_fangraphs_batting(year, args.verbose, log)
     api_rates = fetch_pitcher_rate_stats(pitcher_ids, year, args.verbose, log)
     batter_offense = fetch_batter_offense_profiles(
         batter_ids, year, args.verbose, log
@@ -1528,6 +1530,7 @@ def main(argv: list[str] | None = None) -> int:
             batter_offense,
             hand_rates=batter_k_vs_hand,
             pitcher_hand=pitcher_hand,
+            fangraphs_batting=fangraphs_batting,
         )
         # Patient / walk-heavy lineups trim BF/IP before walking the order.
         if args.ip is None and args.batters_faced is None:
@@ -1617,6 +1620,11 @@ def main(argv: list[str] | None = None) -> int:
             "lineup_avg": offense_summary.get("lineup_avg"),
             "lineup_bb_pct": offense_summary.get("lineup_bb_pct"),
             "lineup_bip_pct": offense_summary.get("lineup_bip_pct"),
+            "lineup_woba": offense_summary.get("lineup_woba"),
+            "lineup_wrc_plus": offense_summary.get("lineup_wrc_plus"),
+            "lineup_iso": offense_summary.get("lineup_iso"),
+            "lineup_quality_n": offense_summary.get("lineup_quality_n"),
+            "lineup_quality_source": offense_summary.get("lineup_quality_source"),
             "contact_grade": offense_summary.get("contact_grade") or "",
             "offense_source": offense_summary.get("offense_source"),
             "offense_factor": None,
@@ -1721,6 +1729,13 @@ def main(argv: list[str] | None = None) -> int:
                     row["lineup_avg"] = offense_meta.get("lineup_avg")
                     row["lineup_bb_pct"] = offense_meta.get("lineup_bb_pct")
                     row["lineup_bip_pct"] = offense_meta.get("lineup_bip_pct")
+                    row["lineup_woba"] = offense_meta.get("lineup_woba")
+                    row["lineup_wrc_plus"] = offense_meta.get("lineup_wrc_plus")
+                    row["lineup_iso"] = offense_meta.get("lineup_iso")
+                    row["lineup_quality_n"] = offense_meta.get("lineup_quality_n")
+                    row["lineup_quality_source"] = offense_meta.get(
+                        "lineup_quality_source"
+                    )
                     row["contact_grade"] = offense_meta.get("contact_grade") or ""
                     row["offense_source"] = offense_meta.get("offense_source")
                     row["discipline_grade"] = (

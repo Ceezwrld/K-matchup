@@ -1871,12 +1871,19 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
             "rate-chip grade-mid",
             "Average Strike% across today's scored starters",
         )
-    strike_note = (
-        "Green = good for K scripts · amber = average · red = soft for overs. "
-        "Rates chips: Strike%/Zone%/SwStr%/O-Swing%/CSW% (miss+chase+command) · Soft% "
-        "(elevated helps FILLER/under). L3 K/9 adj = form scaled for opponent K% faced. "
+    strike_notes = (
+        "<span class='key-note'>"
+        "Green = good for K scripts · amber = average · red = soft for overs."
+        "</span>"
+        "<span class='key-note'>"
+        "Rates chips: Strike%/Zone%/Z-Contact%/SwStr%/O-Swing%/CSW% "
+        "(miss+chase+command) · Soft% (elevated helps FILLER/under)."
+        "</span>"
+        "<span class='key-note'>"
+        "L3 K/9 adj = form scaled for opponent K% faced. "
         "Command/chase confirms the script — they do not flip the side. "
         "Attack-plate + WHIFF + strong stuff can add a tiny Exp K bump."
+        "</span>"
     )
     return (
         "<div class='model-keys' aria-label='Model keys'>"
@@ -1889,7 +1896,7 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
         "<div class='key-row'>"
         "<span class='key-lab'>Strike%</span>"
         f"<span class='key-val'><span class='key-chips'>{strike_chips}</span>"
-        f"<span class='key-note'>{strike_note}</span></span>"
+        f"<span class='key-notes'>{strike_notes}</span></span>"
         "</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Solo grade</span>"
@@ -2405,7 +2412,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     gap: 0.35rem;
     align-items: center;
   }
+  .model-keys .key-notes {
+    display: grid;
+    gap: 0.35rem;
+  }
   .model-keys .key-note {
+    display: block;
     font-size: 0.78rem;
     font-weight: 600;
     color: var(--muted);

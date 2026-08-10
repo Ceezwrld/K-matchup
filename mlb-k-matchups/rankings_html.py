@@ -763,27 +763,6 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
                     title="Pitcher's whiff% on this pitch — green = miss / K helper, red = soft",
                 )
             )
-        p_velo = p.get("pitcher_velo")
-        if p_velo is not None:
-            velo_metric = (
-                "pitch_velo_fb"
-                if _is_fastball_pitch(pt, pname)
-                else "pitch_velo_offspeed"
-            )
-            line1_chips.append(
-                _rate_chip(
-                    "velo",
-                    p_velo,
-                    velo_metric,
-                    1,
-                    suffix=" mph",
-                    title=(
-                        "Fastball velo — green = plus heat"
-                        if velo_metric == "pitch_velo_fb"
-                        else "Offspeed/breaking velo (informational — not a good/bad K grade)"
-                    ),
-                )
-            )
 
         line2_chips: list[str] = []
         usage_l = p.get("usage_vs_lhb")
@@ -841,6 +820,27 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
                 ),
             )
         )
+        p_velo = p.get("pitcher_velo")
+        if p_velo is not None:
+            velo_metric = (
+                "pitch_velo_fb"
+                if _is_fastball_pitch(pt, pname)
+                else "pitch_velo_offspeed"
+            )
+            line2_chips.append(
+                _rate_chip(
+                    "velo",
+                    p_velo,
+                    velo_metric,
+                    1,
+                    suffix=" mph",
+                    title=(
+                        "Fastball velo — green = plus heat"
+                        if velo_metric == "pitch_velo_fb"
+                        else "Offspeed/breaking velo (informational — not a good/bad K grade)"
+                    ),
+                )
+            )
         open_attr = " open" if i == 0 else ""
 
         rows_html: list[str] = []
@@ -2936,7 +2936,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       gap: 0.15rem 0.45rem;
     }
     .pitch-block > summary .pname { font-size: 0.84rem; }
-    .pitch-block > summary .pmeta { font-size: 0.7rem; }
+    .pitch-stack .pmeta-line .rate-chip { font-size: 0.72rem; }
     .pitch-list { padding: 0.1rem 0.65rem 0.45rem; }
   }
   .hint { margin: 0.65rem 0 0; color: var(--muted); font-size: 0.78rem; }

@@ -1768,6 +1768,15 @@ def _key_chip(text: str, css: str, title: str = "") -> str:
     return f"<span class='key-chip {_esc(css)}'{tip}>{_esc(text)}</span>"
 
 
+def _key_notes(*lines: str) -> str:
+    """Stack key-legend notes on separate spaced rows."""
+    return (
+        "<span class='key-notes'>"
+        + "".join(f"<span class='key-note'>{line}</span>" for line in lines if line)
+        + "</span>"
+    )
+
+
 def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
     """Top-of-board legend: color-coded BIP / solo / style / outlook keys."""
     bip_chips = (
@@ -1787,9 +1796,9 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
             "High BIP nines — helps unders (also ≥69% with K% ≤19.5)",
         )
     )
-    bip_note = (
-        "Low BIP helps overs · high BIP helps unders"
-        " · contact_heavy also if BIP ≥69% with K% ≤19.5."
+    bip_notes = _key_notes(
+        "Low BIP helps overs · high BIP helps unders.",
+        "contact_heavy also if BIP ≥69% with K% ≤19.5.",
     )
     solo_chips = (
         _key_chip(f"ELITE ≥{ABS_MATCHUP_ELITE:g}%", "ark ark-elite")
@@ -1797,9 +1806,9 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
         + _key_chip(f"AVG ≥{ABS_MATCHUP_AVG:g}%", "ark ark-avg")
         + _key_chip(f"SOFT <{ABS_MATCHUP_AVG:g}%", "ark ark-soft")
     )
-    solo_note = (
-        f"Arsenal K% vs this nine (league ~{LEAGUE_K_PCT:g}%)."
-        " Side first — Exp K sizes the line."
+    solo_notes = _key_notes(
+        f"Arsenal K% vs this nine (league ~{LEAGUE_K_PCT:g}%).",
+        "Side first — Exp K sizes the line.",
     )
     style_chips = (
         _key_chip("WHIFF", "ark-pstyle-whiff", "Trust K totals")
@@ -1807,7 +1816,11 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
         + _key_chip("FLY", "ark-pstyle-fly_popup", "Fly / popup BIP outs")
         + _key_chip("BAL", "ark-pstyle-balanced", "Mixed profile — caution on juiced totals")
     )
-    style_note = "WHIFF = trust K totals · GB/FLY = BIP outs (thin juiced totals) · BAL = caution."
+    style_notes = _key_notes(
+        "WHIFF = trust K totals.",
+        "GB/FLY = BIP outs (thin juiced totals).",
+        "BAL = caution.",
+    )
     outlook_chips = (
         _key_chip(
             "TRUST",
@@ -1829,9 +1842,10 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
         + _key_chip("MATCHUP OK", "outlook outlook-matchup_ok", "Thin O3.5 only")
         + _key_chip("FILLER", "outlook outlook-filler", "Pass K overs")
     )
-    outlook_note = (
-        f"TRUST needs Exp K ≥{TRUST_TOTAL_EXP_KS:g} · UNDER_OK needs"
-        f" ≥{UNDER_CONFIRM_MIN:g} confirms (incl Soft%) · SPIKE blocks soft U6."
+    outlook_notes = _key_notes(
+        f"TRUST needs Exp K ≥{TRUST_TOTAL_EXP_KS:g}.",
+        f"UNDER_OK needs ≥{UNDER_CONFIRM_MIN:g} confirms (incl Soft%).",
+        "SPIKE blocks soft U6.",
     )
     strike_chips = (
         _key_chip(
@@ -1871,19 +1885,13 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
             "rate-chip grade-mid",
             "Average Strike% across today's scored starters",
         )
-    strike_notes = (
-        "<span class='key-note'>"
-        "Green = good for K scripts · amber = average · red = soft for overs."
-        "</span>"
-        "<span class='key-note'>"
+    strike_notes = _key_notes(
+        "Green = good for K scripts · amber = average · red = soft for overs.",
         "Rates chips: Strike%/Zone%/Z-Contact%/SwStr%/O-Swing%/CSW% "
-        "(miss+chase+command) · Soft% (elevated helps FILLER/under)."
-        "</span>"
-        "<span class='key-note'>"
+        "(miss+chase+command) · Soft% (elevated helps FILLER/under).",
         "L3 K/9 adj = form scaled for opponent K% faced. "
         "Command/chase confirms the script — they do not flip the side. "
-        "Attack-plate + WHIFF + strong stuff can add a tiny Exp K bump."
-        "</span>"
+        "Attack-plate + WHIFF + strong stuff can add a tiny Exp K bump.",
     )
     return (
         "<div class='model-keys' aria-label='Model keys'>"
@@ -1891,27 +1899,27 @@ def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
         "<div class='key-row'>"
         "<span class='key-lab'>Opp BIP</span>"
         f"<span class='key-val'><span class='key-chips'>{bip_chips}</span>"
-        f"<span class='key-note'>{bip_note}</span></span>"
+        f"{bip_notes}</span>"
         "</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Strike%</span>"
         f"<span class='key-val'><span class='key-chips'>{strike_chips}</span>"
-        f"<span class='key-notes'>{strike_notes}</span></span>"
+        f"{strike_notes}</span>"
         "</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Solo grade</span>"
         f"<span class='key-val'><span class='key-chips'>{solo_chips}</span>"
-        f"<span class='key-note'>{solo_note}</span></span>"
+        f"{solo_notes}</span>"
         "</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Style</span>"
         f"<span class='key-val'><span class='key-chips'>{style_chips}</span>"
-        f"<span class='key-note'>{style_note}</span></span>"
+        f"{style_notes}</span>"
         "</div>"
         "<div class='key-row'>"
         "<span class='key-lab'>Outlook</span>"
         f"<span class='key-val'><span class='key-chips'>{outlook_chips}</span>"
-        f"<span class='key-note'>{outlook_note}</span></span>"
+        f"{outlook_notes}</span>"
         "</div>"
         "</div>"
     )

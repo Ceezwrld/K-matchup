@@ -2193,6 +2193,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --noscript-ink: #6b3f0c;
   }
   html[data-theme="dark"] {
+    /* Black chrome only — grade / status chip colors stay identical to light */
     --bg0: #050505;
     --bg1: #0a0a0a;
     --bg-end: #000000;
@@ -2200,8 +2201,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --muted: #a0a0a0;
     --line: rgba(255, 255, 255, 0.12);
     --accent: #f5f5f5;
-    --warn: #d4a04a;
-    --ok: #d0d0d0;
+    --warn: #9a5b12;
+    --ok: #0f6a4d;
     --panel: rgba(18, 18, 18, 0.96);
     --panel-soft: rgba(255, 255, 255, 0.05);
     --panel-solid: rgba(22, 22, 22, 0.96);
@@ -2212,22 +2213,22 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --glow-ok: rgba(255, 255, 255, 0.04);
     --glow-warn: rgba(255, 255, 255, 0.03);
     --shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
-    --grade-elite: #d8d8d8;
-    --grade-high: #c0c0c0;
-    --grade-mid: #e0b06a;
-    --grade-low: #e08888;
-    --grade-elite-soft: rgba(216, 216, 216, 0.72);
-    --chip-fill-elite: rgba(255, 255, 255, 0.14);
-    --chip-fill-high: rgba(255, 255, 255, 0.09);
-    --chip-fill-mid: rgba(212, 160, 74, 0.16);
-    --chip-fill-low: rgba(224, 136, 136, 0.16);
-    --chip-fill-na: rgba(255, 255, 255, 0.06);
-    --chip-ink-na: #b0b0b0;
-    --chip-border-elite: rgba(255, 255, 255, 0.32);
-    --chip-border-high: rgba(255, 255, 255, 0.22);
-    --chip-border-mid: rgba(212, 160, 74, 0.4);
-    --chip-border-low: rgba(224, 136, 136, 0.4);
-    --chip-border-na: rgba(255, 255, 255, 0.14);
+    --grade-elite: #064832;
+    --grade-high: #0f6a4d;
+    --grade-mid: #8a4b0f;
+    --grade-low: #8c2828;
+    --grade-elite-soft: rgba(6, 72, 50, 0.72);
+    --chip-fill-elite: #c8ebd9;
+    --chip-fill-high: #d9f0e4;
+    --chip-fill-mid: #f3e0c4;
+    --chip-fill-low: #f0d0d0;
+    --chip-fill-na: #e8ebe9;
+    --chip-ink-na: #4a554e;
+    --chip-border-elite: #2f8a5f;
+    --chip-border-high: #4a9a72;
+    --chip-border-mid: #c47a1a;
+    --chip-border-low: #c45a5a;
+    --chip-border-na: #b7c0bb;
     --row-rule: rgba(255, 255, 255, 0.07);
     --noscript-ink: #e0b06a;
   }
@@ -2460,18 +2461,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-color: rgba(20, 32, 26, 0.18);
     color: var(--muted);
   }
-  html[data-theme="dark"] .hand.hand-l {
-    background: rgba(212, 160, 74, 0.16);
-    border-color: rgba(212, 160, 74, 0.35);
-  }
-  html[data-theme="dark"] .hand.hand-r {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.28);
-  }
-  html[data-theme="dark"] .hand.hand-s {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.14);
-  }
   html[data-theme="dark"] summary:hover {
     background: rgba(255, 255, 255, 0.04);
   }
@@ -2580,7 +2569,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     padding: 0.22rem 0.55rem 0.28rem;
     justify-self: start;
   }
-  html[data-theme="dark"] .grade-elite { background: rgba(255, 255, 255, 0.1); }
   .grade-elite .nlab { color: var(--grade-elite-soft); }
   .grade-legend {
     display: flex;
@@ -2694,11 +2682,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: #1a4a7a;
     border-color: rgba(30, 90, 160, 0.28);
   }
-  html[data-theme="dark"] .model-keys .key-bip-contact {
-    background: rgba(110, 168, 230, 0.16);
-    color: #9cc7ef;
-    border-color: rgba(110, 168, 230, 0.32);
-  }
   .outlook-trust {
     background: rgba(15, 106, 77, 0.18);
     color: var(--grade-elite);
@@ -2784,31 +2767,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--ink);
     border-color: rgba(20, 32, 26, 0.18);
   }
-  html[data-theme="dark"] .ark-pstyle-contact_gb,
-  html[data-theme="dark"] .style-chip.ark-pstyle-contact_gb {
-    background: rgba(110, 168, 230, 0.16);
-    color: #9cc7ef;
-    border-color: rgba(110, 168, 230, 0.32);
-  }
-  html[data-theme="dark"] .ark-pstyle-fly_popup,
-  html[data-theme="dark"] .style-chip.ark-pstyle-fly_popup {
-    background: rgba(212, 160, 74, 0.16);
-    color: #e0b06a;
-    border-color: rgba(212, 160, 74, 0.32);
-  }
-  html[data-theme="dark"] .ark-pstyle-balanced,
-  html[data-theme="dark"] .style-chip.ark-pstyle-balanced {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.16);
-  }
   .meta-pstyle {
     border-color: rgba(40, 72, 120, 0.30);
     background: rgba(40, 72, 120, 0.07);
     grid-column: 1 / -1;
-  }
-  html[data-theme="dark"] .meta-pstyle {
-    border-color: rgba(110, 168, 230, 0.32);
-    background: rgba(110, 168, 230, 0.08);
   }
   .ark-abs {
     font-size: 0.62rem;
@@ -2840,10 +2802,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .outlook-matchup_ok { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
   .outlook-thin_total { background: rgba(154, 91, 18, 0.16); color: var(--grade-mid); }
   .outlook-under_ok { background: rgba(30, 90, 160, 0.14); color: #1a4a7a; }
-  html[data-theme="dark"] .outlook-under_ok {
-    background: rgba(110, 168, 230, 0.16);
-    color: #9cc7ef;
-  }
   .detail {
     padding: 0 1rem 1.15rem;
     border-top: 1px solid var(--line);
@@ -2876,14 +2834,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-color: rgba(30, 90, 160, 0.28);
     background: rgba(30, 90, 160, 0.06);
     grid-column: 1 / -1;
-  }
-  html[data-theme="dark"] .meta-matchup {
-    border-color: rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.05);
-  }
-  html[data-theme="dark"] .meta-history {
-    border-color: rgba(110, 168, 230, 0.32);
-    background: rgba(110, 168, 230, 0.08);
   }
   .meta-history .vs-recent {
     display: block;
@@ -2960,24 +2910,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--grade-low);
     border-color: rgba(154, 40, 18, 0.28);
   }
-  html[data-theme="dark"] .rate-chip.grade-elite,
-  html[data-theme="dark"] .rate-chip.grade-high {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.28);
-  }
-  html[data-theme="dark"] .rate-chip.grade-mid {
-    background: rgba(212, 160, 74, 0.14);
-    border-color: rgba(212, 160, 74, 0.32);
-  }
-  html[data-theme="dark"] .rate-chip.grade-low,
-  html[data-theme="dark"] .rate-chip.rate-spike {
-    background: rgba(224, 136, 136, 0.14);
-    border-color: rgba(224, 136, 136, 0.32);
-  }
-  html[data-theme="dark"] .rate-chip.rate-na {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.12);
-  }
   .model-keys .key-chip.rate-chip {
     border-radius: 999px;
   }
@@ -3014,11 +2946,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .outlook-banner.outlook-under_ok {
     background: rgba(30, 90, 160, 0.08); border-color: rgba(30, 90, 160, 0.24);
     color: #163a5c;
-  }
-  html[data-theme="dark"] .outlook-banner.outlook-under_ok {
-    background: rgba(110, 168, 230, 0.1);
-    border-color: rgba(110, 168, 230, 0.28);
-    color: #9cc7ef;
   }
   @media (max-width: 560px) {
     .outlook-banner { grid-template-columns: 1fr; gap: 0.25rem; }
@@ -3182,27 +3109,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     background: rgba(140, 40, 40, 0.12);
     color: var(--grade-low);
     border-color: rgba(140, 40, 40, 0.26);
-  }
-  html[data-theme="dark"] .batter .k.grade-elite,
-  html[data-theme="dark"] .kval.grade-elite,
-  html[data-theme="dark"] .kchip.grade-elite,
-  html[data-theme="dark"] .batter .k.grade-high,
-  html[data-theme="dark"] .kval.grade-high,
-  html[data-theme="dark"] .kchip.grade-high {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.28);
-  }
-  html[data-theme="dark"] .batter .k.grade-mid,
-  html[data-theme="dark"] .kval.grade-mid,
-  html[data-theme="dark"] .kchip.grade-mid {
-    background: rgba(212, 160, 74, 0.14);
-    border-color: rgba(212, 160, 74, 0.32);
-  }
-  html[data-theme="dark"] .batter .k.grade-low,
-  html[data-theme="dark"] .kval.grade-low,
-  html[data-theme="dark"] .kchip.grade-low {
-    background: rgba(224, 136, 136, 0.14);
-    border-color: rgba(224, 136, 136, 0.32);
   }
   .kchip {
     display: inline-flex;
@@ -3438,29 +3344,134 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     margin: 0 0 1rem; padding: 0.75rem 0.9rem; border-radius: 12px;
     background: rgba(154, 91, 18, 0.12); color: var(--noscript-ink); font-size: 0.9rem;
   }
-  /* Dark mode: neutralize leftover green fills to black/white chrome */
-  html[data-theme="dark"] .badge.official,
-  html[data-theme="dark"] .risk-clear,
-  html[data-theme="dark"] .outlook-matchup_ok,
-  html[data-theme="dark"] .ark-elite,
-  html[data-theme="dark"] .ark-strong,
-  html[data-theme="dark"] .site-home,
-  html[data-theme="dark"] .ark-pstyle-whiff,
-  html[data-theme="dark"] .style-chip.ark-pstyle-whiff,
-  html[data-theme="dark"] .model-keys .key-bip-whiff,
-  html[data-theme="dark"] .outlook-trust {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--grade-elite);
-    border-color: rgba(255, 255, 255, 0.22);
-  }
+  /* Dark chrome surfaces only */
   html[data-theme="dark"] .pitch-block[open] > summary,
   html[data-theme="dark"] .vs-summary {
     background: rgba(255, 255, 255, 0.04);
   }
+  /*
+   * Keep graded / status chips identical to light mode (solid fills + ink).
+   * Black theme is chrome-only; do not desaturate these.
+   */
+  html[data-theme="dark"] .ark-elite,
+  html[data-theme="dark"] .model-keys .key-bip-whiff,
+  html[data-theme="dark"] .outlook-trust,
+  html[data-theme="dark"] .ark-pstyle-whiff,
+  html[data-theme="dark"] .style-chip.ark-pstyle-whiff {
+    background: #c8ebd9;
+    color: #064832;
+    border-color: #2f8a5f;
+  }
+  html[data-theme="dark"] .ark-strong,
+  html[data-theme="dark"] .badge.official,
+  html[data-theme="dark"] .risk-clear,
+  html[data-theme="dark"] .outlook-matchup_ok,
+  html[data-theme="dark"] .site-home {
+    background: #d9f0e4;
+    color: #0f6a4d;
+    border-color: #4a9a72;
+  }
+  html[data-theme="dark"] .ark-avg,
+  html[data-theme="dark"] .badge.prior,
+  html[data-theme="dark"] .risk-low,
+  html[data-theme="dark"] .risk-medium,
+  html[data-theme="dark"] .outlook-thin_total,
+  html[data-theme="dark"] .role-swingman,
+  html[data-theme="dark"] .site-away,
+  html[data-theme="dark"] .ark-pstyle-fly_popup,
+  html[data-theme="dark"] .style-chip.ark-pstyle-fly_popup {
+    background: #f3e0c4;
+    color: #8a4b0f;
+    border-color: #c47a1a;
+  }
+  html[data-theme="dark"] .ark-soft,
+  html[data-theme="dark"] .ark-spike,
+  html[data-theme="dark"] .outlook-filler,
+  html[data-theme="dark"] .outlook-spike,
+  html[data-theme="dark"] .risk-high,
+  html[data-theme="dark"] .role-opener_likely {
+    background: #f0d0d0;
+    color: #8c2828;
+    border-color: #c45a5a;
+  }
+  html[data-theme="dark"] .outlook-under_ok,
+  html[data-theme="dark"] .model-keys .key-bip-contact,
+  html[data-theme="dark"] .ark-pstyle-contact_gb,
+  html[data-theme="dark"] .style-chip.ark-pstyle-contact_gb {
+    background: rgba(30, 90, 160, 0.14);
+    color: #1a4a7a;
+    border-color: rgba(30, 90, 160, 0.28);
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-filler {
+    background: #f0d0d0; border-color: #c45a5a; color: #8c2828;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-spike {
+    background: #f0d0d0; border-color: #c45a5a; color: #8c2828;
+  }
   html[data-theme="dark"] .outlook-banner.outlook-matchup_ok {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.18);
-    color: var(--grade-elite);
+    background: #d9f0e4; border-color: #4a9a72; color: #0f6a4d;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-thin_total {
+    background: #f3e0c4; border-color: #c47a1a; color: #8a4b0f;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-under_ok {
+    background: rgba(30, 90, 160, 0.14); border-color: rgba(30, 90, 160, 0.28); color: #163a5c;
+  }
+  html[data-theme="dark"] .rate-chip.grade-elite,
+  html[data-theme="dark"] .batter .k.grade-elite,
+  html[data-theme="dark"] .kval.grade-elite,
+  html[data-theme="dark"] .kchip.grade-elite {
+    background: #c8ebd9;
+    color: #064832;
+    border-color: #2f8a5f;
+  }
+  html[data-theme="dark"] .rate-chip.grade-high,
+  html[data-theme="dark"] .batter .k.grade-high,
+  html[data-theme="dark"] .kval.grade-high,
+  html[data-theme="dark"] .kchip.grade-high {
+    background: #d9f0e4;
+    color: #0f6a4d;
+    border-color: #4a9a72;
+  }
+  html[data-theme="dark"] .rate-chip.grade-mid,
+  html[data-theme="dark"] .batter .k.grade-mid,
+  html[data-theme="dark"] .kval.grade-mid,
+  html[data-theme="dark"] .kchip.grade-mid {
+    background: #f3e0c4;
+    color: #8a4b0f;
+    border-color: #c47a1a;
+  }
+  html[data-theme="dark"] .rate-chip.grade-low,
+  html[data-theme="dark"] .rate-chip.rate-spike,
+  html[data-theme="dark"] .batter .k.grade-low,
+  html[data-theme="dark"] .kval.grade-low,
+  html[data-theme="dark"] .kchip.grade-low {
+    background: #f0d0d0;
+    color: #8c2828;
+    border-color: #c45a5a;
+  }
+  /* Summary Exp K / IP numbers need brighter ink on black (not chips) */
+  html[data-theme="dark"] .num.grade-elite {
+    color: #9ee0c0;
+    background: rgba(15, 106, 77, 0.28);
+  }
+  html[data-theme="dark"] .num.grade-elite .nlab { color: rgba(158, 224, 192, 0.75); }
+  html[data-theme="dark"] .num.grade-high,
+  html[data-theme="dark"] .grade-legend .grade-high { color: #6fcf9f; }
+  html[data-theme="dark"] .num.grade-mid,
+  html[data-theme="dark"] .grade-legend .grade-mid { color: #e0b06a; }
+  html[data-theme="dark"] .num.grade-low,
+  html[data-theme="dark"] .grade-legend .grade-low { color: #e08888; }
+  html[data-theme="dark"] .grade-legend .grade-elite { color: #9ee0c0; }
+  html[data-theme="dark"] .hand.hand-l {
+    background: #f3e0c4;
+    border-color: #c47a1a;
+    color: #8a4b0f;
+  }
+  html[data-theme="dark"] .hand.hand-r {
+    background: #d9f0e4;
+    border-color: #4a9a72;
+    color: #0f6a4d;
   }
 </style>
 </head>

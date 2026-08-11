@@ -14,6 +14,60 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
+## 2026-08-10 grade — TRUST / ELITE / WHIFF / SPIKE confirmed; advanced noise watched
+
+Full slate in `backtest-2026-08-10.csv` (n=**20** Final). Mean Exp K **4.67 → 5.15** act (bias **+0.48**, MAE **1.38**). Model slightly under — same direction as several prior nights.
+
+| Solo grade | n | mean expK → act | Notes |
+|------------|---|-----------------|-------|
+| **ELITE** | 5 | 5.74 → **6.80** | Gore **9**, Kremer **7**, Detmers/Scott/Mize **6** — all ≥6 |
+| **STRONG** | 3 | 4.02 → **6.00** | Dobbins / Painter / Tidwell all **6** |
+| **AVG** | 5 | 4.62 → **3.60** | Cameron **2**, Hughes **3**, Wesneski **4** — pass lane right |
+| **SOFT** | 7 | 4.23 → 4.71 | No-SPIKE held under-ish; SPIKE arms (Henderson **7**, Skubal **6**) spiked |
+
+| Layer | Signal |
+|-------|--------|
+| **TRUST** (n=2) | Detmers **6/6.0**, Gore **9/5.1** — both overs cashed |
+| **WHIFF** (n=5) | 5.63 → **6.80**, game K% **30.1** — best style bucket |
+| **SPIKE** (n=8) | 4.73 → **6.12** — soft-under veto correct |
+| **whiff_prone opp** (n=4) | avg **7.0K** / game K% **30** |
+| **Stuff+ ≥105** (n=5) | avg **6.2K** (Detmers/Scott/Skubal/Henderson/Tidwell) |
+| **contact_gb** | Gray **4K / 15.4%** in 6 IP — BIP-outs script true |
+| **SOFT no-SPIKE** | Elder **4**, Soroka **4**, Taillon **3** — stayed soft |
+
+### Ticket / lean scorecard
+
+| Lean | Actual | Result |
+|------|--------|--------|
+| **TRUST Detmers** | 6 K / 6.0 IP | **HIT** — length held (unlike 8/5 short Detmers) |
+| **TRUST Gore** | **9 K** / 5.1 IP | **HIT** — ceiling cashed |
+| **ELITE+WHIFF Scott** | 6 K / 4.0 IP | **HIT** thin length; K% still 28.6 |
+| **SPIKE no soft U — Skubal / Henderson** | 6 / 7 | Veto **correct** |
+| **SOFT no-SPIKE Elder / Soroka / Taillon** | 4 / 4 / 3 | Under-ish **HOLD** |
+| **AVG pass Cameron / Hughes / Wesneski** | 2 / 3 / 4 | Pass **correct** — no juice |
+| **Kremer ELITE** (elev FIP 5.89 / Stuff+ 89 pre-flag) | **7 K** / 7.0 IP | Arsenal + whiff_prone beat advanced fade |
+| **Tidwell** (Exp 1.30 opener proj; STRONG+SPIKE) | **6 K** / 5.2 IP | Short-IP proj lied; SPIKE/STRONG was the true read |
+
+### Reinforced (lock — already process)
+
+1. **TRUST** when IP holds — Detmers/Gore both cashed.
+2. **ELITE / STRONG solo** as over juice — every ELITE/STRONG ≥6K.
+3. **WHIFF** is the K-style edge; **SPIKE** still vetoes soft U6.
+4. **whiff_prone opp** confirms overs; **AVG pass** and **SOFT no-SPIKE** stay non-nuke.
+5. **Stuff+ ≥105** supported the SPIKE/TRUST ceiling pack this night (confirm only — does not move Exp K).
+
+### Watch only (n=1 — do **not** rewrite rules yet)
+
+| Read | Why it stays provisional |
+|------|--------------------------|
+| Season **Strike% ≥65** sizing gate | Did **not** separate (4.9K vs 5.3K). Game Strike% collapses still matter; board Strike% alone did not. |
+| **FIP / Loc+** as K predictors | Low vs high FIP both ~5.1–5.2K; Loc+≥105 flat vs rest. |
+| **under_n ≥2** on SPIKE/STRONG | Tidwell/Lopez noise — do not under those chips. |
+| **Elev FIP vetoes ELITE** | Kremer smoked the fade; keep as caution, not auto-pass. |
+| Short/opener **IP proj** (Tidwell 1.3→5.2) | Prefer STRONG+SPIKE over raw Exp when role/proj looks broken. |
+
+**Process stance after 8/10:** reinforce the chip stack (TRUST · ELITE/STRONG · WHIFF · SPIKE · whiff_prone). Leave Strike%/FIP/Loc+/under_n tweaks as watch items until they show clean on ~2–3 graded nights.
+
 ## 2026-08-08 grade — board clears cashed; under lane mixed
 
 Full slate in `backtest-2026-08-08.csv` (n=29 scored, mean Exp K 4.81 → act 4.83, bias **+0.02**).

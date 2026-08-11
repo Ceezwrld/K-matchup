@@ -19,6 +19,15 @@ Length / risk,TTO,">=2.6",2.2-2.6,<2.2,Times through order
 Length / risk,BB/9,"<=2.8 (best <=2.2)",2.8-3.5,">=3.5",Risk warn 3.5 / high 4.0
 Length / risk,HR/9,"<=1.2 (best <=0.9)",1.2-1.5,">=1.5",Risk warn 1.2 / high 1.5
 Length / risk,xFIP,"<=3.9 (best <=3.4)",3.9-4.5,">=4.5",FILLER soft often >=4.3
+Length / risk,FIP,"<=3.9 (best <=3.4)",3.9-4.5,">=4.5",Confirm only; same bands as xFIP
+Length / risk,SIERA,"<=3.9 (best <=3.4)",3.9-4.5,">=4.5",Credits GB/popup weak contact; confirm only
+Length / risk,xERA,"<=3.9 (best <=3.4)",3.9-4.5,">=4.5",Savant/FG expected ERA; luck check
+Expected / contact,xwOBA allowed,"<=0.300 (best)",0.300-0.330,">=0.330",Savant pitcher expected; lower better
+Expected / contact,xBA allowed,"<=0.230 (best)",0.230-0.270,">=0.270",Savant; lower better
+Expected / contact,xSLG allowed,"<=0.380 (best)",0.380-0.450,">=0.450",Savant; lower better
+Stuff+,Stuff+ (FG),">=105 (elite >=115)",95-105,<95,100 = average; confirm only — pairs with SPIKE proxy
+Stuff+,Location+ / Pitching+,">=105 (elite >=115)",95-105,<95,Command + combined quality; confirm only
+Stuff+,Pitch RV/100,">=0.8 (elite >=1.5)",0-0.8,<0,FanGraphs run value / 100 pitches; + prevents runs
 Length / risk,Outing risk,clear / low,medium,high,
 Length / risk,FB velo,">=94.5 (elite >=96.5)",92-94.5,<92,SPIKE helper with stuff when >=95
 Form,L3 K,">=5 (elite >=6.5)",3.5-5,<3.5,Last 3 starts avg Ks

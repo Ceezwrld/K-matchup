@@ -325,6 +325,12 @@ Also check edges on the card: **vs league** (`expected_k_pct − 22.5`) and **vs
 
 **Stuff ceiling (velo/whiff by pitch)** — separate from solo grade. Usage-weighted pitcher-own whiff% + primary FB velo → `stuff_grade` / **SPIKE** chip. Soft solo **+ SPIKE** = do **not** auto-under (U6.5+ or pass). Does not move Exp K.
 
+**Advanced confirm layer (FIP / SIERA / xStats / Stuff+ / pitch RV) — display only:**
+- **FIP · xFIP · SIERA · xERA** on Rates — ERA estimators; SIERA credits GB/popup weak contact. Lower better. Confirm length / soft-contact / luck — **does not flip** solo or Exp K.
+- **xwOBA / xBA / xSLG allowed** (Savant) — contact quality allowed; lower = better suppression / sustainable profile.
+- **Stuff+ · Loc+ · Pit+** (FanGraphs, 100 = avg) — true pitch quality next to the whiff/velo SPIKE proxy.
+- **Arsenal RV/100 + pitch Stuff+** — FanGraphs pitch run value (positive = prevents runs) and per-pitch Stuff+. Use to see which pitch is carrying the arsenal; confirm-only.
+
 **Lineup contact / BIP** — opposing nine’s balls-in-play rate (`lineup_bip_pct`) + `contact_grade` (`whiff_prone` / `neutral` / `contact_heavy`). Contact-heavy BIP trims Exp K; whiff-prone (high K% / low BIP) boosts it. Secondary to solo arsenal grade — sizes the number, doesn’t flip the side.
 
 **Pitcher style (Ks vs BIP outs)** — season FanGraphs K%/Contact%/GB%/FB%/IFFB → `pitcher_style` chips (`P-WHIFF` / `P-GB` / `P-FLY` / `P-BAL`). Confirmation only (no Exp K move). WHIFF confirms overs / SPIKE caution on soft unders; GB/FLY = outs via contact — soft matchup strengthens under; don’t force huge overs on elite mix + contact style without length.

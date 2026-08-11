@@ -220,8 +220,25 @@ def _grade_for(metric: str, value: Any) -> str | None:
         return _grade_band_desc(value, 2.2, 2.8, 3.5)
     if metric == "hr9":
         return _grade_band_desc(value, 0.9, 1.2, 1.5)
-    if metric == "xfip":
+    if metric in ("xfip", "fip", "siera", "xera"):
+        # Lower ERA estimators = better (confirm-only; does not flip Exp K)
         return _grade_band_desc(value, 3.40, 3.90, 4.50)
+    if metric == "pitcher_xwoba":
+        # Lower xwOBA allowed = better contact suppression (lg ~.315)
+        return _grade_band_desc(value, 0.300, 0.315, 0.330)
+    if metric == "pitcher_xba":
+        return _grade_band_desc(value, 0.230, 0.250, 0.270)
+    if metric == "pitcher_xslg":
+        return _grade_band_desc(value, 0.380, 0.410, 0.450)
+    if metric in ("stuff_plus", "location_plus", "pitching_plus", "pitch_stuff_plus"):
+        # FanGraphs Stuff+/Location+/Pitching+ — 100 = average
+        return _grade_band(value, 95.0, 105.0, 115.0)
+    if metric == "pitch_run_value_100":
+        # FanGraphs pitch run value / 100 — positive helps pitcher
+        return _grade_band(value, 0.0, 0.8, 1.5)
+    if metric == "pitch_run_value":
+        # Season total pitch run value — positive helps pitcher
+        return _grade_band(value, 0.0, 5.0, 12.0)
     if metric == "pitcher_k_pct":
         return _grade_band(value, 20.0, 24.0, 27.0)
     if metric == "pitcher_contact_pct":
@@ -521,6 +538,9 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "pitcher_whiff_pct": _json_safe(p.get("pitcher_whiff_pct")),
                     "pitcher_velo": _json_safe(p.get("pitcher_velo")),
                     "pitcher_k_pct": _json_safe(p.get("pitcher_k_pct")),
+                    "run_value": _json_safe(p.get("run_value")),
+                    "run_value_100": _json_safe(p.get("run_value_100")),
+                    "pitch_stuff_plus": _json_safe(p.get("pitch_stuff_plus")),
                 }
             )
         clean_pitch_avg = []
@@ -538,6 +558,9 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "pitcher_whiff_pct": _json_safe(p.get("pitcher_whiff_pct")),
                     "pitcher_velo": _json_safe(p.get("pitcher_velo")),
                     "pitcher_k_pct": _json_safe(p.get("pitcher_k_pct")),
+                    "run_value": _json_safe(p.get("run_value")),
+                    "run_value_100": _json_safe(p.get("run_value_100")),
+                    "pitch_stuff_plus": _json_safe(p.get("pitch_stuff_plus")),
                 }
             )
 
@@ -573,6 +596,15 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "hr9": _json_safe(r.get("hr9")),
                 "k9": _json_safe(r.get("k9")),
                 "xfip": _json_safe(r.get("xfip")),
+                "fip": _json_safe(r.get("fip")),
+                "siera": _json_safe(r.get("siera")),
+                "xera": _json_safe(r.get("xera")),
+                "stuff_plus": _json_safe(r.get("stuff_plus")),
+                "location_plus": _json_safe(r.get("location_plus")),
+                "pitching_plus": _json_safe(r.get("pitching_plus")),
+                "xba": _json_safe(r.get("xba")),
+                "xslg": _json_safe(r.get("xslg")),
+                "xwoba": _json_safe(r.get("xwoba")),
                 "strike_pct": _json_safe(r.get("strike_pct")),
                 "f_strike_pct": _json_safe(r.get("f_strike_pct")),
                 "zone_pct": _json_safe(r.get("zone_pct")),
@@ -816,6 +848,44 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
                     1,
                     suffix="%",
                     title="Pitcher's whiff% on this pitch — green = miss / K helper, red = soft",
+                )
+            )
+        if p.get("pitch_stuff_plus") is not None:
+            line1_chips.append(
+                _rate_chip(
+                    "Stuff+",
+                    p.get("pitch_stuff_plus"),
+                    "pitch_stuff_plus",
+                    0,
+                    title="FanGraphs Stuff+ for this pitch type (100 = avg). Confirm only.",
+                )
+            )
+        if p.get("run_value_100") is not None:
+            line1_chips.append(
+                _rate_chip(
+                    "RV/100",
+                    p.get("run_value_100"),
+                    "pitch_run_value_100",
+                    2,
+                    signed=True,
+                    title=(
+                        "FanGraphs run value per 100 pitches — positive prevents runs "
+                        "(count/base-state aware linear weights). Confirm only."
+                    ),
+                )
+            )
+        elif p.get("run_value") is not None:
+            line1_chips.append(
+                _rate_chip(
+                    "RV",
+                    p.get("run_value"),
+                    "pitch_run_value",
+                    1,
+                    signed=True,
+                    title=(
+                        "FanGraphs season pitch run value — positive prevents runs. "
+                        "Confirm only."
+                    ),
                 )
             )
 
@@ -1240,11 +1310,32 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             title="Home-run rate — lower is better",
         ),
         _rate_chip(
+            "FIP",
+            row.get("fip"),
+            "fip",
+            2,
+            title="FIP — fielding-independent ERA estimator; lower is better (confirm only)",
+        ),
+        _rate_chip(
             "xFIP",
             row.get("xfip"),
             "xfip",
             2,
-            title="Expected FIP — lower is better",
+            title="Expected FIP — HR/FB normalized; lower is better (confirm only)",
+        ),
+        _rate_chip(
+            "SIERA",
+            row.get("siera"),
+            "siera",
+            2,
+            title="SIERA — skill-interactive ERA; credits GB/popup weak contact (confirm only)",
+        ),
+        _rate_chip(
+            "xERA",
+            row.get("xera"),
+            "xera",
+            2,
+            title="Expected ERA (Savant/FG) — quality of contact allowed (confirm only)",
         ),
         _rate_chip(
             "K9",
@@ -1254,6 +1345,36 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             title="Season K/9 — higher helps K scripts",
         ),
     ]
+    if row.get("xwoba") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "xwOBA",
+                row.get("xwoba"),
+                "pitcher_xwoba",
+                3,
+                title="Expected wOBA allowed (Savant) — lower = better contact suppression",
+            )
+        )
+    if row.get("xba") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "xBA",
+                row.get("xba"),
+                "pitcher_xba",
+                3,
+                title="Expected BA allowed (Savant) — lower is better",
+            )
+        )
+    if row.get("xslg") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "xSLG",
+                row.get("xslg"),
+                "pitcher_xslg",
+                3,
+                title="Expected SLG allowed (Savant) — lower is better",
+            )
+        )
     if row.get("strike_pct") is not None:
         rates_chips.append(
             _rate_chip(
@@ -1393,6 +1514,36 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     rates_html = "".join(rates_chips) + form_html
 
     stuff_bits: list[str] = []
+    if row.get("stuff_plus") is not None:
+        stuff_bits.append(
+            _rate_chip(
+                "Stuff+",
+                row.get("stuff_plus"),
+                "stuff_plus",
+                0,
+                title="FanGraphs Stuff+ — pitch quality vs average (100). Confirm only; does not change Exp K.",
+            )
+        )
+    if row.get("location_plus") is not None:
+        stuff_bits.append(
+            _rate_chip(
+                "Loc+",
+                row.get("location_plus"),
+                "location_plus",
+                0,
+                title="FanGraphs Location+ — command / location quality (100 = avg). Confirm only.",
+            )
+        )
+    if row.get("pitching_plus") is not None:
+        stuff_bits.append(
+            _rate_chip(
+                "Pit+",
+                row.get("pitching_plus"),
+                "pitching_plus",
+                0,
+                title="FanGraphs Pitching+ — Stuff+ and Location+ combined (100 = avg). Confirm only.",
+            )
+        )
     if row.get("stuff_whiff_pct") is not None:
         sg = (row.get("stuff_grade") or "").strip()
         tip = f"Usage-weighted pitcher whiff%{'' if not sg else ' (' + sg + ')'}"

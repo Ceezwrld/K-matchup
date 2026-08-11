@@ -19,6 +19,7 @@ from sharpen import (  # noqa: E402
     apply_lineup_discipline_overlay,
     apply_lineup_offense_overlay,
     apply_attack_plate_stuff_bump,
+    apply_pitcher_advanced_metrics,
     apply_pitcher_stuff_overlay,
     apply_recent_form_overlay,
     apply_ticket_outlook,
@@ -37,6 +38,7 @@ from sharpen import (  # noqa: E402
     fetch_pitcher_hand_mixes,
     fetch_pitcher_rate_stats,
     fetch_pitcher_recent_form,
+    fetch_savant_pitcher_expected,
     merge_risk_metrics,
     platoon_adjust_k_pct,
     summarize_lineup_offense,
@@ -1485,6 +1487,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     fangraphs = fetch_fangraphs_pitching(year, args.verbose, log)
     fangraphs_batting = fetch_fangraphs_batting(year, args.verbose, log)
+    savant_pitcher_expected = fetch_savant_pitcher_expected(year, args.verbose, log)
     api_rates = fetch_pitcher_rate_stats(pitcher_ids, year, args.verbose, log)
     batter_offense = fetch_batter_offense_profiles(
         batter_ids, year, args.verbose, log
@@ -1576,6 +1579,12 @@ def main(argv: list[str] | None = None) -> int:
             "hr9": risk_metrics.get("hr9"),
             "k9": risk_metrics.get("k9"),
             "xfip": risk_metrics.get("xfip"),
+            "fip": risk_metrics.get("fip"),
+            "siera": risk_metrics.get("siera"),
+            "xera": risk_metrics.get("xera"),
+            "stuff_plus": risk_metrics.get("stuff_plus"),
+            "location_plus": risk_metrics.get("location_plus"),
+            "pitching_plus": risk_metrics.get("pitching_plus"),
             "pitcher_k_pct": risk_metrics.get("pitcher_k_pct"),
             "pitcher_contact_pct": risk_metrics.get("pitcher_contact_pct"),
             "z_contact_pct": risk_metrics.get("z_contact_pct"),
@@ -1782,6 +1791,12 @@ def main(argv: list[str] | None = None) -> int:
 
     # Pitcher-own velo/whiff ceiling (SPIKE) — before ticket outlook notes.
     out = apply_pitcher_stuff_overlay(out, savant_pitcher_stuff, hand_mixes)
+    # FIP/SIERA/Stuff+/xStats + per-pitch run value — confirm-only display.
+    out = apply_pitcher_advanced_metrics(
+        out,
+        fangraphs=fangraphs,
+        savant_expected=savant_pitcher_expected,
+    )
     # Tiny Exp K bump for full attack-plate stacks only; re-rank after.
     out = apply_attack_plate_stuff_bump(out)
     out = out.sort_values(

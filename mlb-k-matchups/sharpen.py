@@ -19,6 +19,10 @@
 
 Hits-prop helpers (barrel / hard-hit / xwOBA) live here too but are
 display-only — they never modify expected_ks.
+
+12. Advanced confirm layer — FIP/SIERA/xERA, Savant xBA/xSLG/xwOBA,
+    FanGraphs Stuff+/Location+/Pitching+, and per-pitch run value.
+    Display-only; never modifies expected_ks or solo arsenal grade.
 """
 
 from __future__ import annotations
@@ -105,6 +109,30 @@ SAVANT_EXPECTED_URL = (
     "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
     "?type=batter&year={year}&position=&team=&filterType=pa&min=1&csv=true"
 )
+
+SAVANT_PITCHER_EXPECTED_URL = (
+    "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
+    "?type=pitcher&year={year}&position=&team=&filterType=pa&min=1&csv=true"
+)
+
+# FanGraphs pitch-value / Stuff+ fields → Savant pitch_type codes.
+# Run values (wFB/wSL/…) are season totals; /C is per 100 pitches.
+# Stuff+ (sp_s_*) is 100-neutral pitch quality. Confirm-only — never moves Exp K.
+FG_PITCH_QUALITY: dict[str, dict[str, str | None]] = {
+    "FF": {"rv": "wFB", "rv100": "wFB/C", "stuff_plus": "sp_s_FF"},
+    "SI": {"rv": "wFB", "rv100": "wFB/C", "stuff_plus": "sp_s_SI"},
+    "FT": {"rv": "wFB", "rv100": "wFB/C", "stuff_plus": "sp_s_SI"},
+    "FC": {"rv": "wCT", "rv100": "wCT/C", "stuff_plus": "sp_s_FC"},
+    "SL": {"rv": "wSL", "rv100": "wSL/C", "stuff_plus": "sp_s_SL"},
+    "ST": {"rv": "wSL", "rv100": "wSL/C", "stuff_plus": "sp_s_SL"},
+    "SV": {"rv": "wSL", "rv100": "wSL/C", "stuff_plus": "sp_s_SL"},
+    "CU": {"rv": "wCB", "rv100": "wCB/C", "stuff_plus": "sp_s_CU"},
+    "KC": {"rv": "wCB", "rv100": "wCB/C", "stuff_plus": "sp_s_KC"},
+    "CH": {"rv": "wCH", "rv100": "wCH/C", "stuff_plus": "sp_s_CH"},
+    "FS": {"rv": "wSF", "rv100": "wSF/C", "stuff_plus": "sp_s_FS"},
+    "FO": {"rv": "wSF", "rv100": "wSF/C", "stuff_plus": "sp_s_FO"},
+    "KN": {"rv": "wKN", "rv100": "wKN/C", "stuff_plus": None},
+}
 
 # Ignore non-pitch / rare codes when building mixes.
 SKIP_PITCH_TYPES = {"PO", "IN", "AB", "UN", "FA", ""}
@@ -1204,17 +1232,46 @@ def fetch_fangraphs_batting(
     return out
 
 
+def _fg_optional(value: Any) -> float | None:
+    """FanGraphs numeric → float, or None when missing/NaN."""
+    f = _fg_float(value)
+    if pd.isna(f):
+        return None
+    return float(f)
+
+
+def _fg_pitch_quality_map(row: dict[str, Any]) -> dict[str, dict[str, float | None]]:
+    """Per Savant pitch_type: FanGraphs run value + Stuff+ (confirm-only)."""
+    out: dict[str, dict[str, float | None]] = {}
+    for pt, fields in FG_PITCH_QUALITY.items():
+        rv = _fg_optional(row.get(fields["rv"])) if fields.get("rv") else None
+        rv100 = _fg_optional(row.get(fields["rv100"])) if fields.get("rv100") else None
+        sp = (
+            _fg_optional(row.get(fields["stuff_plus"]))
+            if fields.get("stuff_plus")
+            else None
+        )
+        if rv is None and rv100 is None and sp is None:
+            continue
+        out[pt] = {
+            "run_value": rv,
+            "run_value_100": rv100,
+            "stuff_plus": sp,
+        }
+    return out
+
+
 def fetch_fangraphs_pitching(
     year: int, verbose: bool, log: Callable[[bool, str], None]
-) -> dict[int, dict[str, float]]:
-    """xFIP / rates / contact profile (K%, Contact%, Z-Contact%, GB%, FB%, IFFB%) by MLBAM id."""
+) -> dict[int, dict[str, Any]]:
+    """FanGraphs pitcher rates + FIP/SIERA/xERA + Stuff+ + pitch run values."""
     url = FANGRAPHS_PITCHING_URL.format(year=year)
     try:
         payload = _get(url, verbose, log).json()
     except Exception as exc:  # noqa: BLE001
         log(verbose, f"FanGraphs fetch failed: {exc}")
         return {}
-    out: dict[int, dict[str, float]] = {}
+    out: dict[int, dict[str, Any]] = {}
     for row in payload.get("data") or []:
         pid = row.get("xMLBAMID")
         if pid is None:
@@ -1223,6 +1280,15 @@ def fetch_fangraphs_pitching(
             out[int(pid)] = {
                 "xfip": float(row["xFIP"]) if row.get("xFIP") is not None else float("nan"),
                 "fip": float(row["FIP"]) if row.get("FIP") is not None else float("nan"),
+                "siera": (
+                    float(row["SIERA"]) if row.get("SIERA") is not None else float("nan")
+                ),
+                "xera": (
+                    float(row["xERA"]) if row.get("xERA") is not None else float("nan")
+                ),
+                "stuff_plus": _fg_optional(row.get("sp_stuff")),
+                "location_plus": _fg_optional(row.get("sp_location")),
+                "pitching_plus": _fg_optional(row.get("sp_pitching")),
                 "bb9": float(row["BB/9"]) if row.get("BB/9") is not None else float("nan"),
                 "hr9": float(row["HR/9"]) if row.get("HR/9") is not None else float("nan"),
                 "k9": float(row["K/9"]) if row.get("K/9") is not None else float("nan"),
@@ -1244,9 +1310,155 @@ def fetch_fangraphs_pitching(
                 "zone_pct": _fg_pct(row.get("Zone%")),
                 "pitches": _fg_float(row.get("Pitches")),
                 "strikes": _fg_float(row.get("Strikes")),
+                "pitch_quality": _fg_pitch_quality_map(row),
             }
         except (TypeError, ValueError):
             continue
+    return out
+
+
+def fetch_savant_pitcher_expected(
+    year: int, verbose: bool, log: Callable[[bool, str], None]
+) -> dict[int, dict[str, float]]:
+    """Savant expected stats vs pitcher: xBA / xSLG / xwOBA / xERA (confirm-only)."""
+    url = SAVANT_PITCHER_EXPECTED_URL.format(year=year)
+    try:
+        text = _get(url, verbose, log).content.decode("utf-8-sig")
+        df = pd.read_csv(StringIO(text))
+    except Exception as exc:  # noqa: BLE001
+        log(verbose, f"Savant pitcher expected fetch failed: {exc}")
+        return {}
+    if df.empty or "player_id" not in df.columns:
+        return {}
+    out: dict[int, dict[str, float]] = {}
+    for _, row in df.iterrows():
+        try:
+            pid = int(row["player_id"])
+        except (TypeError, ValueError):
+            continue
+
+        def _num(key: str) -> float:
+            val = row.get(key)
+            try:
+                f = float(val)
+            except (TypeError, ValueError):
+                return float("nan")
+            return f
+
+        out[pid] = {
+            "xba": _num("est_ba"),
+            "xslg": _num("est_slg"),
+            "xwoba": _num("est_woba"),
+            "xera": _num("xera"),
+            "ba": _num("ba"),
+            "slg": _num("slg"),
+            "woba": _num("woba"),
+            "era": _num("era"),
+        }
+    return out
+
+
+def attach_pitch_quality(
+    arsenal: list[dict[str, Any]] | None,
+    pitch_quality: dict[str, dict[str, float | None]] | None,
+) -> list[dict[str, Any]]:
+    """Copy FanGraphs RV / Stuff+ onto arsenal pitch rows (display-only)."""
+    if not arsenal:
+        return []
+    pq = pitch_quality or {}
+    out: list[dict[str, Any]] = []
+    for pitch in arsenal:
+        row = dict(pitch)
+        pt = str(row.get("pitch_type") or "").upper()
+        meta = pq.get(pt) or {}
+        row["run_value"] = meta.get("run_value")
+        row["run_value_100"] = meta.get("run_value_100")
+        row["pitch_stuff_plus"] = meta.get("stuff_plus")
+        out.append(row)
+    return out
+
+
+def apply_pitcher_advanced_metrics(
+    df: pd.DataFrame,
+    *,
+    fangraphs: dict[int, dict[str, Any]] | None = None,
+    savant_expected: dict[int, dict[str, float]] | None = None,
+) -> pd.DataFrame:
+    """Attach FIP/SIERA/Stuff+/expected + per-pitch RV (confirm-only; no Exp K)."""
+    out = df.copy()
+    fangraphs = fangraphs or {}
+    savant_expected = savant_expected or {}
+    for col, default in (
+        ("fip", pd.NA),
+        ("siera", pd.NA),
+        ("xera", pd.NA),
+        ("stuff_plus", pd.NA),
+        ("location_plus", pd.NA),
+        ("pitching_plus", pd.NA),
+        ("xba", pd.NA),
+        ("xslg", pd.NA),
+        ("xwoba", pd.NA),
+        ("ba_against", pd.NA),
+        ("slg_against", pd.NA),
+        ("woba_against", pd.NA),
+    ):
+        if col not in out.columns:
+            out[col] = default
+
+    for i, row in out.iterrows():
+        pid_raw = row.get("pitcher_id")
+        try:
+            pid = int(pid_raw) if pid_raw is not None and not pd.isna(pid_raw) else None
+        except (TypeError, ValueError):
+            pid = None
+        if pid is None:
+            continue
+        fg = fangraphs.get(pid) or {}
+        exp = savant_expected.get(pid) or {}
+
+        def _set(col: str, val: Any) -> None:
+            if val is None:
+                return
+            try:
+                f = float(val)
+            except (TypeError, ValueError):
+                return
+            if pd.isna(f):
+                return
+            out.at[i, col] = f
+
+        # Prefer row values already merged from risk_metrics; fill gaps from FG.
+        for col in (
+            "fip",
+            "siera",
+            "xera",
+            "stuff_plus",
+            "location_plus",
+            "pitching_plus",
+        ):
+            cur = row.get(col)
+            if cur is None or (isinstance(cur, float) and pd.isna(cur)):
+                _set(col, fg.get(col))
+
+        # Savant expected contact quality allowed (pitcher perspective).
+        _set("xba", exp.get("xba"))
+        _set("xslg", exp.get("xslg"))
+        _set("xwoba", exp.get("xwoba"))
+        _set("ba_against", exp.get("ba"))
+        _set("slg_against", exp.get("slg"))
+        _set("woba_against", exp.get("woba"))
+        # Prefer Savant xERA when present; else keep FanGraphs xERA.
+        if exp.get("xera") is not None and not pd.isna(exp.get("xera")):
+            _set("xera", exp.get("xera"))
+
+        pq = fg.get("pitch_quality") or row.get("pitch_quality") or {}
+        if not isinstance(pq, dict):
+            pq = {}
+        for key in ("arsenal", "pitch_lineup_avg"):
+            pitches = row.get(key)
+            if isinstance(pitches, list) and pitches:
+                out.at[i, key] = attach_pitch_quality(pitches, pq)
+
     return out
 
 
@@ -1397,7 +1609,7 @@ def classify_pitcher_style(
 
 def merge_risk_metrics(
     pitcher_id: int | None,
-    fangraphs: dict[int, dict[str, float]],
+    fangraphs: dict[int, dict[str, Any]],
     api_rates: dict[int, dict[str, float]],
 ) -> dict[str, Any]:
     empty = {
@@ -1405,6 +1617,13 @@ def merge_risk_metrics(
         "hr9": None,
         "k9": None,
         "xfip": None,
+        "fip": None,
+        "siera": None,
+        "xera": None,
+        "stuff_plus": None,
+        "location_plus": None,
+        "pitching_plus": None,
+        "pitch_quality": {},
         "pitcher_k_pct": None,
         "pitcher_contact_pct": None,
         "z_contact_pct": None,
@@ -1448,6 +1667,15 @@ def merge_risk_metrics(
     hr9 = _pick("hr9")
     k9 = _pick("k9")
     xfip = _pick("xfip")
+    fip = _pick("fip")
+    siera = _pick("siera")
+    xera = _pick("xera")
+    stuff_plus = _pick("stuff_plus")
+    location_plus = _pick("location_plus")
+    pitching_plus = _pick("pitching_plus")
+    pitch_quality = fg.get("pitch_quality") or {}
+    if not isinstance(pitch_quality, dict):
+        pitch_quality = {}
     pk = _pick("pitcher_k_pct")
     pc = _pick("pitcher_contact_pct")
     zc = _pick("z_contact_pct")
@@ -1477,6 +1705,13 @@ def merge_risk_metrics(
         "hr9": hr9,
         "k9": k9,
         "xfip": xfip,
+        "fip": fip,
+        "siera": siera,
+        "xera": xera,
+        "stuff_plus": stuff_plus,
+        "location_plus": location_plus,
+        "pitching_plus": pitching_plus,
+        "pitch_quality": pitch_quality,
         "pitcher_k_pct": pk,
         "pitcher_contact_pct": pc,
         "z_contact_pct": zc,

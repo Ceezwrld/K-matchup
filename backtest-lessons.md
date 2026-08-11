@@ -129,10 +129,23 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
    When official lineups post (or when asked for a full-metric pass), re-run the board and deliver **this exact shape** — not the short morning lean alone:
    1. **Slate status** — n starters · official vs prior count · games still on prior.
    2. **Prior → OFF callouts** — which arms flipped, any starter/role change, BIP/K%/wRC+ moves that change the lean.
-   3. **Every-metric scan** per notable arm: solo · STYLE · stuff/SPIKE · SwStr/Contact/Z-Contact · Strike%/Zone%/O-Swing · Soft% · K9/L3 · BB9/xFIP/IP/risk · opp K%/BIP/BB% · **opp wOBA/wRC+/ISO** · TRUST/UNDER_OK/FILLER/SPIKE.
+   3. **Every-metric scan** per notable arm: solo · STYLE · stuff/SPIKE · SwStr/Contact/Z-Contact · Strike%/Zone%/O-Swing · Soft% · K9/L3 · BB9/xFIP/IP/risk · opp K%/BIP/BB% · **opp wOBA/wRC+/ISO** · TRUST/UNDER_OK/FILLER/SPIKE · **plus advanced confirm layer below**.
    4. **What stands out** — TRUST stacks, ceiling/SPIKE traps, dead-matchup elite miss, attack-plate without WHIFF, thin under lane, pass/trap names.
    5. **Ticket lean table** — Tier 1 / co-anchor / ceiling / pass juiced / FILLER / no soft U6, with the metric reason on each.
    Explain **pitcher + opposing lineup** expectations in plain language (what the prior/OFF nine implies for Ks and leash). Better explained → clearer ticket.
+
+3e. **Advanced confirm / disprove layer (locked — use on every pitcher essay from 8/11 onward):**
+   After the core stack (solo → STYLE → SPIKE → Rates → opp leash), run these **confirm-only** checks. They never flip solo alone; they **size** the lean or veto juice.
+
+   | Bucket | Metrics | Confirms lean when… | Disproves / caps lean when… |
+   |--------|---------|---------------------|-----------------------------|
+   | ERA estimators | FIP · xFIP · SIERA · xERA | All ≤~3.9 and aligned with WHIFF/TRUST | Elev (≥4.3) on a juiced over; SIERA≫FIP without GB/FLY story |
+   | Expected contact | xwOBA · xBA · xSLG allowed | Low xwOBA (≲.300) / soft xSLG → leash OK | High xwOBA/xSLG → HR/BIP risk even with Ks |
+   | Stuff quality | Stuff+ · Loc+ · Pit+ (100=avg) | Stuff+ ≥105 + Loc+ ≥100 supports TRUST/SPIKE | Soft Stuff+ (&lt;95) undercuts WHIFF story; high Stuff+ + soft Loc+ = BB/short-outing risk |
+   | Arsenal weapons | Pitch Stuff+ · RV/100 | Best pitches are +RV and match lineup K holes | Featured pitch is −RV/100 (liability); weapons don’t overlap opp whiff |
+
+   **Essay line required:** one short “Confirms / Disproves” blurb using these metrics before the ticket call.
+   Prior-lineup reviews use the same shape — label **PRIOR** and re-check on OFF.
 
 4. **Re-refresh when lineups confirm** — same report shape **plus** the full-metric essay in **3d**; flip prior→official; re-check leans before locking tickets.
 5. **Accuracy lock before firing** — official nine in, starter not opener, side matches arsenal vulnerability, line edge still holds.

@@ -2193,42 +2193,42 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --noscript-ink: #6b3f0c;
   }
   html[data-theme="dark"] {
-    --bg0: #101814;
-    --bg1: #16201a;
-    --bg-end: #121a16;
-    --ink: #e7f0ea;
-    --muted: #9aaba1;
-    --line: rgba(231, 240, 234, 0.14);
-    --accent: #3db889;
+    --bg0: #050505;
+    --bg1: #0a0a0a;
+    --bg-end: #000000;
+    --ink: #f2f2f2;
+    --muted: #a0a0a0;
+    --line: rgba(255, 255, 255, 0.12);
+    --accent: #f5f5f5;
     --warn: #d4a04a;
-    --ok: #3db889;
-    --panel: rgba(24, 34, 29, 0.94);
-    --panel-soft: rgba(255, 255, 255, 0.06);
-    --panel-solid: rgba(30, 42, 36, 0.92);
-    --controls-bg: rgba(18, 28, 23, 0.94);
-    --detail-bg: rgba(0, 0, 0, 0.22);
-    --meta-cell: rgba(255, 255, 255, 0.06);
-    --hand-bg: rgba(255, 255, 255, 0.08);
-    --glow-ok: rgba(61, 184, 137, 0.16);
-    --glow-warn: rgba(212, 160, 74, 0.12);
-    --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-    --grade-elite: #9ee0c0;
-    --grade-high: #6fcf9f;
+    --ok: #d0d0d0;
+    --panel: rgba(18, 18, 18, 0.96);
+    --panel-soft: rgba(255, 255, 255, 0.05);
+    --panel-solid: rgba(22, 22, 22, 0.96);
+    --controls-bg: rgba(10, 10, 10, 0.96);
+    --detail-bg: rgba(0, 0, 0, 0.45);
+    --meta-cell: rgba(255, 255, 255, 0.04);
+    --hand-bg: rgba(255, 255, 255, 0.06);
+    --glow-ok: rgba(255, 255, 255, 0.04);
+    --glow-warn: rgba(255, 255, 255, 0.03);
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    --grade-elite: #d8d8d8;
+    --grade-high: #c0c0c0;
     --grade-mid: #e0b06a;
     --grade-low: #e08888;
-    --grade-elite-soft: rgba(158, 224, 192, 0.72);
-    --chip-fill-elite: rgba(61, 184, 137, 0.22);
-    --chip-fill-high: rgba(61, 184, 137, 0.14);
+    --grade-elite-soft: rgba(216, 216, 216, 0.72);
+    --chip-fill-elite: rgba(255, 255, 255, 0.14);
+    --chip-fill-high: rgba(255, 255, 255, 0.09);
     --chip-fill-mid: rgba(212, 160, 74, 0.16);
     --chip-fill-low: rgba(224, 136, 136, 0.16);
-    --chip-fill-na: rgba(255, 255, 255, 0.08);
-    --chip-ink-na: #b4c2ba;
-    --chip-border-elite: rgba(61, 184, 137, 0.45);
-    --chip-border-high: rgba(61, 184, 137, 0.32);
+    --chip-fill-na: rgba(255, 255, 255, 0.06);
+    --chip-ink-na: #b0b0b0;
+    --chip-border-elite: rgba(255, 255, 255, 0.32);
+    --chip-border-high: rgba(255, 255, 255, 0.22);
     --chip-border-mid: rgba(212, 160, 74, 0.4);
     --chip-border-low: rgba(224, 136, 136, 0.4);
-    --chip-border-na: rgba(255, 255, 255, 0.16);
-    --row-rule: rgba(255, 255, 255, 0.06);
+    --chip-border-na: rgba(255, 255, 255, 0.14);
+    --row-rule: rgba(255, 255, 255, 0.07);
     --noscript-ink: #e0b06a;
   }
   * { box-sizing: border-box; }
@@ -2335,8 +2335,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     line-height: 1.4;
   }
   html[data-theme="dark"] .freshness {
-    border-color: rgba(61, 184, 137, 0.32);
-    background: rgba(61, 184, 137, 0.1);
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
   }
   .freshness a { color: var(--accent); font-weight: 700; word-break: break-all; }
   .controls {
@@ -2465,12 +2465,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     border-color: rgba(212, 160, 74, 0.35);
   }
   html[data-theme="dark"] .hand.hand-r {
-    background: rgba(61, 184, 137, 0.16);
-    border-color: rgba(61, 184, 137, 0.35);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.28);
   }
   html[data-theme="dark"] .hand.hand-s {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+  html[data-theme="dark"] summary:hover {
+    background: rgba(255, 255, 255, 0.04);
   }
   .pitch-stack .pmeta-lines {
     display: grid;
@@ -2577,7 +2580,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     padding: 0.22rem 0.55rem 0.28rem;
     justify-self: start;
   }
-  html[data-theme="dark"] .grade-elite { background: rgba(61, 184, 137, 0.16); }
+  html[data-theme="dark"] .grade-elite { background: rgba(255, 255, 255, 0.1); }
   .grade-elite .nlab { color: var(--grade-elite-soft); }
   .grade-legend {
     display: flex;
@@ -2875,8 +2878,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     grid-column: 1 / -1;
   }
   html[data-theme="dark"] .meta-matchup {
-    border-color: rgba(61, 184, 137, 0.32);
-    background: rgba(61, 184, 137, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.05);
   }
   html[data-theme="dark"] .meta-history {
     border-color: rgba(110, 168, 230, 0.32);
@@ -2959,8 +2962,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   html[data-theme="dark"] .rate-chip.grade-elite,
   html[data-theme="dark"] .rate-chip.grade-high {
-    background: rgba(61, 184, 137, 0.16);
-    border-color: rgba(61, 184, 137, 0.32);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.28);
   }
   html[data-theme="dark"] .rate-chip.grade-mid {
     background: rgba(212, 160, 74, 0.14);
@@ -3052,6 +3055,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .tabs > input:checked + .tab {
     background: var(--accent); color: #fff;
     box-shadow: 0 6px 16px rgba(15, 106, 77, 0.22);
+  }
+  html[data-theme="dark"] .tabs > input:checked + .tab {
+    background: #f2f2f2;
+    color: #0a0a0a;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
   }
   .tab-panel {
     display: none;
@@ -3181,8 +3189,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   html[data-theme="dark"] .batter .k.grade-high,
   html[data-theme="dark"] .kval.grade-high,
   html[data-theme="dark"] .kchip.grade-high {
-    background: rgba(61, 184, 137, 0.16);
-    border-color: rgba(61, 184, 137, 0.32);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.28);
   }
   html[data-theme="dark"] .batter .k.grade-mid,
   html[data-theme="dark"] .kval.grade-mid,
@@ -3372,6 +3380,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: #fff;
     box-shadow: 0 6px 16px rgba(15, 106, 77, 0.22);
   }
+  html[data-theme="dark"] .view-tabs > input:checked + .view-tab {
+    background: #f2f2f2;
+    color: #0a0a0a;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  }
   .view-tab .tab-count {
     font-size: 0.72rem;
     font-weight: 700;
@@ -3424,6 +3437,30 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .noscript {
     margin: 0 0 1rem; padding: 0.75rem 0.9rem; border-radius: 12px;
     background: rgba(154, 91, 18, 0.12); color: var(--noscript-ink); font-size: 0.9rem;
+  }
+  /* Dark mode: neutralize leftover green fills to black/white chrome */
+  html[data-theme="dark"] .badge.official,
+  html[data-theme="dark"] .risk-clear,
+  html[data-theme="dark"] .outlook-matchup_ok,
+  html[data-theme="dark"] .ark-elite,
+  html[data-theme="dark"] .ark-strong,
+  html[data-theme="dark"] .site-home,
+  html[data-theme="dark"] .ark-pstyle-whiff,
+  html[data-theme="dark"] .style-chip.ark-pstyle-whiff,
+  html[data-theme="dark"] .model-keys .key-bip-whiff,
+  html[data-theme="dark"] .outlook-trust {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--grade-elite);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+  html[data-theme="dark"] .pitch-block[open] > summary,
+  html[data-theme="dark"] .vs-summary {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-matchup_ok {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: var(--grade-elite);
   }
 </style>
 </head>

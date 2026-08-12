@@ -201,51 +201,79 @@ Board can still *show* IP / STYLE for context. **Do not recommend new outs overs
 
 ## Every morning routine (do this first)
 
-Run this **every morning** before tickets. Goal: one clear outlook for **every** probable starter.
+Run this **every morning** before tickets. Goal: one clear outlook for **every** probable starter — **and** an honest read of why the book posted that K line.
 
-1. **Refresh the board** (probable starters; usually all prior early):
+**Mindset (locked 8/12):** Sportsbooks price information we do not fully see (role, pitch-count plan, platoon construction, market demand, injury whispers). **Model edge ≠ true edge.** A fat `k_edge` is a *question*, not a ticket. Bradford 8/11: TRUST/ELITE stack died because **Stuff+ 86** + Angels’ RHB-heavy / vs-LHP profile were the real story — details > Exp K.
+
+1. **Refresh the board** (probable starters + live odds):
    ```bash
+   export ODDS_API_KEY="…"   # or THE_ODDS_API_KEY / Actions secret
    TZ=America/Chicago python3 mlb-k-matchups/k_matchups.py \
      --date YYYY-MM-DD \
      -o rankings-YYYY-MM-DD.csv \
      --html rankings.html \
-     --hits-output hits-YYYY-MM-DD.csv
+     --hits-output hits-YYYY-MM-DD.csv -v
    ```
-2. **Publish** CSV + `rankings.html` / `index.html` + hits CSV to `main` (GitHub Pages updates the **same** bookmark URL). Note lineup status (`prior` vs `official`).
-   - **Bookmark only (interactive tabs):** https://htmlpreview.github.io/?https://raw.githubusercontent.com/Ceezwrld/K-matchup/main/index.html  
-   - Optional Pages URL (one Settings enable): https://ceezwrld.github.io/K-matchup/  
-   - Never use jsDelivr (plain text) or commit-SHA htmlpreview links.
-3. **Deliver the morning outlook** in this exact shape (arsenal-first):
+   Odds join is display-only (`k_line` / `k_edge` = Exp K − line). Missing key → board still publishes without lines.
+2. **Publish** CSV + `rankings.html` / `index.html` + hits CSV. Note lineup status (`prior` vs `official`).
+   - Prefer the **current-branch / SHA htmlpreview** while iterating; `main` only after merge.
+3. **Deliver the morning pack** in this exact shape (book-aware, every arm):
 
-   **Over leans** — solo arsenal grade **ELITE / STRONG** (starter, not opener)  
-   **Under leans** — solo arsenal grade **SOFT**  
-   **Fade / thin** — FILLER, openers, MATCHUP_OK (thin O3.5 only), high-risk watch list  
+### Morning pack shape (locked)
 
-   For each arm include: **solo grade**, arsenal K%, vs league / vs opp K%, Exp K, outing risk, game/time, plus the **info lean** (3b).  
-   Slate `#` and opp K% `#` are optional context only.  
-   Also check **vs Team history** on each card (career K% vs that batting team + recent games with **HOME/AWAY** for the pitcher). Use history to confirm or caution the model side — not to override a clear absolute arsenal gate.  
-   Mark the whole board **provisional** until official lineups post.
+**A. Slate status** — n starters · OFF vs PRIOR · odds coverage · games still without a K line.
+
+**B. Book vs model map** — sort by `|k_edge|` and flag:
+| Flag | Meaning |
+|------|---------|
+| Book **low** (edge ≥ ~+1.0) | Model likes overs more than the number — ask *why the book is soft* (role, Stuff+, platoon, name discount) before juicing |
+| Book **high** (edge ≤ ~−1.0) | Name/SPIKE premium — Cam-rule under only if arsenal allows; never soft-under SPIKE |
+| Line ≈ Exp | Aligned — size with STYLE / IP / confirms, not “edge” |
+| No line | Short role / not posted — pass full-outing K props |
+
+**C. Every-pitcher info card** (for *your* analysis — not a ticket lock yet). Compact chart + plain-language “why”:
+
+```
+#rk Name (H) TM vs OPP | PRIOR/OFF | role | time
+Line O/U X.5 (book · O/U prices) · Exp K · edge
+| Solo | STYLE | SPIKE/outlook | Stuff+ | Loc+ | IP | risk |
+| K9/L3 | SwStr/CSW | Strike%/Zone% | FIP/xFIP/SIERA/xERA | xwOBA/xBA |
+| Opp BIP | K% vs hand | wRC+/wOBA/ISO | disc | hand-mix cue |
+Book why: …
+Model read: …
+Watch flags: Stuff+<95 · Loc+<95 · RHB-heavy vs LHP · tough-vs-hand K% · short IP · swingman …
+```
+
+**Bradford-rule watch flags (confirm/disprove juice):**
+- **Stuff+ &lt; ~95** undercuts WHIFF/TRUST even on ELITE solo
+- **Loc+ &lt; ~95** + elev BB9 → short outing / walk script
+- **Platoon / hand construction** — LHP vs RHB-heavy nine that hits LHP well (use opp K% vs hand + lineup names)
+- **Book disagreeing hard with Exp** — resolve the disagreement before sizing
+
+**D. Bucket leans (provisional until OFF):** Over / Under / Fade-thin — each with the *book why* attached. No ticket lock on PRIOR alone except tiny promo chalk.
 
 3b. **Info lean (default on every arm — not a full essay):** stack signals so outs-type is visible at a glance:
+   - **Book line + k_edge** → what is priced? does the number fight our stack?
    - **Solo grade** → can the mix K *this* nine?
    - **STYLE** (WHIFF / GB / FLY / BAL) → does he usually get outs via Ks or BIP?
    - **Opp BIP / contact** (whiff_prone / neutral / contact_heavy) → will the nine help or fight Ks?
    - **Opp offense quality** (lineup PA-weighted **wOBA / wRC+ / ISO**) → soft/avg/good offense for **length/leash** (lower = longer leash OK; higher = size down overs). Confirm only — does **not** flip solo grade. Pitch-type vulnerability stays on **Arsenal lineup K%**, not per-pitch wOBA.
    - **Opp K% vs hand** (vs LHP / vs RHP matching the starter) → primary opp-K confirm; overall opp K% is secondary
+   - **Stuff+ / Loc+ / Pit+** → quality red flags (Bradford rule)
    - **Strike% / Zone% / Z-Contact% / O-Swing%** (optional confirm) → does he attack the plate / induce chase / miss in-zone? High Strike% (≥~65) + Zone% supports WHIFF overs; O-Swing% confirms chase; low Strike% alone does **not** lock an under (SPIKE can still clear).
    - **L3 K/9 adj** → recent form scaled by opponent-team K% faced (juiced L3 opps haircut hot form; soft-K L3 opps boost it). Use adj for sizing, raw L3 for SPIKE ceiling.
 
-   One-glance combos: ELITE+WHIFF+whiff-prone = strong K info · ELITE+FLY/GB = matchup OK, don’t overweight K total · SOFT+GB/FLY+contact_heavy = strong under info · SOFT+WHIFF/SPIKE = soft grade but K ceiling live · AVG+WHIFF+juiced line = Cam-rule under info · WHIFF+Strike%≥65 = command confirms the K script · soft offense (low wRC+) + WHIFF + clear IP = length confirms the over.
+   One-glance combos: ELITE+WHIFF+whiff-prone = strong K info · ELITE+FLY/GB = matchup OK, don’t overweight K total · SOFT+GB/FLY+contact_heavy = strong under info · SOFT+WHIFF/SPIKE = soft grade but K ceiling live · AVG+WHIFF+juiced line = Cam-rule under info · WHIFF+Strike%≥65 = command confirms the K script · soft offense (low wRC+) + WHIFF + clear IP = length confirms the over · **ELITE+WHIFF but Stuff+&lt;95 = size down / don’t TRUST-hammer**.
 
-3c. **Full thesis / essay (on request only):** when asked for a specific pitcher (or a short list), expand to Littell/Skubal depth — table of arsenal / opp BIP / STYLE / stuff·SPIKE / IP·risk, then answer “can we trust the K total?” and line-sizing. Do **not** essay the whole slate unless asked. Same daily routine, deeper read on demand.
+3c. **Full thesis / essay (on request only):** when asked for a specific pitcher (or a short list), expand to Littell/Skubal depth — table of arsenal / opp BIP / STYLE / stuff·SPIKE / IP·risk / **book line why**, then answer “can we trust the K total?” and line-sizing. Do **not** essay the whole slate unless asked — the morning pack’s per-arm chart already covers the slate. Same daily routine, deeper read on demand.
 
 3d. **Full-metric slate essay (locked process — OFF confirm + when asked “what stands out”):**
    When official lineups post (or when asked for a full-metric pass), re-run the board and deliver **this exact shape** — not the short morning lean alone:
-   1. **Slate status** — n starters · official vs prior count · games still on prior.
-   2. **Prior → OFF callouts** — which arms flipped, any starter/role change, BIP/K%/wRC+ moves that change the lean.
-   3. **Every-metric scan** per notable arm: solo · STYLE · stuff/SPIKE · SwStr/Contact/Z-Contact · Strike%/Zone%/O-Swing · Soft% · K9/L3 · BB9/xFIP/IP/risk · opp K%/BIP/BB% · **opp wOBA/wRC+/ISO** · TRUST/UNDER_OK/FILLER/SPIKE · **plus advanced confirm layer below**.
-   4. **What stands out** — TRUST stacks, ceiling/SPIKE traps, dead-matchup elite miss, attack-plate without WHIFF, thin under lane, pass/trap names.
-   5. **Ticket lean table** — Tier 1 / co-anchor / ceiling / pass juiced / FILLER / no soft U6, with the metric reason on each.
+   1. **Slate status** — n starters · official vs prior count · games still on prior · **odds coverage**.
+   2. **Prior → OFF callouts** — which arms flipped, any starter/role change, BIP/K%/wRC+ moves that change the lean · **line moves**.
+   3. **Every-metric scan** per notable arm: solo · STYLE · stuff/SPIKE · SwStr/Contact/Z-Contact · Strike%/Zone%/O-Swing · Soft% · K9/L3 · BB9/xFIP/IP/risk · opp K%/BIP/BB% · **opp wOBA/wRC+/ISO** · TRUST/UNDER_OK/FILLER/SPIKE · **k_line/k_edge/book why** · **plus advanced confirm layer below**.
+   4. **What stands out** — TRUST stacks, ceiling/SPIKE traps, dead-matchup elite miss, attack-plate without WHIFF, thin under lane, **book-vs-model disagreements**, pass/trap names.
+   5. **Ticket lean table** — Tier 1 / co-anchor / ceiling / pass juiced / FILLER / no soft U6, with the metric + book-why reason on each.
    Explain **pitcher + opposing lineup** expectations in plain language (what the prior/OFF nine implies for Ks and leash). Better explained → clearer ticket.
 
 3e. **Advanced confirm / disprove layer (locked — use on every pitcher essay from 8/11 onward):**
@@ -257,12 +285,13 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
    | Expected contact | xwOBA · xBA · xSLG allowed | Low xwOBA (≲.300) / soft xSLG → leash OK | High xwOBA/xSLG → HR/BIP risk even with Ks |
    | Stuff quality | Stuff+ · Loc+ · Pit+ (100=avg) | Stuff+ ≥105 + Loc+ ≥100 supports TRUST/SPIKE | Soft Stuff+ (&lt;95) undercuts WHIFF story; high Stuff+ + soft Loc+ = BB/short-outing risk |
    | Arsenal weapons | Pitch Stuff+ · RV/100 | Best pitches are +RV and match lineup K holes | Featured pitch is −RV/100 (liability); weapons don’t overlap opp whiff |
+   | Book line | k_line · k_edge · role news | Line agrees with stack (±0.5) | Fat edge unexplained = investigate before firing |
 
    **Essay line required:** one short “Confirms / Disproves” blurb using these metrics before the ticket call.
    Prior-lineup reviews use the same shape — label **PRIOR** and re-check on OFF.
 
-4. **Re-refresh when lineups confirm** — same report shape **plus** the full-metric essay in **3d**; flip prior→official; re-check leans before locking tickets.
-5. **Accuracy lock before firing** — official nine in, starter not opener, side matches arsenal vulnerability, line edge still holds.
+4. **Re-refresh when lineups confirm** — same report shape **plus** the full-metric essay in **3d**; flip prior→official; re-check leans **and lines** before locking tickets.
+5. **Accuracy lock before firing** — official nine in, starter not opener, side matches arsenal vulnerability, line edge still holds, **Stuff+/platoon watch flags cleared**, book-why resolved.
 
 This morning pack is the daily starting point — not optional.
 

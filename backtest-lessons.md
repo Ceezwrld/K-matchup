@@ -14,6 +14,66 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
+## 2026-08-11 grade — hits lane cashed; TRUST dud + SPIKE under killed ticket
+
+Full slate in `backtest-2026-08-11.csv` (n=**30** Final). Mean Exp K **4.53 → 4.40** act (bias **−0.13**, MAE **1.51**).
+
+### User 7-leg ticket — **4/7 DEAD**
+
+| Leg | Actual | Result | Break |
+|-----|--------|--------|-------|
+| Snell **U6.5 K** | **10 K** / 6.0 IP | **MISS** | AVG+**SPIKE**+WHIFF ceiling — never under SPIKE, even on “chalk” U6.5 |
+| R. Johnson **U4.5 K** | **5 K** / 4.1 IP | **MISS** | FILLER ≠ UNDER_OK; Exp 3.4 lied soft |
+| Bratt **O3.5 K** | **4 K** / 6.0 IP | **HIT** | MATCHUP_OK floor — O4.5 would miss |
+| Sugano **O5.5 H** | **6 H** / 6.0 IP | **HIT** | Soft-contact + volume |
+| Bradford **O3.5 K** | **1 K** / 7.0 IP | **MISS** | TRUST dud — tiny-sample ELITE/WHIFF + Stuff+ **86** undercut |
+| Wacha **O4.5 H** | **7 H** / 6.2 IP | **HIT** | UNDER_OK soft-contact vs LAD |
+| Martinez **O4.5 H** | **8 H** / 9.0 IP | **HIT** | Soft FILLER + long leash |
+
+**Killers:** Snell SPIKE under + Bradford TRUST collapse (+ Johnson FILLER under).  
+**Hits 3/3** on the card (Sugano/Wacha/Martinez) — strongest lane of the night.
+
+### Discussed alts scorecard
+
+| Alt | Actual | Result |
+|-----|--------|--------|
+| Bibee H O4.5 / ER O2.5 | 5 H / 5 ER | **HIT / HIT** |
+| Lodolo ER O2.5 | 4 ER | **HIT** |
+| Pallante U4.5 K | 2 K | **HIT** (UNDER_OK) |
+| Whisenhunt BB O2.5 | 3 BB | **HIT** (thin lean OK) |
+| Whisenhunt H/ER O | 4 H / 1 ER | MISS / MISS — short-outing veto right |
+| Harrison O4.5 K | 3 K | **MISS** (fade correct) |
+| Johnson ER/H O | 1 ER / 3 H | MISS / MISS — no rescue swap |
+
+### Process buckets
+
+| Layer | Signal |
+|-------|--------|
+| **TRUST** (n=1 Bradford) | **1 K / Exp 5.9** — catastrophic; tiny sample + Stuff+86 was the pre-flag |
+| **THIN_TOTAL** (Imanaga/Woo) | both **5 K** vs Exp ~6.2 — juiced overs correctly blocked |
+| **UNDER_OK** (Pallante/Wacha) | Pallante **2 K** cashed; Wacha K soft but **H O4.5** smashed |
+| **MATCHUP_OK** (Bratt/Lodolo/Ober) | Bratt **4** = O3.5 only; Lodolo ER live; Ober **4 K / 8 H** |
+| **SPIKE** (n=14) | mean ~flat; **Snell 10** / Eury·Cease·Sánchez·Burke **7–8** vs McLean **3** / Bradford **1** — veto soft+chalk unders |
+| **soft-contact H>4.5** | **6/10** cashed (Wacha/Martinez/Sugano/Bibee/Ober/Lodolo) |
+
+### Reinforced (lock)
+
+1. **Never under SPIKE** — Snell U6.5 is the textbook chalk-under trap when WHIFF+elite stuff.
+2. **THIN_TOTAL** — Imanaga/Woo 5K again; O3.5/thin O4.5 only.
+3. **UNDER_OK / soft-contact hits** — Pallante K under + Wacha/Martinez/Sugano/Bibee H overs.
+4. **MATCHUP_OK = O3.5 floor** — Bratt 4K; do not juice O4.5.
+5. **TRUST needs Stuff+ confirm** — Bradford Stuff+86 + 70-pitch sample → treat as thin/caution next time, not floor O3.5 hammer.
+
+### Watch only
+
+| Read | Note |
+|------|------|
+| Tiny-sample TRUST | Bradford — require Stuff+ ≥~95 or larger pitch pool before TRUST floor overs |
+| FILLER K unders | Johnson 5K — need UNDER_OK (2+ confirms), not Exp alone |
+| Harrison-style K fade | 3K correct; 10 H was outing chaos — don’t retrofit H overs on SPIKE/WHIFF |
+
+**Process stance after 8/11:** hits/UNDER_OK lane strong; SPIKE-under ban absolute; TRUST must survive Stuff+/sample check; THIN_TOTAL + MATCHUP_OK sizing held.
+
 ## 2026-08-10 grade — TRUST / ELITE / WHIFF / SPIKE confirmed; advanced noise watched
 
 Full slate in `backtest-2026-08-10.csv` (n=**20** Final). Mean Exp K **4.67 → 5.15** act (bias **+0.48**, MAE **1.38**). Model slightly under — same direction as several prior nights.

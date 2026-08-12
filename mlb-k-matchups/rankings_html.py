@@ -2298,6 +2298,22 @@ def write_interactive_html(
     hits_board: list[dict[str, Any]] | None = None,
 ) -> None:
     rows = rows_for_html(df)
+    # Guard: CSV reload drops nested arsenal / batter_detail. Never publish a
+    # stripped board that looks complete but has empty Arsenal tabs.
+    scored_ok = [r for r in rows if r.get("status") == "ok"]
+    with_arsenal = [
+        r
+        for r in scored_ok
+        if (r.get("arsenal") or r.get("pitch_lineup_avg") or r.get("batter_detail"))
+    ]
+    if len(scored_ok) >= 5 and len(with_arsenal) * 2 < len(scored_ok):
+        raise RuntimeError(
+            f"Refusing to write HTML: only {len(with_arsenal)}/{len(scored_ok)} "
+            f"scored pitchers have arsenal payload. CSV reload strips nested "
+            f"columns — re-run mlb-k-matchups/k_matchups.py end-to-end "
+            f"(do not rebuild HTML from rankings CSV alone)."
+        )
+
     # Opposing batting-team K% rank on this slate (#1 = highest lineup K%).
     opp_scored = [
         (i, float(r["lineup_k_pct"]))

@@ -14,6 +14,45 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
+## 2026-08-12 mid-slate — Zebby Matthews K miss (what broke)
+
+Partial finals in `backtest-2026-08-12-partial.csv`. Focus arm: **Matthews vs BAL**.
+
+| | Pregame | Actual |
+|--|---------|--------|
+| Exp K / Act K | **6.24** | **4** (Δ **−2.24**) |
+| IP | 5.4 proj | **5.0** (94 pitches / 60 strikes) |
+| BF | 23 | **22** |
+| H / ER / BB / HR | — | **6 / 4 / 2 / 1** |
+| Solo / contact | ELITE · whiff_prone | K% act **18.2%** (4/22) vs Exp K% **25.3%** |
+| Stuff+ / ArvOpp | **94.9** / **+0.48** | Failed later K-gate (Stuff+≥100) |
+| Risk flags | high_hr, elev_xfip, exit_hr | **HR + 4 ER** — flags fired |
+
+**Ks:** O'Neill, Beavers, Holliday, Taveras. Damage: Henderson BB → Alonso 1B (1st); Franklin/Narváez 1Bs (2nd); Alonso 1B → O'Neill 1B → **Beavers 3-run HR** (3rd).
+
+### What went wrong (stack)
+
+1. **Stuff+ undercut the ELITE chip** — season K% only **20**, Stuff+ **94.9**, stuff_grade **avg**. Model Exp was driven by opp whiff_prone + arsenal_abs **elite**, not by a true miss kit (same shape as Bradford 8/11 TRUST dud).
+2. **Arsenal vs opp was thin** — ArvOpp only **+0.48** (barely positive). Lineup was “whiff_prone” on season K%/BIP, but not clearly vulnerable to *his* mix.
+3. **Damage flags were pre-printed** — high_hr / exit_hr / elev_xfip → Beavers HR + 4 ER. K script died in the crooked 3rd; pitch count (94/5) also capped a 6+ K climb.
+4. **SPIKE was L3 form, not stuff** — L3 K9 ~10.8 spiked the card, but outing SPIKE without Stuff+≥100 is form noise (Miller gate later required both).
+5. **Efficiency / patient BAL** — three_true BB% ~10.7; 2 BB + traffic → early leash pressure. Got to 5 IP but never ran a clean K inning after the 1st.
+
+### Rule written (lock)
+
+- **ELITE + whiff_prone is not enough** without **Stuff+ ≥ ~100** *and* **arsenal_vs_opp clearly >0** (prefer ≥+1). Matthews 8/12 is the exhibit: Exp 6.24 → 4 K.
+- Treat **high_hr / exit_hr** as a hard size-down on K overs even when contact_grade = whiff_prone.
+- L3 K9 SPIKE alone does **not** override soft Stuff+.
+
+### Same-day finals context
+
+| Arm | Exp → Act | Note |
+|-----|-----------|------|
+| Matthews | 6.24 → **4** | Soft Stuff+ ELITE miss |
+| Baz | 4.31 → **2** | Contact_heavy + Arv −1.7; crushed (9 H / 5 ER / 3 IP) |
+| Wheeler | 4.79 → **5** | Near flat; 6 H / 4 ER despite Stuff+104 |
+| Leahy | 4.20 → **6** | Over-performed (contact_heavy PHI; soft Stuff+) |
+
 ## 2026-08-11 grade — hits lane cashed; TRUST dud + SPIKE under killed ticket
 
 Full slate in `backtest-2026-08-11.csv` (n=**30** Final). Mean Exp K **4.53 → 4.40** act (bias **−0.13**, MAE **1.51**).

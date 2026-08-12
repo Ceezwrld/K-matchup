@@ -255,6 +255,78 @@ def _empty_odds_cols() -> dict[str, Any]:
     return cols
 
 
+def _commence_date_ct(ev: dict[str, Any]) -> str | None:
+    """YYYY-MM-DD in America/Chicago from event commence_time.
+
+    Late CT evening games commence on the next UTC date — matching the slate
+    calendar day (not UTC) keeps SEA@NYY / KC@LAD on the right card.
+    """
+    raw = str(ev.get("commence_time") or "").strip()
+    if not raw:
+        return None
+    try:
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        if raw.endswith("Z"):
+            raw = raw[:-1] + "+00:00"
+        dt = datetime.fromisoformat(raw)
+        if dt.tzinfo is None:
+            from datetime import timezone
+
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(ZoneInfo("America/Chicago")).strftime("%Y-%m-%d")
+    except Exception:  # noqa: BLE001
+        return raw[:10] if len(raw) >= 10 else None
+
+
+def _index_events_by_game(
+    events: list[dict[str, Any]],
+    *,
+    slate_date: str | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Map away@home (and flipped) → event.
+
+    When the same club pair appears on multiple days (e.g. SEA@NYY tonight and
+    tomorrow), prefer the event whose commence_time **CT calendar date** matches
+    ``slate_date`` (YYYY-MM-DD). Falls back to the soonest commence_time.
+    """
+    buckets: dict[str, list[dict[str, Any]]] = {}
+    for ev in events:
+        away = _team_abbr(ev.get("away_team"))
+        home = _team_abbr(ev.get("home_team"))
+        if not away or not home:
+            continue
+        for key in (f"{away}@{home}", f"{home}@{away}"):
+            buckets.setdefault(key, []).append(ev)
+
+    target = (slate_date or "").strip()[:10] or None
+    event_by_game: dict[str, dict[str, Any]] = {}
+    for key, evs in buckets.items():
+        # Dedupe by event id while preserving order.
+        seen: set[str] = set()
+        uniq: list[dict[str, Any]] = []
+        for ev in evs:
+            eid = str(ev.get("id") or "")
+            if not eid or eid in seen:
+                continue
+            seen.add(eid)
+            uniq.append(ev)
+
+        picked: dict[str, Any] | None = None
+        if target:
+            dated = [e for e in uniq if _commence_date_ct(e) == target]
+            if dated:
+                dated.sort(key=lambda e: str(e.get("commence_time") or ""))
+                picked = dated[0]
+        if picked is None:
+            uniq.sort(key=lambda e: str(e.get("commence_time") or ""))
+            picked = uniq[0] if uniq else None
+        if picked is not None:
+            event_by_game[key] = picked
+    return event_by_game
+
+
 def enrich_dataframe_odds(
     df: pd.DataFrame,
     *,
@@ -262,6 +334,7 @@ def enrich_dataframe_odds(
     markets: tuple[str, ...] | list[str] = DEFAULT_MARKETS,
     books: tuple[str, ...] | list[str] = DEFAULT_BOOKS,
     regions: str = "us",
+    slate_date: str | None = None,
     verbose: bool = False,
 ) -> pd.DataFrame:
     """Join live prop lines onto the rankings frame. Never modifies expected_ks."""
@@ -288,15 +361,16 @@ def enrich_dataframe_odds(
         out["odds_status"] = f"error:{exc}"
         return out
 
-    # Index events by away@home abbr pair.
-    event_by_game: dict[str, dict[str, Any]] = {}
-    for ev in events:
-        away = _team_abbr(ev.get("away_team"))
-        home = _team_abbr(ev.get("home_team"))
-        if not away or not home:
-            continue
-        event_by_game[f"{away}@{home}"] = ev
-        event_by_game[f"{home}@{away}"] = ev  # tolerate flipped game strings
+    # Infer slate date from rows when not passed (game_time_utc / explicit).
+    if not slate_date and "game_time_utc" in out.columns:
+        for raw in out["game_time_utc"].dropna().astype(str):
+            if len(raw) >= 10 and raw[4] == "-":
+                slate_date = raw[:10]
+                break
+
+    event_by_game = _index_events_by_game(events, slate_date=slate_date)
+    if verbose and slate_date:
+        _log(verbose, f"Odds: slate_date={slate_date} indexed {len(event_by_game)} game keys")
 
     # Unique slate games → fetch odds once each.
     games = sorted(

@@ -1870,6 +1870,7 @@ def main(argv: list[str] | None = None) -> int:
                 out,
                 api_key=key,
                 markets=markets,
+                slate_date=str(args.date),
                 verbose=args.verbose,
             )
         except Exception as exc:  # pragma: no cover

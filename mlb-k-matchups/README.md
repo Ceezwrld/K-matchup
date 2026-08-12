@@ -122,7 +122,22 @@ Useful flags:
 | `--detail` | Print each lineup batter’s arsenal-weighted K% |
 | `-o/--output` | Write full rankings CSV |
 | `--html` | Write self-contained interactive HTML rankings |
+| `--odds` / `--no-odds` | Join live book lines from The Odds API (default: on when key present) |
+| `--odds-key` | Odds API key (else `ODDS_API_KEY` / `THE_ODDS_API_KEY`) |
+| `--odds-markets` | Comma-separated markets (default: K / hits / ER / walks / outs) |
 | `-v/--verbose` | Log HTTP fetches |
+
+## Live odds (The Odds API)
+
+Display-only book lines join onto the board as `k_line` / `k_edge` (Exp K − line), plus hits / ER / BB / outs when posted. **Never changes `expected_ks`.**
+
+```bash
+export ODDS_API_KEY="your_key"   # or THE_ODDS_API_KEY
+python3 mlb-k-matchups/k_matchups.py --date $(date +%F) -o rankings.csv --html rankings.html -v
+# skip:  ... --no-odds
+```
+
+For GitHub Actions, add repo secret `ODDS_API_KEY` — the daily workflow passes it through. Quota note: props are per-event (~1 + N games per refresh).
 
 ## Lineups
 
@@ -137,5 +152,6 @@ Useful flags:
 - [MLB Stats API schedule](https://statsapi.mlb.com/api/v1/schedule) with `hydrate=probablePitcher,team,lineups`
 - [MLB Stats API people](https://statsapi.mlb.com/api/v1/people) season pitching, game logs, and hitting `vl`/`vr` splits
 - [FanGraphs pitching leaders](https://www.fangraphs.com/) for xFIP / BB/9 / HR/9
+- [The Odds API](https://the-odds-api.com/) for live pitcher prop lines (optional; `ODDS_API_KEY`)
 
 Pitchers resolve by MLBAM `player_id` first, then name (`First Last` / `Last, First`). Missing arsenals get `missing_arsenal` / `unresolved` instead of crashing.

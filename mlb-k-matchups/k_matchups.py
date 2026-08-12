@@ -44,6 +44,12 @@ from sharpen import (  # noqa: E402
     summarize_lineup_offense,
     usage_for_batter_side,
 )
+from odds import (  # noqa: E402
+    DEFAULT_MARKETS,
+    enrich_dataframe_odds,
+    format_american,
+    resolve_api_key,
+)
 from vs_team_history import (  # noqa: E402
     enrich_dataframe_vs_team_history,
     format_vs_team_console,
@@ -1360,6 +1366,29 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Log data fetches to stderr",
     )
+    p.add_argument(
+        "--odds",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Join live book lines from The Odds API using ODDS_API_KEY / "
+            "THE_ODDS_API_KEY (default: on when key present; --no-odds skips)"
+        ),
+    )
+    p.add_argument(
+        "--odds-key",
+        metavar="KEY",
+        help="Odds API key (default: ODDS_API_KEY or THE_ODDS_API_KEY env)",
+    )
+    p.add_argument(
+        "--odds-markets",
+        metavar="LIST",
+        default=",".join(DEFAULT_MARKETS),
+        help=(
+            "Comma-separated Odds API markets "
+            f"(default: {','.join(DEFAULT_MARKETS)})"
+        ),
+    )
     return p.parse_args(argv)
 
 
@@ -1824,7 +1853,51 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as exc:  # pragma: no cover - network / API soft-fail
         log(True, f"vs-team history skipped: {exc}")
 
+    # Live book lines (The Odds API) — display-only; never moves expected_ks.
+    if args.odds:
+        markets = tuple(
+            m.strip() for m in str(args.odds_markets or "").split(",") if m.strip()
+        ) or DEFAULT_MARKETS
+        key = resolve_api_key(args.odds_key)
+        if not key:
+            log(
+                True,
+                "Odds skipped: set ODDS_API_KEY or THE_ODDS_API_KEY "
+                "(or pass --odds-key)",
+            )
+        try:
+            out = enrich_dataframe_odds(
+                out,
+                api_key=key,
+                markets=markets,
+                verbose=args.verbose,
+            )
+        except Exception as exc:  # pragma: no cover
+            log(True, f"Odds enrich failed: {exc}")
+    else:
+        log(args.verbose, "Odds skipped (--no-odds)")
+
     print(format_table(out))
+    # Live K lines vs Exp K (when odds joined).
+    if "k_line" in out.columns and out["k_line"].notna().any():
+        print("\nBook K lines (Odds API — display only)")
+        shown = out[out["k_line"].notna()].sort_values(
+            "k_edge", ascending=False, na_position="last"
+        )
+        for _, r in shown.iterrows():
+            edge = r.get("k_edge")
+            edge_s = (
+                f"{float(edge):+.2f}"
+                if edge is not None and not (isinstance(edge, float) and pd.isna(edge))
+                else "—"
+            )
+            print(
+                f"  {r.get('pitcher')}: Exp {float(r['expected_ks']):.2f} vs "
+                f"O/U {float(r['k_line']):.1f} "
+                f"({format_american(r.get('k_over_price'))}/"
+                f"{format_american(r.get('k_under_price'))} "
+                f"{r.get('k_book') or '?'}) · edge {edge_s}"
+            )
     # Print ticket outlook for flagged arms (FILLER / MATCHUP_OK / SPIKE /
     # THIN_TOTAL / UNDER_OK).
     flagged = out[out["ticket_outlook"].astype(str).str.len() > 0]

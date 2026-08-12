@@ -673,6 +673,25 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "pitcher_style_flags": r.get("pitcher_style_flags") or "",
                 "ticket_outlook": r.get("ticket_outlook") or "",
                 "ticket_note": r.get("ticket_note") or "",
+                "k_line": _json_safe(r.get("k_line")),
+                "k_over_price": _json_safe(r.get("k_over_price")),
+                "k_under_price": _json_safe(r.get("k_under_price")),
+                "k_book": r.get("k_book") or "",
+                "k_edge": _json_safe(r.get("k_edge")),
+                "hits_line": _json_safe(r.get("hits_line")),
+                "hits_over_price": _json_safe(r.get("hits_over_price")),
+                "hits_under_price": _json_safe(r.get("hits_under_price")),
+                "hits_book": r.get("hits_book") or "",
+                "er_line": _json_safe(r.get("er_line")),
+                "er_over_price": _json_safe(r.get("er_over_price")),
+                "er_under_price": _json_safe(r.get("er_under_price")),
+                "er_book": r.get("er_book") or "",
+                "bb_line": _json_safe(r.get("bb_line")),
+                "bb_book": r.get("bb_book") or "",
+                "outs_line": _json_safe(r.get("outs_line")),
+                "outs_book": r.get("outs_book") or "",
+                "odds_status": r.get("odds_status") or "",
+                "odds_updated": r.get("odds_updated") or "",
                 "vs_team_games": _json_safe(r.get("vs_team_games")),
                 "vs_team_ks": _json_safe(r.get("vs_team_ks")),
                 "vs_team_pa": _json_safe(r.get("vs_team_pa")),
@@ -1131,6 +1150,54 @@ def _render_hits_board(hits_board: list[dict[str, Any]] | None) -> str:
     )
 
 
+def _amer_price(p: Any) -> str:
+    if p is None:
+        return "—"
+    try:
+        i = int(p)
+    except (TypeError, ValueError):
+        return "—"
+    return f"+{i}" if i > 0 else str(i)
+
+
+def _odds_meta_html(row: dict[str, Any]) -> str:
+    """Compact book-line chips for the card meta strip."""
+    status = (row.get("odds_status") or "").strip()
+    chips: list[str] = []
+
+    def add(label: str, line_key: str, book_key: str, over_key: str, under_key: str) -> None:
+        line = row.get(line_key)
+        if line is None:
+            return
+        try:
+            lv = float(line)
+        except (TypeError, ValueError):
+            return
+        book = (row.get(book_key) or "").strip()
+        tip = (
+            f"{label} {lv:.1f} · O {_amer_price(row.get(over_key))} / "
+            f"U {_amer_price(row.get(under_key))}"
+            f"{'' if not book else ' · ' + book}"
+        )
+        chips.append(
+            f"<span class='rate-chip' title='{_esc(tip)}'>"
+            f"{_esc(label)} {_esc(f'{lv:.1f}')}</span>"
+        )
+
+    add("K", "k_line", "k_book", "k_over_price", "k_under_price")
+    add("H", "hits_line", "hits_book", "hits_over_price", "hits_under_price")
+    add("ER", "er_line", "er_book", "er_over_price", "er_under_price")
+    add("BB", "bb_line", "bb_book", "bb_over_price", "bb_under_price")
+    add("Outs", "outs_line", "outs_book", "outs_over_price", "outs_under_price")
+    if chips:
+        return " ".join(chips)
+    if status in ("", "skipped_no_key"):
+        return "<span class='muted'>no key / skipped</span>"
+    if status == "ok":
+        return "—"
+    return f"<span class='muted'>{_esc(status)}</span>"
+
+
 def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     kind, label = _lineup_label(row.get("lineup_source"))
     tto = row.get("times_through_order")
@@ -1167,6 +1234,39 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     ip_grade = _grade_class("projected_ip", row.get("projected_ip"))
     tto_grade = _grade_class("tto", row.get("times_through_order"))
     kpct_grade = _grade_class("expected_k_pct", row.get("expected_k_pct"))
+
+    # Book K line + edge (Odds API) — display only.
+    k_line = row.get("k_line")
+    k_edge = row.get("k_edge")
+    line_html = "—"
+    edge_html = "—"
+    line_title = "Book K O/U (The Odds API) — not used in Exp K"
+    edge_title = "Exp K − book line (positive = model above the number)"
+    edge_grade = ""
+    if k_line is not None:
+        try:
+            kl = float(k_line)
+            book = (row.get("k_book") or "").strip()
+            line_html = f"{kl:.1f}"
+            line_title = (
+                f"Book K O/U {kl:.1f} "
+                f"(O {_amer_price(row.get('k_over_price'))} / "
+                f"U {_amer_price(row.get('k_under_price'))}"
+                f"{'' if not book else ' · ' + book}). "
+                f"Display only — does not change Exp K."
+            )
+        except (TypeError, ValueError):
+            line_html = "—"
+    if k_edge is not None:
+        try:
+            ke = float(k_edge)
+            edge_html = f"{ke:+.2f}"
+            if ke >= 0.75:
+                edge_grade = " grade-high"
+            elif ke <= -0.75:
+                edge_grade = " grade-low"
+        except (TypeError, ValueError):
+            edge_html = "—"
 
     badge_html = f"<span class='badge {kind}'>{_esc(label)}</span>"
     if outlook:
@@ -1258,6 +1358,8 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"{game_html}"
         "<div class='stat-row'>"
         f"{_stat(f'ks{ks_grade}', _fmt(row.get('expected_ks')), 'Exp K', 'Expected strikeouts')}"
+        f"{_stat('kline', line_html, 'Line', line_title)}"
+        f"{_stat(f'kedge{edge_grade}', edge_html, 'Edge', edge_title)}"
         f"{_stat(f'ip{ip_grade}', _fmt(row.get('projected_ip'), 1), 'IP', 'Projected innings pitched')}"
         f"{_stat(f'tto{tto_grade}', tto_s, 'TTO', 'Times through the order')}"
         f"<div class='num kpct{kpct_grade}' title='Arsenal K% vs opposing lineup'>"
@@ -1904,6 +2006,10 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "<span class='meta-label'>Rates / form</span>"
         f"<span class='meta-value meta-rates'>{rates_html} {risk_chip}</span>"
         "</div>"
+        "<div class='meta-cell meta-odds'>"
+        "<span class='meta-label'>Book lines (Odds API)</span>"
+        f"<span class='meta-value meta-rates'>{_odds_meta_html(row)}</span>"
+        "</div>"
         "<div class='meta-cell'>"
         "<span class='meta-label'>Outing / form</span>"
         f"<span class='meta-value'>{outing_val}{role_html}</span>"
@@ -1954,6 +2060,8 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"data-lineup='{_esc(row.get('lineup_source') or '')}' "
         f"data-status='{'scored' if scored else 'missing'}' "
         f"data-expected-ks='{_json_safe(row.get('expected_ks'))}' "
+        f"data-k-line='{_json_safe(row.get('k_line'))}' "
+        f"data-k-edge='{_json_safe(row.get('k_edge'))}' "
         f"data-projected-ip='{_json_safe(row.get('projected_ip'))}' "
         f"data-tto='{_json_safe(row.get('times_through_order'))}' "
         f"data-kpct='{_json_safe(row.get('expected_k_pct'))}' "
@@ -2524,7 +2632,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .colhead, .summary-grid {
     display: grid;
-    grid-template-columns: 3rem minmax(9rem, 1.35fr) minmax(5.5rem, 0.85fr) repeat(4, minmax(4.6rem, 0.85fr)) minmax(5.5rem, 0.9fr);
+    grid-template-columns: 3rem minmax(9rem, 1.35fr) minmax(5.5rem, 0.85fr) repeat(6, minmax(3.8rem, 0.75fr)) minmax(5.5rem, 0.9fr);
     gap: 0.75rem 0.9rem;
     align-items: center;
   }
@@ -2581,7 +2689,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   summary::-webkit-details-marker { display: none; }
   summary:hover { background: rgba(15, 106, 77, 0.05); }
-  .rank { font-family: var(--display); color: var(--accent); font-size: 1.05rem; }
+  .muted { color: var(--muted); font-size: 0.85em; }
   .pitcher { font-weight: 700; }
   .hand {
     display: inline-block;
@@ -3703,6 +3811,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             <select id="sort" autocomplete="off">
               <option value="expected_ks:desc" selected>Expected Ks ↓</option>
               <option value="expected_ks:asc">Expected Ks ↑</option>
+              <option value="k_edge:desc">K edge ↓</option>
+              <option value="k_line:asc">Book line ↑</option>
               <option value="projected_ip:desc">Proj IP ↓</option>
               <option value="tto:desc">TTO ↓</option>
               <option value="kpct:desc">Arsenal K% ↓</option>
@@ -3714,7 +3824,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
         <div class="colhead">
           <div>#</div><div>Pitcher</div><div>Game</div><div>Exp K</div>
-          <div>IP</div><div>TTO</div><div>K%</div><div>Flags</div>
+          <div>Line</div><div>Edge</div><div>IP</div><div>TTO</div><div>K%</div><div>Flags</div>
         </div>
 
         <div class="board" id="board">
@@ -3823,6 +3933,8 @@ __MATCHUP_CARDS__
 
         const attrKey = {
           expected_ks: "expectedKs",
+          k_edge: "kEdge",
+          k_line: "kLine",
           projected_ip: "projectedIp",
           tto: "tto",
           kpct: "kpct",

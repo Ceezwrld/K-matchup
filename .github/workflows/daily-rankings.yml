@@ -50,6 +50,8 @@ jobs:
           echo "Scoring date: $DATE"
 
       - name: Run K-matchup model
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
           python3 mlb-k-matchups/k_matchups.py \
             --date "${{ steps.date.outputs.date }}" \
@@ -57,6 +59,7 @@ jobs:
             --html rankings.html \
             -v
           # write_interactive_html also writes index.html for the stable Pages URL
+          # Odds join when ODDS_API_KEY secret is set; otherwise board still publishes.
 
       - name: Commit and push rankings
         run: |

@@ -374,13 +374,12 @@ def enrich_dataframe_odds(
         # k_edge = Exp K − line (positive → model higher than book → over lean cue)
         exp = row.get("expected_ks")
         k_line = out.at[idx, "k_line"]
-        if (
-            exp is not None
-            and not (isinstance(exp, float) and pd.isna(exp))
-            and k_line is not None
-            and not (isinstance(k_line, float) and pd.isna(k_line))
-        ):
+        exp_ok = exp is not None and not pd.isna(exp)
+        line_ok = k_line is not None and not pd.isna(k_line)
+        if exp_ok and line_ok:
             out.at[idx, "k_edge"] = float(exp) - float(k_line)
+        else:
+            out.at[idx, "k_edge"] = pd.NA
 
         out.at[idx, "odds_status"] = "ok" if got_any else "no_player_props"
         if got_any:

@@ -63,6 +63,18 @@ def _json_safe(value: Any) -> Any:
     return value
 
 
+def _str_field(value: Any) -> str:
+    """Stringify a CSV/Series cell without choking on pandas NA."""
+    if value is None:
+        return ""
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    return str(value)
+
+
 def _esc(value: Any) -> str:
     if value is None:
         return ""
@@ -471,6 +483,10 @@ def _hand_chip_html(code: Any, role: str, *, title: str = "") -> str:
 
 
 def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
+    # CSV reload path: empty cells become float NaN — normalize to None first.
+    df = df.copy()
+    df = df.astype(object)
+    df = df.where(pd.notna(df), None)
     rows: list[dict[str, Any]] = []
     for _, r in df.iterrows():
         detail = r.get("batter_detail") or []
@@ -676,22 +692,22 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "k_line": _json_safe(r.get("k_line")),
                 "k_over_price": _json_safe(r.get("k_over_price")),
                 "k_under_price": _json_safe(r.get("k_under_price")),
-                "k_book": r.get("k_book") or "",
+                "k_book": _str_field(r.get("k_book")),
                 "k_edge": _json_safe(r.get("k_edge")),
                 "hits_line": _json_safe(r.get("hits_line")),
                 "hits_over_price": _json_safe(r.get("hits_over_price")),
                 "hits_under_price": _json_safe(r.get("hits_under_price")),
-                "hits_book": r.get("hits_book") or "",
+                "hits_book": _str_field(r.get("hits_book")),
                 "er_line": _json_safe(r.get("er_line")),
                 "er_over_price": _json_safe(r.get("er_over_price")),
                 "er_under_price": _json_safe(r.get("er_under_price")),
-                "er_book": r.get("er_book") or "",
+                "er_book": _str_field(r.get("er_book")),
                 "bb_line": _json_safe(r.get("bb_line")),
-                "bb_book": r.get("bb_book") or "",
+                "bb_book": _str_field(r.get("bb_book")),
                 "outs_line": _json_safe(r.get("outs_line")),
-                "outs_book": r.get("outs_book") or "",
-                "odds_status": r.get("odds_status") or "",
-                "odds_updated": r.get("odds_updated") or "",
+                "outs_book": _str_field(r.get("outs_book")),
+                "odds_status": _str_field(r.get("odds_status")),
+                "odds_updated": _str_field(r.get("odds_updated")),
                 "vs_team_games": _json_safe(r.get("vs_team_games")),
                 "vs_team_ks": _json_safe(r.get("vs_team_ks")),
                 "vs_team_pa": _json_safe(r.get("vs_team_pa")),
@@ -1206,7 +1222,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     scored = status == "ok" and row.get("expected_ks") is not None
     pitcher_hand = _hand_label(row.get("pitch_hand"), "P")
     hand_html = _hand_chip_html(row.get("pitch_hand"), "P")
-    outlook = (row.get("ticket_outlook") or "").strip()
+    outlook = _str_field(row.get("ticket_outlook")).strip()
     search = " ".join(
         str(x)
         for x in [
@@ -1221,7 +1237,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             outlook,
             row.get("matchup_grade"),
         ]
-        if x
+        if x is not None and not (isinstance(x, float) and pd.isna(x)) and str(x) not in ("", "nan")
     ).lower()
 
     uid = f"m{idx}"

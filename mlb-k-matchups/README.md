@@ -27,7 +27,7 @@ Thin samples (`GS < 5`) shrink toward that default; uncapped season averages are
 
 These show as `outing_role` / `outing_source` in the CSV and HTML.
 
-**Lineup rollup**
+**Lineup rollup (PA interactions × volume — not pitcher season K% × BF alone)**
 
 ```
 expected_k_pct = mean(batter_k_pct over lineup batters with Savant rates)
@@ -36,6 +36,20 @@ expected_ks_1x = Σ batter_k_pct/100 for one trip through the nine (reference on
 ```
 
 No league-average blending: rates come only from the opposing lineup’s batters.
+
+**Distribution + book compare (when odds join)**
+
+Strikeout props care about *shape*, not only the mean. From the same PA-level K probabilities:
+
+```
+k_p10 / k_p50 / k_p90   — outing band (poisson-binomial over the order walk)
+k_p_ge_9 / k_dist_shape — right-tail / tight vs heavy_right_tail
+k_p_over                — P(K > book line) when k_line is present
+book_model_note         — plain-language book vs model + “why ~X Ks”
+expected_ks_rate_x_bf   — transparent rate% × BF next to order-walk Exp K
+```
+
+Mindset: sportsbooks are often sharper on public info — `k_edge` is a **question**, not a ticket. The product job is to explain **why** a pitcher can get X strikeouts (this lineup’s K environment + volume), then compare that story to the number.
 
 **Sharpening layers**
 

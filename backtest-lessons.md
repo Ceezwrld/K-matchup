@@ -304,9 +304,23 @@ Full slate in `backtest-2026-08-07.csv` (n=30, mean Exp K 4.43 → act 4.60, bia
 
 Board can still *show* IP / STYLE for context. **Do not recommend new outs overs/unders** until we explicitly reopen the lane after more graded evidence.
 
+## Product thesis (locked) — why can this pitcher get X strikeouts?
+
+This is the main course. Book lines are the comparison surface; **understanding the path to X Ks** is the point.
+
+1. **Books are usually sharper on public info.** Fat `k_edge` is a *question* (“why is the number there?”), not a ticket. Model edge ≠ true edge.
+2. **Strikeouts are PA interactions**, not pitcher season K%. A 28% K arm vs 26–30% K hitters is a different game than the same arm vs 14–17% contact bats.
+3. **Split the problem:**
+   - **Rate** — K probability per PA (pitcher mix × hitter tendencies / this lineup)
+   - **Volume** — batters faced / IP / pitch-count / traffic (how much of the nine he actually sees)
+4. **Build a distribution, not only a mean.** Two arms can both Exp ~6 with very different shapes (tight 5–7 vs heavy right tail to 9–10). Prop betting cares about that shape (`k_p10`/`k_p90`, `k_p_ge_9`, `k_p_over` vs the book line).
+5. **When odds are live:** compare Line ↔ Exp ↔ P(over) ↔ distribution shape, then write the plain-language *why* (lineup K environment + volume + confirms). Do not stop at “pitcher K% vs line.”
+
+Board fields: `expected_k_pct` + `projected_bf` / `expected_ks_rate_x_bf`, `k_p10`–`k_p90`, `k_dist_shape`, `k_p_over`, `book_model_note`.
+
 ## Every morning routine (do this first)
 
-Run this **every morning** before tickets. Goal: one clear outlook for **every** probable starter — **and** an honest read of why the book posted that K line.
+Run this **every morning** before tickets. Goal: one clear outlook for **every** probable starter — **and** an honest read of why the book posted that K line / why the pitcher can reach X Ks.
 
 **Mindset (locked 8/12):** Sportsbooks price information we do not fully see (role, pitch-count plan, platoon construction, market demand, injury whispers). **Model edge ≠ true edge.** A fat `k_edge` is a *question*, not a ticket. Bradford 8/11: TRUST/ELITE stack died because **Stuff+ 86** + Angels’ RHB-heavy / vs-LHP profile were the real story — details > Exp K.
 
@@ -328,23 +342,26 @@ Run this **every morning** before tickets. Goal: one clear outlook for **every**
 
 **A. Slate status** — n starters · OFF vs PRIOR · odds coverage · games still without a K line.
 
-**B. Book vs model map** — sort by `|k_edge|` and flag:
+**B. Book vs model map** — sort by `|k_edge|` and flag (always with P(over) + shape when present):
 | Flag | Meaning |
 |------|---------|
 | Book **low** (edge ≥ ~+1.0) | Model likes overs more than the number — ask *why the book is soft* (role, Stuff+, platoon, name discount) before juicing |
 | Book **high** (edge ≤ ~−1.0) | Name/SPIKE premium — Cam-rule under only if arsenal allows; never soft-under SPIKE |
-| Line ≈ Exp | Aligned — size with STYLE / IP / confirms, not “edge” |
+| Line ≈ Exp | Aligned — size with STYLE / IP / confirms / **distribution shape**, not “edge” |
+| Heavy right tail | Same mean, more 9–10 K mass — juiced overs / ceiling legs live; chalk unders fragile |
+| Tight band | Mean is the story — size nearer the number; less nuke |
 | No line | Short role / not posted — pass full-outing K props |
 
-**C. Every-pitcher info card** (for *your* analysis — not a ticket lock yet). Compact chart + plain-language “why”:
+**C. Every-pitcher info card** (for *your* analysis — not a ticket lock yet). Compact chart + plain-language “why X Ks”:
 
 ```
 #rk Name (H) TM vs OPP | PRIOR/OFF | role | time
-Line O/U X.5 (book · O/U prices) · Exp K · edge
-| Solo | STYLE | SPIKE/outlook | Stuff+ | Loc+ | IP | risk |
+Line O/U X.5 (book · O/U prices) · Exp K · edge · P(over) · P10–P90
+| Solo | STYLE | SPIKE/outlook | Stuff+ | Loc+ | IP | BF | risk |
+| Lineup K env (vs hand) | BIP/contact | rate×BF vs Exp |
 | K9/L3 | SwStr/CSW | Strike%/Zone% | FIP/xFIP/SIERA/xERA | xwOBA/xBA |
-| Opp BIP | K% vs hand | wRC+/wOBA/ISO | disc | hand-mix cue |
 Book why: …
+Why X Ks: (PA matchups — which bats/pitches) + (volume — IP/BF/leash) …
 Model read: …
 Watch flags: Stuff+<95 · Loc+<95 · RHB-heavy vs LHP · tough-vs-hand K% · short IP · swingman …
 ```

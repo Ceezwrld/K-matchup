@@ -45,6 +45,7 @@ from sharpen import (  # noqa: E402
     summarize_lineup_offense,
     usage_for_batter_side,
 )
+from k_dist import enrich_dataframe_k_distribution  # noqa: E402
 from odds import (  # noqa: E402
     DEFAULT_MARKETS,
     enrich_dataframe_odds,
@@ -1905,10 +1906,19 @@ def main(argv: list[str] | None = None) -> int:
     else:
         log(args.verbose, "Odds skipped (--no-odds)")
 
+    # PA-level K dist + rate/volume + book-vs-model read (after lines join).
+    try:
+        out = enrich_dataframe_k_distribution(out)
+    except Exception as exc:  # pragma: no cover
+        log(True, f"K distribution skipped: {exc}")
+
     print(format_table(out))
-    # Live K lines vs Exp K (when odds joined).
+    # Book vs model — question-first (books may be sharper; edge ≠ ticket).
     if "k_line" in out.columns and out["k_line"].notna().any():
-        print("\nBook K lines (Odds API — display only)")
+        print(
+            "\nBook vs model (display only — public info ≠ edge; "
+            "ask why the pitcher can get X Ks)"
+        )
         shown = out[out["k_line"].notna()].sort_values(
             "k_edge", ascending=False, na_position="last"
         )
@@ -1919,13 +1929,33 @@ def main(argv: list[str] | None = None) -> int:
                 if edge is not None and not (isinstance(edge, float) and pd.isna(edge))
                 else "—"
             )
+            p_over = r.get("k_p_over")
+            p_s = (
+                f" · P(over)≈{100 * float(p_over):.0f}%"
+                if p_over is not None
+                and not (isinstance(p_over, float) and pd.isna(p_over))
+                else ""
+            )
+            shape = (str(r.get("k_dist_shape") or "")).strip()
+            shape_s = f" · {shape}" if shape else ""
             print(
                 f"  {r.get('pitcher')}: Exp {float(r['expected_ks']):.2f} vs "
                 f"O/U {float(r['k_line']):.1f} "
                 f"({format_american(r.get('k_over_price'))}/"
                 f"{format_american(r.get('k_under_price'))} "
-                f"{r.get('k_book') or '?'}) · edge {edge_s}"
+                f"{r.get('k_book') or '?'}) · edge {edge_s}{p_s}{shape_s}"
             )
+            note = (str(r.get("book_model_note") or "")).strip()
+            if note:
+                print(f"    {note}")
+    elif "book_model_note" in out.columns:
+        top = out[out["status"].astype(str).eq("ok")].head(8)
+        if not top.empty:
+            print("\nWhy ~X Ks (lineup K env × volume — no book line yet)")
+            for _, r in top.iterrows():
+                note = (str(r.get("book_model_note") or "")).strip()
+                if note:
+                    print(f"  {r.get('pitcher')}: {note}")
     # Print ticket outlook for flagged arms (FILLER / MATCHUP_OK / SPIKE /
     # THIN_TOTAL / UNDER_OK).
     flagged = out[out["ticket_outlook"].astype(str).str.len() > 0]

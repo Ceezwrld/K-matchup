@@ -694,6 +694,16 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "k_under_price": _json_safe(r.get("k_under_price")),
                 "k_book": _str_field(r.get("k_book")),
                 "k_edge": _json_safe(r.get("k_edge")),
+                "k_p_over": _json_safe(r.get("k_p_over")),
+                "k_p_under": _json_safe(r.get("k_p_under")),
+                "k_p10": _json_safe(r.get("k_p10")),
+                "k_p50": _json_safe(r.get("k_p50")),
+                "k_p90": _json_safe(r.get("k_p90")),
+                "k_p_ge_9": _json_safe(r.get("k_p_ge_9")),
+                "k_dist_shape": _str_field(r.get("k_dist_shape")),
+                "k_dist_sd": _json_safe(r.get("k_dist_sd")),
+                "expected_ks_rate_x_bf": _json_safe(r.get("expected_ks_rate_x_bf")),
+                "book_model_note": r.get("book_model_note") or "",
                 "hits_line": _json_safe(r.get("hits_line")),
                 "hits_over_price": _json_safe(r.get("hits_over_price")),
                 "hits_under_price": _json_safe(r.get("hits_under_price")),
@@ -1251,13 +1261,22 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     tto_grade = _grade_class("tto", row.get("times_through_order"))
     kpct_grade = _grade_class("expected_k_pct", row.get("expected_k_pct"))
 
-    # Book K line + edge (Odds API) — display only.
+    # Book K line + edge (Odds API) — display only; edge is a question.
     k_line = row.get("k_line")
     k_edge = row.get("k_edge")
+    k_p_over = row.get("k_p_over")
     line_html = "—"
     edge_html = "—"
+    pover_html = "—"
     line_title = "Book K O/U (The Odds API) — not used in Exp K"
-    edge_title = "Exp K − book line (positive = model above the number)"
+    edge_title = (
+        "Exp K − book line (positive = model above the number). "
+        "Question-first — books may be sharper; edge ≠ ticket."
+    )
+    pover_title = (
+        "Model P(K > book line) from PA-level K probs × projected BF. "
+        "Shape cue for props — not a bet recommendation."
+    )
     edge_grade = ""
     if k_line is not None:
         try:
@@ -1269,7 +1288,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
                 f"(O {_amer_price(row.get('k_over_price'))} / "
                 f"U {_amer_price(row.get('k_under_price'))}"
                 f"{'' if not book else ' · ' + book}). "
-                f"Display only — does not change Exp K."
+                f"Display only — does not change Exp K. Compare to model, then ask why."
             )
         except (TypeError, ValueError):
             line_html = "—"
@@ -1283,6 +1302,25 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
                 edge_grade = " grade-low"
         except (TypeError, ValueError):
             edge_html = "—"
+    if k_p_over is not None:
+        try:
+            pover_html = f"{100 * float(k_p_over):.0f}%"
+            p10 = row.get("k_p10")
+            p90 = row.get("k_p90")
+            shape = (row.get("k_dist_shape") or "").strip()
+            band = ""
+            if p10 is not None and p90 is not None:
+                try:
+                    band = f" P10–P90 {float(p10):.0f}–{float(p90):.0f}."
+                except (TypeError, ValueError):
+                    band = ""
+            pover_title = (
+                f"Model P(over line) ≈ {pover_html}.{band}"
+                f"{'' if not shape else ' Shape: ' + shape + '.'} "
+                f"Built from pitcher×hitter PA K probs + projected BF — not season K% alone."
+            )
+        except (TypeError, ValueError):
+            pover_html = "—"
 
     badge_html = f"<span class='badge {kind}'>{_esc(label)}</span>"
     if outlook:
@@ -1373,12 +1411,13 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
         f"{game_html}"
         "<div class='stat-row'>"
-        f"{_stat(f'ks{ks_grade}', _fmt(row.get('expected_ks')), 'Exp K', 'Expected strikeouts')}"
+        f"{_stat(f'ks{ks_grade}', _fmt(row.get('expected_ks')), 'Exp K', 'Expected strikeouts from PA matchups × volume (not pitcher season K% alone)')}"
         f"{_stat('kline', line_html, 'Line', line_title)}"
         f"{_stat(f'kedge{edge_grade}', edge_html, 'Edge', edge_title)}"
+        f"{_stat('kpover', pover_html, 'P(O)', pover_title)}"
         f"{_stat(f'ip{ip_grade}', _fmt(row.get('projected_ip'), 1), 'IP', 'Projected innings pitched')}"
         f"{_stat(f'tto{tto_grade}', tto_s, 'TTO', 'Times through the order')}"
-        f"<div class='num kpct{kpct_grade}' title='Arsenal K% vs opposing lineup'>"
+        f"<div class='num kpct{kpct_grade}' title='Arsenal K% vs opposing lineup (PA interaction environment)'>"
         f"{chips_html}"
         f"<span class='nval'>"
         f"<span class='kpct-val'>{_fmt(row.get('expected_k_pct'))}</span>"
@@ -2037,6 +2076,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
     )
     ticket_note = (row.get("ticket_note") or "").strip()
+    book_note = (row.get("book_model_note") or "").strip()
     # Banner for flagged outlooks (FILLER / MATCHUP_OK / SPIKE / THIN_TOTAL / UNDER_OK).
     if outlook:
         note = _esc(ticket_note) if ticket_note else matchup_val
@@ -2044,6 +2084,13 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"<div class='outlook-banner outlook-{_esc(outlook.lower())}'>"
             f"<strong>{_esc(outlook.replace('_', ' '))}</strong>"
             f"<span>{note}</span>"
+            "</div>"
+        )
+    if book_note and scored:
+        head += (
+            "<div class='outlook-banner outlook-book'>"
+            "<strong>Book vs model</strong>"
+            f"<span>{_esc(book_note)}</span>"
             "</div>"
         )
 
@@ -2664,7 +2711,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .colhead, .summary-grid {
     display: grid;
-    grid-template-columns: 3rem minmax(9rem, 1.35fr) minmax(5.5rem, 0.85fr) repeat(6, minmax(3.8rem, 0.75fr)) minmax(5.5rem, 0.9fr);
+    grid-template-columns: 3rem minmax(9rem, 1.35fr) minmax(5.5rem, 0.85fr) repeat(7, minmax(3.4rem, 0.7fr)) minmax(5.5rem, 0.9fr);
     gap: 0.75rem 0.9rem;
     align-items: center;
   }
@@ -3233,6 +3280,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .outlook-banner.outlook-thin_total {
     background: rgba(154, 91, 18, 0.10); border-color: rgba(154, 91, 18, 0.28);
     color: var(--grade-mid);
+  }
+  .outlook-banner.outlook-book {
+    background: rgba(30, 90, 120, 0.10);
+    border-color: rgba(30, 90, 120, 0.28);
   }
   .outlook-banner.outlook-under_ok {
     background: rgba(30, 90, 160, 0.08); border-color: rgba(30, 90, 160, 0.24);

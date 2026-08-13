@@ -14,6 +14,24 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
+## 2026-08-13 locked ticket — Nola O4.5 H + Buxton O0.5 H
+
+**2-leg same-game hits multi** (PHI@MIN). Locked while game **In Progress**. Grade after final.
+
+| Leg | Market | Book context | Thesis |
+|-----|--------|--------------|--------|
+| **A. Aaron Nola O4.5 hits** | Pitcher hits allowed | Book H **5.5** (+112/−149 DK) — O4.5 is floor under chalk | Soft arsenal (Arv **−1.8**) · MIN **contact_heavy** BIP 69% · BA against **.279** · `high_hr`/`exit_hr` · Exp K only **4.26** (fade K-over; hits lane) |
+| **B. Byron Buxton O0.5 hits** | Batter hits | #1 hits board vs Nola (score **59.2**) | Barrel **17.6%** · HH **47.3%** · AVG vs RHP **.265** · xwOBA **.348** · slot **2** |
+
+**Correlation:** Buxton single+ helps both legs; multi is not independent. Nola still needs ~4 other hits (or Buxton multi-hit) for O4.5 H if Buxton only goes 1-for-X.
+
+**Process checks held:** not a Nola K ticket (book K 5.5 / P(O) ~24%); Bradley SPIKE still passed; Buxton picked as top hits lean on board metrics.
+
+**Kill risks:** Nola early hook before 5 H · Buxton 0-fer with hard contact outs · soft contact distributed to lower slots only.
+
+Snap: late lite odds pull `00aa631` · OFF nines · day odds budget ~63/500.
+
+
 ## 2026-08-13 early/midday grade — process vs book (n=12 finals)
 
 Full detail in `backtest-2026-08-13-early.csv`. Box scores verified via MLB StatsAPI. Board snaps: **morning** lite odds for 12:10/12:35 tips; **afternoon** OFF+odds for CHC@WSH (3:05). BOS@TOR graded on morning K line (5.5 Tolle) with afternoon alt (6.5) noted. Late still live: PHI@MIN · TEX@LAA · MIL@LAD → full slate `backtest-2026-08-13.csv` after finals.

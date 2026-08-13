@@ -1385,9 +1385,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         metavar="LIST",
         default=",".join(DEFAULT_MARKETS),
         help=(
-            "Comma-separated Odds API markets "
-            f"(default: {','.join(DEFAULT_MARKETS)})"
+            "Comma-separated Odds API markets. Default is credit-lite "
+            f"({','.join(DEFAULT_MARKETS)} = 3 credits/game). "
+            "Add pitcher_walks,pitcher_outs only when needed."
         ),
+    )
+    p.add_argument(
+        "--odds-force",
+        action="store_true",
+        help="Bypass on-disk odds cache (normally reuses pulls for ~45 minutes)",
+    )
+    p.add_argument(
+        "--odds-include-finished",
+        action="store_true",
+        help="Also fetch props for games that started >4.5h ago (default: skip)",
     )
     return p.parse_args(argv)
 
@@ -1862,19 +1873,22 @@ def main(argv: list[str] | None = None) -> int:
         if not key:
             log(
                 True,
-                "Odds skipped: set ODDS_API_KEY or THE_ODDS_API_KEY "
-                "(or pass --odds-key)",
+                "Odds skipped: set ODDS_API_KEY_NEW / ODDS_API_KEY / "
+                "THE_ODDS_API_KEY (or pass --odds-key)",
             )
-        try:
-            out = enrich_dataframe_odds(
-                out,
-                api_key=key,
-                markets=markets,
-                slate_date=str(args.date),
-                verbose=args.verbose,
-            )
-        except Exception as exc:  # pragma: no cover
-            log(True, f"Odds enrich failed: {exc}")
+        else:
+            try:
+                out = enrich_dataframe_odds(
+                    out,
+                    api_key=key,
+                    markets=markets,
+                    slate_date=str(args.date or game_date),
+                    skip_finished=not bool(args.odds_include_finished),
+                    force_refresh=bool(args.odds_force),
+                    verbose=args.verbose,
+                )
+            except Exception as exc:  # pragma: no cover
+                log(True, f"Odds enrich failed: {exc}")
     else:
         log(args.verbose, "Odds skipped (--no-odds)")
 

@@ -123,21 +123,44 @@ Useful flags:
 | `-o/--output` | Write full rankings CSV |
 | `--html` | Write self-contained interactive HTML rankings |
 | `--odds` / `--no-odds` | Join live book lines from The Odds API (default: on when key present) |
-| `--odds-key` | Odds API key (else `ODDS_API_KEY` / `THE_ODDS_API_KEY`) |
-| `--odds-markets` | Comma-separated markets (default: K / hits / ER / walks / outs) |
+| `--odds-key` | Odds API key (else `ODDS_API_KEY_NEW` / `ODDS_API_KEY` / `THE_ODDS_API_KEY`) |
+| `--odds-markets` | Comma-separated markets (default: **lite** = K / hits / ER = 3 credits/game) |
+| `--odds-force` | Bypass on-disk cache (normally reuses pulls ~45 min) |
+| `--odds-include-finished` | Also fetch props for games started >4.5h ago (default: skip) |
 | `-v/--verbose` | Log HTTP fetches |
 
 ## Live odds (The Odds API)
 
-Display-only book lines join onto the board as `k_line` / `k_edge` (Exp K − line), plus hits / ER / BB / outs when posted. **Never changes `expected_ks`.**
+Display-only book lines join onto the board as `k_line` / `k_edge` (Exp K − line), plus hits / ER (and BB / outs when requested). **Never changes `expected_ks`.**
 
 ```bash
-export ODDS_API_KEY="your_key"   # or THE_ODDS_API_KEY
+export ODDS_API_KEY_NEW="your_32_char_hex_key"   # preferred; else ODDS_API_KEY
 python3 mlb-k-matchups/k_matchups.py --date $(date +%F) -o rankings.csv --html rankings.html -v
-# skip:  ... --no-odds
+# model-only (0 odds credits):  ... --no-odds
 ```
 
-For GitHub Actions, add repo secret `ODDS_API_KEY` — the daily workflow passes it through. Quota note: props are per-event (~1 + N games per refresh).
+### Stretching credits (20k plan)
+
+Cost model: `/events` is **free**. Each `/events/{id}/odds` costs **markets × regions**. Default is **3 markets × 1 region = 3 credits per live game**. Cache hits and skipped finished games cost **0**.
+
+| Habit | Approx cost |
+| --- | --- |
+| Full slate lite pull (~15 live games) | ~45 credits |
+| Same board again within ~45 min (cache) | ~0 |
+| Mid/late day (finished games skipped) | fewer than full slate |
+| Full markets (K+hits+ER+BB+outs) | 5 credits/game — avoid unless needed |
+| `--odds-force` every refresh | burns a full pull each time — avoid |
+
+Rough ceiling at lite defaults: **20,000 ÷ 45 ≈ 440 full-slate pulls**. In practice you get more by using cache, skipping finished games, and running `--no-odds` for model-only refreshes.
+
+Tips:
+- Put the key in `.env` as `ODDS_API_KEY_NEW=…` (gitignored). Prefer the dashboard **API Key** (32-char hex), not the account UUID.
+- Refresh the board freely for Savant/lineups with `--no-odds`; only pull odds when you need Line / Edge.
+- Raise cache window with `ODDS_CACHE_TTL_MIN=90` (or higher) if lines don’t need to be minute-fresh.
+- Opt into walks/outs only when needed:  
+  `--odds-markets pitcher_strikeouts,pitcher_hits_allowed,pitcher_earned_runs,pitcher_walks,pitcher_outs`
+
+For GitHub Actions, add repo secret `ODDS_API_KEY` (or `ODDS_API_KEY_NEW`) — the daily workflow passes it through.
 
 ## Lineups
 

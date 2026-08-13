@@ -1,18 +1,23 @@
 """Live book lines from The Odds API (display-only — never moves expected_ks).
 
 Env:
-  ODDS_API_KEY or THE_ODDS_API_KEY — required to fetch; missing key → no-op.
+  ODDS_API_KEY_NEW / ODDS_API_KEY / THE_ODDS_API_KEY — required to fetch.
+  ODDS_CACHE_DIR — optional cache directory (default: .cache/odds).
+  ODDS_CACHE_TTL_MIN — reuse cached event odds this many minutes (default: 45).
 
-Typical markets (US books):
-  pitcher_strikeouts, pitcher_hits_allowed, pitcher_earned_runs,
-  pitcher_walks, pitcher_outs (+ optional *_alternate).
+Credit cost (The Odds API):
+  /events is free. Each /events/{id}/odds costs (markets × regions).
+  Default lite pull = 3 markets × 1 region = 3 credits per game.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
+import time
 import unicodedata
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -24,13 +29,24 @@ SPORT_KEY = "baseball_mlb"
 # Preferred books in order (first match wins when lines disagree).
 DEFAULT_BOOKS = ("draftkings", "fanduel", "betmgm", "caesars", "fanatics")
 
-DEFAULT_MARKETS = (
+# Credit-saver default: K / hits / ER only (3 credits/game @ 1 region).
+# Full pack (bb + outs) is opt-in via --odds-markets.
+LITE_MARKETS = (
+    "pitcher_strikeouts",
+    "pitcher_hits_allowed",
+    "pitcher_earned_runs",
+)
+DEFAULT_MARKETS = LITE_MARKETS
+FULL_MARKETS = (
     "pitcher_strikeouts",
     "pitcher_hits_allowed",
     "pitcher_earned_runs",
     "pitcher_walks",
     "pitcher_outs",
 )
+
+# Keep responses small; ≤10 bookmakers still counts as 1 region for credits.
+DEFAULT_BOOKMAKER_FILTER = ("draftkings", "fanduel")
 
 # Odds API full team name → our board abbreviations.
 TEAM_NAME_TO_ABBR: dict[str, str] = {
@@ -156,22 +172,105 @@ def fetch_mlb_events(api_key: str, *, verbose: bool = False) -> list[dict[str, A
     return list(data or [])
 
 
+def estimate_odds_credits(
+    n_events: int,
+    markets: tuple[str, ...] | list[str],
+    *,
+    regions: str = "us",
+    bookmakers: tuple[str, ...] | list[str] | None = None,
+) -> int:
+    """Credits ≈ events × markets × region_groups (bookmakers/10 or region count)."""
+    n_markets = max(1, len([m for m in markets if m and "_alternate" not in m]))
+    if bookmakers:
+        region_groups = max(1, (len(bookmakers) + 9) // 10)
+    else:
+        region_groups = max(1, len([r for r in str(regions).split(",") if r.strip()]))
+    return int(n_events) * n_markets * region_groups
+
+
+def _cache_dir() -> Path:
+    raw = (os.environ.get("ODDS_CACHE_DIR") or "").strip()
+    return Path(raw) if raw else Path(".cache") / "odds"
+
+
+def _cache_ttl_sec() -> int:
+    raw = (os.environ.get("ODDS_CACHE_TTL_MIN") or "45").strip()
+    try:
+        mins = max(0, int(float(raw)))
+    except ValueError:
+        mins = 45
+    return mins * 60
+
+
+def _cache_path(event_id: str, markets: tuple[str, ...] | list[str]) -> Path:
+    mkey = "_".join(sorted(str(m) for m in markets))
+    safe = re.sub(r"[^a-zA-Z0-9_-]+", "", f"{event_id}_{mkey}")[:180]
+    return _cache_dir() / f"{safe}.json"
+
+
+def _read_event_cache(
+    event_id: str,
+    markets: tuple[str, ...] | list[str],
+    *,
+    force: bool = False,
+    verbose: bool = False,
+) -> dict[str, Any] | None:
+    if force or _cache_ttl_sec() <= 0:
+        return None
+    path = _cache_path(event_id, markets)
+    if not path.is_file():
+        return None
+    age = time.time() - path.stat().st_mtime
+    if age > _cache_ttl_sec():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return None
+    if not isinstance(data, dict):
+        return None
+    _log(verbose, f"Odds cache HIT {event_id} age={int(age)}s → 0 credits")
+    return data
+
+
+def _write_event_cache(
+    event_id: str,
+    markets: tuple[str, ...] | list[str],
+    payload: dict[str, Any],
+) -> None:
+    if payload.get("_error"):
+        return
+    path = _cache_path(event_id, markets)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def fetch_event_odds(
     api_key: str,
     event_id: str,
     *,
     markets: tuple[str, ...] | list[str] = DEFAULT_MARKETS,
     regions: str = "us",
+    bookmakers: tuple[str, ...] | list[str] | None = DEFAULT_BOOKMAKER_FILTER,
     verbose: bool = False,
 ) -> dict[str, Any]:
+    params: dict[str, Any] = {
+        "markets": ",".join(markets),
+        "oddsFormat": "american",
+    }
+    # bookmakers takes priority over regions for which books return; still 1
+    # credit-region when ≤10 books are listed.
+    if bookmakers:
+        params["bookmakers"] = ",".join(bookmakers)
+    else:
+        params["regions"] = regions
     data = _get_json(
         f"/sports/{SPORT_KEY}/events/{event_id}/odds",
         api_key=api_key,
-        params={
-            "regions": regions,
-            "markets": ",".join(markets),
-            "oddsFormat": "american",
-        },
+        params=params,
         verbose=verbose,
     )
     return data or {}
@@ -333,6 +432,25 @@ def _index_events_by_game(
     return event_by_game
 
 
+def _event_likely_finished(ev: dict[str, Any], *, hours_after: float = 4.5) -> bool:
+    """True when commence_time is more than ``hours_after`` in the past."""
+    raw = str(ev.get("commence_time") or "").strip()
+    if not raw:
+        return False
+    try:
+        from datetime import datetime, timezone
+
+        if raw.endswith("Z"):
+            raw = raw[:-1] + "+00:00"
+        start = datetime.fromisoformat(raw)
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=timezone.utc)
+        age_h = (datetime.now(timezone.utc) - start.astimezone(timezone.utc)).total_seconds() / 3600.0
+        return age_h > hours_after
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def enrich_dataframe_odds(
     df: pd.DataFrame,
     *,
@@ -340,7 +458,10 @@ def enrich_dataframe_odds(
     markets: tuple[str, ...] | list[str] = DEFAULT_MARKETS,
     books: tuple[str, ...] | list[str] = DEFAULT_BOOKS,
     regions: str = "us",
+    bookmakers: tuple[str, ...] | list[str] | None = DEFAULT_BOOKMAKER_FILTER,
     slate_date: str | None = None,
+    skip_finished: bool = True,
+    force_refresh: bool = False,
     verbose: bool = False,
 ) -> pd.DataFrame:
     """Join live prop lines onto the rankings frame. Never modifies expected_ks."""
@@ -361,7 +482,7 @@ def enrich_dataframe_odds(
         return out
 
     try:
-        events = fetch_mlb_events(key, verbose=verbose)
+        events = fetch_mlb_events(key, verbose=verbose)  # free endpoint
     except Exception as exc:  # noqa: BLE001 — board should still publish
         _log(verbose, f"Odds: events fetch failed: {exc}")
         out["odds_status"] = f"error:{exc}"
@@ -386,26 +507,75 @@ def enrich_dataframe_odds(
             if str(g).strip()
         }
     )
-    odds_by_event: dict[str, dict[str, Any]] = {}
+    # Plan fetches (skip finished / use cache) before spending credits.
+    planned: list[tuple[str, str]] = []  # (game, event_id)
+    skipped_finished = 0
     for game in games:
         ev = event_by_game.get(game)
         if not ev:
-            # Try rebuild from pitcher_team/opponent if game missing.
             continue
         eid = str(ev.get("id") or "")
-        if not eid or eid in odds_by_event:
+        if not eid:
+            continue
+        if skip_finished and _event_likely_finished(ev):
+            skipped_finished += 1
+            continue
+        planned.append((game, eid))
+    # Dedupe event ids while keeping order.
+    seen_eids: set[str] = set()
+    unique_plan: list[tuple[str, str]] = []
+    for game, eid in planned:
+        if eid in seen_eids:
+            continue
+        seen_eids.add(eid)
+        unique_plan.append((game, eid))
+
+    est = estimate_odds_credits(
+        len(unique_plan), markets, regions=regions, bookmakers=bookmakers
+    )
+    _log(
+        True,
+        f"Odds plan: {len(unique_plan)} events × {len(markets)} markets "
+        f"≈ {est} credits"
+        + (f" (skipped {skipped_finished} finished)" if skipped_finished else "")
+        + ("; cache TTL on" if _cache_ttl_sec() > 0 and not force_refresh else ""),
+    )
+
+    odds_by_event: dict[str, dict[str, Any]] = {}
+    fetched = 0
+    cache_hits = 0
+    for game, eid in unique_plan:
+        cached = _read_event_cache(
+            eid, markets, force=force_refresh, verbose=verbose
+        )
+        if cached is not None:
+            odds_by_event[eid] = cached
+            cache_hits += 1
             continue
         try:
-            odds_by_event[eid] = fetch_event_odds(
+            payload = fetch_event_odds(
                 key,
                 eid,
                 markets=markets,
                 regions=regions,
+                bookmakers=bookmakers,
                 verbose=verbose,
             )
+            odds_by_event[eid] = payload
+            _write_event_cache(eid, markets, payload)
+            fetched += 1
         except Exception as exc:  # noqa: BLE001
             _log(verbose, f"Odds: event {eid} ({game}) failed: {exc}")
             odds_by_event[eid] = {"_error": str(exc)}
+
+    spent = estimate_odds_credits(
+        fetched, markets, regions=regions, bookmakers=bookmakers
+    )
+    _log(
+        True,
+        f"Odds fetch: network={fetched} cache_hits={cache_hits} "
+        f"est_credits_spent≈{spent}",
+    )
 
     # Also map via team pairs from pitcher_team + opponent when game string absent.
     matched = 0

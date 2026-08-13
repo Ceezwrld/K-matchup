@@ -14,18 +14,99 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
-## 2026-08-13 early — Messick / Gilbert user legs (partial)
+## 2026-08-13 early/midday grade — process vs book (n=12 finals)
 
-Ticket: **Messick O5.5 K** · **Gilbert O4.5 K**. Full slate grade later in `backtest-2026-08-13.csv`.
+Full detail in `backtest-2026-08-13-early.csv`. Box scores verified via MLB StatsAPI. Board snaps: **morning** lite odds for 12:10/12:35 tips; **afternoon** OFF+odds for CHC@WSH (3:05). BOS@TOR graded on morning K line (5.5 Tolle) with afternoon alt (6.5) noted. Late still live: PHI@MIN · TEX@LAA · MIL@LAD → full slate `backtest-2026-08-13.csv` after finals.
 
-| Arm | Exp → Act | User leg | Result | Note |
-|-----|-----------|----------|--------|------|
-| **Parker Messick** | 5.70 → **6** (5.2 IP) | O5.5 | **HIT** | AVG/WHIFF · aligned 5.5 book · DET wRC+ leash didn't kill Ks (3 H / 2 ER) |
-| **Logan Gilbert** | 6.09 → **7** (6.0 IP) | O4.5 | **HIT** | ELITE+WHIFF+Stuff+109 floor cashed clean (4 H / 0 ER); O5.5/O6.5 also would HIT |
+**Model fit:** mean Exp **4.74 → 5.33** act · bias **+0.59** · MAE **2.07** (wider than 8/12’s 1.55 — Ashcraft/Cavalli +5 ceilings + Montero −3.25).  
+**K over @ posted snap book:** **6/12 (50%)**. Blind chalk over is coin-flip; process lanes split cleanly.
 
-**Confirm:** board-clear WHIFF / TRUST-ish stacks on OFF nines; safe Gilbert floor sizing worked. Messick O5.5 needed the full script and got it.
+### User ticket
 
-Also early finals context (not on ticket): Ashcraft **10 K** / Phillips **6 K** · Montero **0 K** (UNDER_OK) · Abbott **3 K / 7 H / 5 ER** (damage) · Martin short.
+| Arm | Snap Exp → Act | Book K | Leg | Result | Box |
+|-----|----------------|--------|-----|--------|-----|
+| **Parker Messick** | 5.63 → **6** | 5.5 | **O5.5** | **HIT** | 5.2 IP · 3 H / 2 ER / 2 BB / 1 HR · BF 23 · 102/59 |
+| **Logan Gilbert** | 6.08 → **7** | 6.5 (→5.5 aft) | **O4.5** | **HIT** | 6.0 IP · 4 H / 0 ER / 1 BB · BF 22 · 95/59 · O5.5 & O6.5 also HIT |
+
+### Pitcher-by-pitcher (metrics × book × actual)
+
+| Arm | Process / lean | Stuff+ · Arv · Contact · Spike | Exp · Book K · Edge · P(O) | Act K/H/ER (IP) | K over | Process grade |
+|-----|----------------|--------------------------------|----------------------------|-----------------|--------|---------------|
+| **Messick** | User O5.5 · AVG/WHIFF clear | 97 · −1.0 · neutral · no | 5.63 · **5.5** · +0.13 · 51% | **6**/3/2 (5.2) | **HIT** | **CONFIRM** — Exp≈book; rate held (26% act) |
+| **Montero** | UNDER_OK quiet; fade K-over juice | 95 · −1.7 · soft · no | 3.25 · **2.5** · +0.75 · 65% | **0**/3/0 (6.1) | **MISS** | Quiet **CONFIRM** (H/ER unders HIT) · fat K edge = **trap** |
+| **Abbott** | Damage H/ER; fade K | 95 · +2.2 · strong flags | 4.05 · **4.5** · −0.45 · 38% | **3**/7/5 (4.1) | MISS | **CONFIRM_DAMAGE** — BB/xFIP flags printed |
+| **Martin** | O3.5 max · length veto | **90** · −1.9 · elite label | 4.87 · **4.5** · +0.37 · 56% | **3**/2/3 (**2.0**) | MISS | **CONFIRM_LENGTH_VETO** — Stuff+90 + short_recent_ip |
+| **Ashcraft** | SPIKE ceiling · never soft-under | **106** · **+2.4** · SPIKE | 4.71 · **5.5** · −0.79 · 32% | **10**/3/1 (**9.0**) | **HIT** | **CONFIRM_SPIKE** — Exp undershoot +5.3; soft-under dies |
+| **Phillips** | MATCHUP_OK O3.5 floor | 96 · +1.1 · whiff_prone | 5.29 · **3.5** · **+1.79** · 81% | **6**/6/4 (5.1) | **HIT** | K floor **CONFIRM** + damage co-path (not clean) |
+| **Gilbert** | User O4.5 floor · ELITE stack | **109** · +1.5 · whiff_prone · SPIKE | 6.08 · **6.5** · −0.42 · 41% | **7**/4/0 (6.0) | **HIT** | **CONFIRM** — floor sizing; elev_hr quiet |
+| **Fried** | O4.5 lean · not O5.5 juice | 106 · +0.2 · SPIKE | 5.32 · **5.5** · −0.18 · 45% | **4**/5/1 (5.0) | MISS | **PARTIAL** — O4.5 would HIT; O5.5 miss |
+| **Tolle** | SPIKE · no soft-under · fade aft 6.5 | **115** · −1.6 · contact_heavy · SPIKE | 5.39 · **5.5** (→**6.5**) · −0.11→−1.11 | **4**/2/0 (**8.0**) | MISS | **PROCESS_OK_MIXED** — gem without Ks; rule held |
+| **Scherzer** | Fade K over · soft damage | 93 · +2.0 · MATCHUP_OK aft | 2.88 · **4.5** · −1.62 · 14% | **4**/3/1 (5.0) | MISS | **SOFT_MIXED** — miss by 0.5 K; damage overstated |
+| **Gausman** | Aft OFF cut; not clean K | 98 · +2.5 · whiff_prone | **4.93** · **5.5** · −0.57 · 37% | **7**/7/6 (4.2) | **HIT** | **MIXED** — K cashes with blowup; morn 6.16/4.5 was wrong world |
+| **Cavalli** | Fade O5.5 (not chalk under) | 102 · **−1.8** · whiff_prone | **4.49** · **5.5** · −1.01 · 28% | **10**/1/0 (**8.0**) | **HIT** | **MISS_FADE** — Castillo-style; BF collapse hid ceiling |
+
+### Book line movers (why the board shifted)
+
+| Arm | Morning | Afternoon | Actual | Read |
+|-----|---------|-----------|--------|------|
+| Gilbert K | **6.5** (edge −0.42) | **5.5** (edge +0.59) | 7 | Book cut into model; user O4.5 was the safe side either line |
+| Tolle K | **5.5** (aligned) | **6.5** (edge −1.11) | 4 | Juice over after open — fade juiced O6.5 correct; soft under still vetoed by SPIKE |
+| Gausman K | **4.5** / Exp **6.16** (edge +1.66) | **5.5** / Exp **4.93** | 7 | Morning fat edge was the danger signal; OFF refresh fixed direction |
+| Cavalli Exp | 3.92 | 4.49 (BF ~20) | 10 | Still too low — Arv− vs whiff_prone + Stuff+≥100 + length |
+| Ashcraft K | 5.5 | live **8.5** | 10 | In-game alt; pregame SPIKE read was the ticket frame |
+
+### Process buckets
+
+| Lane | Arms | Exp → Act | Verdict |
+|------|------|-----------|---------|
+| **User / ELITE stacks** | Messick, Gilbert | 5.86 → **6.50** | **2/2 HIT** — WHIFF + OFF + (Gilbert Stuff+109) |
+| **SPIKE** | Ashcraft, Tolle | 5.05 → **7.00** | Never soft-under **held**; Ashcraft ceiling cashed; Tolle = length gem / K miss |
+| **DAMAGE / quiet** | Abbott, Montero, Scherzer | 3.39 → **2.33** | Abbott damage **CONFIRM**; Montero quiet **CONFIRM**; Scherzer damage soft |
+| **MATCHUP_OK / length** | Phillips, Martin | 5.08 → **4.50** | Phillips O3.5 OK; Martin length veto **CONFIRM** |
+| **Aft OFF** | Gausman, Cavalli | 4.71 → **8.50** | Gausman chaos K; Cavalli fade **MISS** |
+
+### Hits / ER vs book (where posted)
+
+| Arm | Book H / ER | Act H / ER | H over | ER over |
+|-----|-------------|------------|--------|---------|
+| Messick | 4.5 / 2.5 | 3 / 2 | MISS | MISS |
+| Montero | 4.5 / 2.5 | 3 / 0 | MISS (under side) | MISS (under side) |
+| Ashcraft | 4.5 / 1.5 | 3 / 1 | MISS | MISS |
+| Phillips | 4.5 / 1.5 | 6 / 4 | **HIT** | **HIT** |
+| Gilbert | 4.5 / 2.5 | 4 / 0 | MISS | MISS |
+| Fried | 4.5 / 1.5 | 5 / 1 | **HIT** | MISS |
+| Tolle | 4.5 / 1.5 | 2 / 0 | MISS | MISS |
+| Scherzer | 4.5 / 2.5 | 3 / 1 | MISS | MISS |
+| Gausman | 4.5 / 2.5 | 7 / 6 | **HIT** | **HIT** |
+| Cavalli | 5.5 / 2.5 | 1 / 0 | MISS | MISS |
+
+Abbott/Martin: no H/ER books on morning snap — damage read was flag-driven (printed on Abbott).
+
+### Biggest Exp misses
+
+**Model low (undershoot):** Ashcraft **+5.29** · Cavalli **+5.51** · Gausman **+2.07**  
+**Model high (overshoot):** Montero **−3.25** · Martin **−1.87** · Tolle **−1.39** · Fried **−1.32**
+
+### Reinforced (lock after early 8/13)
+
+1. **User ticket process worked** — Messick aligned O5.5; Gilbert O4.5 floor on Stuff+109 / whiff_prone / SPIKE.
+2. **Never soft-under SPIKE** — Ashcraft 10 K is the exhibit; Tolle soft-under would cash *result* but process correctly blocked (K ceiling still live pregame).
+3. **Fat `k_edge` ≠ ticket** — Montero +0.75 / P(O) 65% → 0 K; Gausman morning +1.66 was the warning before OFF cut.
+4. **MATCHUP_OK = O3.5 + length** — Phillips 6 K OK; Martin 2 IP veto held (Stuff+90).
+5. **Damage flags > matchup label** — Abbott strong arsenal / 7H/5ER; Scherzer damage was soft — need BIP/contact_heavy for juice.
+6. **Castillo/Cavalli rule** — do **not** hard-fade K over when opp is **whiff_prone** + Stuff+≥100 + 5+ IP path, even with Arv− and model under book (fade ≠ chalk under, but today’s fade was wrong).
+7. **Afternoon OFF matters** — Gausman Exp 6.16→4.93 and line 4.5→5.5 before tip; morning juice was not the betting board.
+
+### Watch / still open
+
+| Item | Note |
+|------|------|
+| **Nola O4.5 H** (user) | PHI@MIN Pre-Game — grade after final |
+| Bradley SPIKE / pass | Held — do not chase |
+| Late TEX@LAA / MIL@LAD | Refresh OFF 1–2h pre tip; lite odds only if asked |
+| Cavalli-style Arv− | Add to fade checklist: whiff_prone + Stuff+≥100 → no hard fade |
+
+**Process stance after early 8/13:** ticket lane clean (2/2); SPIKE/UNDER_OK/length rules held; biggest miss = Cavalli fade; biggest model miss = Ashcraft/Cavalli ceilings. Full slate after late finals.
 
 
 ## 2026-08-12 grade — K-gate held; bad-game T1 split; MATCHUP_OK length veto

@@ -3,7 +3,9 @@
 Env:
   ODDS_API_KEY_NEW / ODDS_API_KEY / THE_ODDS_API_KEY — required to fetch.
   ODDS_CACHE_DIR — optional cache directory (default: .cache/odds).
-  ODDS_CACHE_TTL_MIN — reuse cached event odds this many minutes (default: 45).
+  ODDS_CACHE_TTL_MIN — reuse cached event odds this many minutes (default: 120).
+  ODDS_DAILY_BUDGET — max estimated credits per America/Chicago day (default: 500;
+    0 disables). Aimed at stretching a ~20k monthly quota.
 
 Credit cost (The Odds API):
   /events is free. Each /events/{id}/odds costs (markets × regions).
@@ -194,12 +196,66 @@ def _cache_dir() -> Path:
 
 
 def _cache_ttl_sec() -> int:
-    raw = (os.environ.get("ODDS_CACHE_TTL_MIN") or "45").strip()
+    # 120 min default: enough for lineup/board churn without minute-fresh burns.
+    raw = (os.environ.get("ODDS_CACHE_TTL_MIN") or "120").strip()
     try:
         mins = max(0, int(float(raw)))
     except ValueError:
-        mins = 45
+        mins = 120
     return mins * 60
+
+
+def _daily_budget() -> int:
+    """Max estimated network credits per CT day. 0 = unlimited."""
+    raw = (os.environ.get("ODDS_DAILY_BUDGET") or "500").strip()
+    try:
+        return max(0, int(float(raw)))
+    except ValueError:
+        return 500
+
+
+def _usage_date_ct() -> str:
+    """America/Chicago calendar date for daily budget buckets."""
+    try:
+        from zoneinfo import ZoneInfo
+        from datetime import datetime
+
+        return datetime.now(ZoneInfo("America/Chicago")).date().isoformat()
+    except Exception:  # noqa: BLE001
+        from datetime import date
+
+        return date.today().isoformat()
+
+
+def _usage_path() -> Path:
+    return _cache_dir() / f"usage-{_usage_date_ct()}.json"
+
+
+def _read_daily_spent() -> int:
+    path = _usage_path()
+    if not path.is_file():
+        return 0
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return max(0, int(data.get("spent") or 0))
+    except Exception:  # noqa: BLE001
+        return 0
+
+
+def _add_daily_spent(n: int) -> int:
+    if n <= 0:
+        return _read_daily_spent()
+    path = _usage_path()
+    spent = _read_daily_spent() + int(n)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps({"date": _usage_date_ct(), "spent": spent}),
+            encoding="utf-8",
+        )
+    except Exception:  # noqa: BLE001
+        pass
+    return spent
 
 
 def _cache_path(event_id: str, markets: tuple[str, ...] | list[str]) -> Path:
@@ -213,15 +269,17 @@ def _read_event_cache(
     markets: tuple[str, ...] | list[str],
     *,
     force: bool = False,
+    allow_stale: bool = False,
     verbose: bool = False,
 ) -> dict[str, Any] | None:
-    if force or _cache_ttl_sec() <= 0:
+    if force and not allow_stale:
         return None
     path = _cache_path(event_id, markets)
     if not path.is_file():
         return None
     age = time.time() - path.stat().st_mtime
-    if age > _cache_ttl_sec():
+    ttl = _cache_ttl_sec()
+    if not allow_stale and (ttl <= 0 or age > ttl):
         return None
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -229,7 +287,12 @@ def _read_event_cache(
         return None
     if not isinstance(data, dict):
         return None
-    _log(verbose, f"Odds cache HIT {event_id} age={int(age)}s → 0 credits")
+    stale = ttl > 0 and age > ttl
+    _log(
+        verbose,
+        f"Odds cache HIT {event_id} age={int(age)}s"
+        f"{' STALE' if stale else ''} → 0 credits",
+    )
     return data
 
 
@@ -533,17 +596,29 @@ def enrich_dataframe_odds(
     est = estimate_odds_credits(
         len(unique_plan), markets, regions=regions, bookmakers=bookmakers
     )
+    budget = _daily_budget()
+    already = _read_daily_spent()
+    per_event = estimate_odds_credits(
+        1, markets, regions=regions, bookmakers=bookmakers
+    )
     _log(
         True,
         f"Odds plan: {len(unique_plan)} events × {len(markets)} markets "
         f"≈ {est} credits"
         + (f" (skipped {skipped_finished} finished)" if skipped_finished else "")
-        + ("; cache TTL on" if _cache_ttl_sec() > 0 and not force_refresh else ""),
+        + (f"; cache TTL={_cache_ttl_sec() // 60}m" if _cache_ttl_sec() > 0 else "")
+        + (
+            f"; daily budget {already}/{budget} used (CT)"
+            if budget > 0
+            else "; daily budget off"
+        ),
     )
 
     odds_by_event: dict[str, dict[str, Any]] = {}
     fetched = 0
     cache_hits = 0
+    stale_hits = 0
+    budget_blocked = 0
     for game, eid in unique_plan:
         cached = _read_event_cache(
             eid, markets, force=force_refresh, verbose=verbose
@@ -552,6 +627,26 @@ def enrich_dataframe_odds(
             odds_by_event[eid] = cached
             cache_hits += 1
             continue
+
+        # Stop network spends when the CT-day budget would be exceeded.
+        if budget > 0 and (already + (fetched + 1) * per_event) > budget:
+            stale = _read_event_cache(
+                eid,
+                markets,
+                force=False,
+                allow_stale=True,
+                verbose=verbose,
+            )
+            if stale is not None:
+                odds_by_event[eid] = stale
+                stale_hits += 1
+            else:
+                odds_by_event[eid] = {
+                    "_error": f"daily_budget_exceeded({already}/{budget})"
+                }
+                budget_blocked += 1
+            continue
+
         try:
             payload = fetch_event_odds(
                 key,
@@ -571,10 +666,13 @@ def enrich_dataframe_odds(
     spent = estimate_odds_credits(
         fetched, markets, regions=regions, bookmakers=bookmakers
     )
+    day_total = _add_daily_spent(spent)
     _log(
         True,
         f"Odds fetch: network={fetched} cache_hits={cache_hits} "
-        f"est_credits_spent≈{spent}",
+        f"stale_hits={stale_hits} budget_blocked={budget_blocked} "
+        f"est_credits_spent≈{spent}"
+        + (f" day_total≈{day_total}/{budget}" if budget > 0 else f" day_total≈{day_total}"),
     )
 
     # Also map via team pairs from pitcher_team + opponent when game string absent.

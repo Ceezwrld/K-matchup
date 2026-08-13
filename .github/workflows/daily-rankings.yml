@@ -52,14 +52,28 @@ jobs:
       - name: Run K-matchup model
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          # Month stretch (~20k credits): only the afternoon CI pull spends odds.
+          # Morning publishes model/lineups with --no-odds (0 credits).
+          ODDS_DAILY_BUDGET: "500"
+          ODDS_CACHE_TTL_MIN: "120"
         run: |
+          DATE="${{ steps.date.outputs.date }}"
+          # cron 11:00 UTC ≈ morning ET → model only; 20:00 UTC ≈ afternoon → odds.
+          HOUR_UTC="$(date -u +%H)"
+          ODDS_FLAG=""
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$HOUR_UTC" -lt 16 ]; then
+            ODDS_FLAG="--no-odds"
+            echo "Morning CI: skipping Odds API (credit saver)"
+          else
+            echo "Odds CI pull enabled (lite markets + daily budget)"
+          fi
           python3 mlb-k-matchups/k_matchups.py \
-            --date "${{ steps.date.outputs.date }}" \
-            -o "rankings-${{ steps.date.outputs.date }}.csv" \
+            --date "$DATE" \
+            -o "rankings-${DATE}.csv" \
             --html rankings.html \
-            -v
+            -v \
+            $ODDS_FLAG
           # write_interactive_html also writes index.html for the stable Pages URL
-          # Odds join when ODDS_API_KEY secret is set; otherwise board still publishes.
 
       - name: Commit and push rankings
         run: |

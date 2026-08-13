@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -1393,12 +1394,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument(
         "--odds-force",
         action="store_true",
-        help="Bypass on-disk odds cache (normally reuses pulls for ~45 minutes)",
+        help="Bypass on-disk odds cache (normally reuses pulls for ~120 minutes)",
     )
     p.add_argument(
         "--odds-include-finished",
         action="store_true",
         help="Also fetch props for games that started >4.5h ago (default: skip)",
+    )
+    p.add_argument(
+        "--odds-daily-budget",
+        type=int,
+        metavar="N",
+        help=(
+            "Max estimated odds credits per America/Chicago day "
+            "(default: ODDS_DAILY_BUDGET or 500; 0 = unlimited). "
+            "Over budget → reuse stale cache instead of fetching."
+        ),
     )
     return p.parse_args(argv)
 
@@ -1877,6 +1888,8 @@ def main(argv: list[str] | None = None) -> int:
                 "THE_ODDS_API_KEY (or pass --odds-key)",
             )
         else:
+            if args.odds_daily_budget is not None:
+                os.environ["ODDS_DAILY_BUDGET"] = str(int(args.odds_daily_budget))
             try:
                 out = enrich_dataframe_odds(
                     out,

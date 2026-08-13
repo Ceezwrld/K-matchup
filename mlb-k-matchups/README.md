@@ -125,8 +125,9 @@ Useful flags:
 | `--odds` / `--no-odds` | Join live book lines from The Odds API (default: on when key present) |
 | `--odds-key` | Odds API key (else `ODDS_API_KEY_NEW` / `ODDS_API_KEY` / `THE_ODDS_API_KEY`) |
 | `--odds-markets` | Comma-separated markets (default: **lite** = K / hits / ER = 3 credits/game) |
-| `--odds-force` | Bypass on-disk cache (normally reuses pulls ~45 min) |
+| `--odds-force` | Bypass on-disk cache (normally reuses pulls ~120 min) |
 | `--odds-include-finished` | Also fetch props for games started >4.5h ago (default: skip) |
+| `--odds-daily-budget N` | Cap estimated credits per CT day (default: 500; 0 = unlimited) |
 | `-v/--verbose` | Log HTTP fetches |
 
 ## Live odds (The Odds API)
@@ -139,28 +140,33 @@ python3 mlb-k-matchups/k_matchups.py --date $(date +%F) -o rankings.csv --html r
 # model-only (0 odds credits):  ... --no-odds
 ```
 
-### Stretching credits (20k plan)
+### Stretching ~20k credits for a month
 
-Cost model: `/events` is **free**. Each `/events/{id}/odds` costs **markets × regions**. Default is **3 markets × 1 region = 3 credits per live game**. Cache hits and skipped finished games cost **0**.
+Cost model: `/events` is **free**. Each `/events/{id}/odds` costs **markets × regions**. Default is **3 markets × 1 region = 3 credits per live game**. Cache hits, stale reuse, and skipped finished games cost **0**.
+
+**Month math (target):** 20,000 ÷ 30 ≈ **667 credits/day**. Soft cap defaults to **500/day** (`ODDS_DAILY_BUDGET`) → ~15k/month with ~5k buffer for spikes.
 
 | Habit | Approx cost |
 | --- | --- |
 | Full slate lite pull (~15 live games) | ~45 credits |
-| Same board again within ~45 min (cache) | ~0 |
-| Mid/late day (finished games skipped) | fewer than full slate |
-| Full markets (K+hits+ER+BB+outs) | 5 credits/game — avoid unless needed |
-| `--odds-force` every refresh | burns a full pull each time — avoid |
+| Same board again within ~120 min (cache) | ~0 |
+| Over daily budget | stale cache / skip network |
+| CI morning publish | **0** (`--no-odds`) |
+| CI afternoon publish | ~1 lite pull |
+| Local intentional Line/Edge pulls | aim **2–4 / day** |
+| Full markets (K+hits+ER+BB+outs) | 5 credits/game — avoid |
+| `--odds-force` every refresh | burns a full pull — avoid |
 
-Rough ceiling at lite defaults: **20,000 ÷ 45 ≈ 440 full-slate pulls**. In practice you get more by using cache, skipping finished games, and running `--no-odds` for model-only refreshes.
+Sustainable day (~180–225 credits): morning pack + lineup lock + pre-first-pitch (3 × ~45), plus CI afternoon. That is well under the 500 cap and leaves headroom for ~30 days.
 
 Tips:
 - Put the key in `.env` as `ODDS_API_KEY_NEW=…` (gitignored). Prefer the dashboard **API Key** (32-char hex), not the account UUID.
-- Refresh the board freely for Savant/lineups with `--no-odds`; only pull odds when you need Line / Edge.
-- Raise cache window with `ODDS_CACHE_TTL_MIN=90` (or higher) if lines don’t need to be minute-fresh.
+- Refresh Savant/lineups with `--no-odds`; only pull odds when you need Line / Edge.
+- Over budget, the client reuses **stale** cache instead of spending — raise `ODDS_DAILY_BUDGET` only if you must.
 - Opt into walks/outs only when needed:  
   `--odds-markets pitcher_strikeouts,pitcher_hits_allowed,pitcher_earned_runs,pitcher_walks,pitcher_outs`
 
-For GitHub Actions, add repo secret `ODDS_API_KEY` (or `ODDS_API_KEY_NEW`) — the daily workflow passes it through.
+For GitHub Actions, add repo secret `ODDS_API_KEY` (or `ODDS_API_KEY_NEW`). Morning cron skips odds; afternoon cron spends one lite pull.
 
 ## Lineups
 

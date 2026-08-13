@@ -3907,7 +3907,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
         <div class="colhead">
           <div>#</div><div>Pitcher</div><div>Game</div><div>Exp K</div>
-          <div>Line</div><div>Edge</div><div>IP</div><div>TTO</div><div>K%</div><div>Flags</div>
+          <div>Line</div><div>Edge</div><div>P(O)</div><div>IP</div><div>TTO</div><div>K%</div><div>Flags</div>
         </div>
 
         <div class="board" id="board">

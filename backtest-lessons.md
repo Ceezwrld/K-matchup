@@ -14,9 +14,84 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
+## 2026-08-12 grade — K-gate held; bad-game T1 split; MATCHUP_OK length veto
+
+Full slate in `backtest-2026-08-12.csv` (n=**29** with Exp K; Jackson Kent unscored). Mean Exp K **4.37 → 3.93** act (bias **−0.44**, MAE **1.55**). Model ran slightly hot on Ks — same MAE band as 8/11.
+
+### Headline scorecard
+
+| Lane | Result | Takeaway |
+|------|--------|----------|
+| **K-good gate (Miller only PASS)** | **5 K** / 6.0 IP (Exp 5.78) | Floor OK; **8 H / 5 ER** — elev_hr vetoed “clean good game” |
+| **Matthews soft-Stuff ELITE** | **4 K** / Exp 6.22 | Gate correctly blocked; mid-slate note stands |
+| **Bad-game T1 damage** | **3/6** clear H+ER cash | Kelly / Perkins smashed; Feltner H+; **Houser / Lauer / Quantrill** faded |
+| **MATCHUP_OK** | **Mlodzinski 1 K / 2.1 IP** | Length kill — O3.5-only was the max |
+| **UNDER_OK** | Suarez **2** cashed; **May 6** wrecked under | Stuff+≥100 UNDER_OK ≠ chalk under |
+| **Castillo spike** | Exp 4.91 → **10 K** | Whiff_prone CWS + length; Arv −3 underweighted ceiling |
+
+### Process buckets
+
+| Layer | n | exp → act | Notes |
+|-------|---|-----------|-------|
+| **Top Exp (≥5.5)** | 4 | 5.99 → 5.25 | Miller 5 / Peterson 6 / Quantrill 6; **Matthews 4** drag |
+| **SPIKE flag** | 12 | 4.25 → 3.92 | Near flat; never soft-under (Houser 5, Wheeler 5, Soriano 4, Lynch 3) |
+| **UNDER_OK** | 4 | 3.52 → 3.25 | Suarez 2 / Feltner 2 / Valdez 3; **May 6** outlier |
+| **MATCHUP_OK** | 3 | 4.78 → 3.00 | Lauer **6** OK; Thornton **2**; **Mlodzinski 1** length dud |
+| **FILLER** | 3 | 4.69 → 3.33 | Kelly 2 / Junk 2 correct fade; Quantrill 6 = pass-not-fade |
+
+### K-good sheet (gates: whiff_prone + Stuff+≥100 + ArvOpp>0)
+
+| Arm | Gates | Exp → Act | H/ER | Note |
+|-----|-------|-----------|------|------|
+| **Bryce Miller** | **PASS** | 5.78 → **5** | **8 / 5** | Only full PASS; O4.5 K live, O5.5+ thin; elev_hr fired |
+| Matthews | fail Stuff+ | 6.24 → **4** | 6 / 4 | Soft Stuff+ ELITE — blocked correctly |
+| Lowder | fail Stuff+ | 4.96 → **4** | 7 / 2 | Stuff+86; flat K, damage noise |
+| Castillo | fail Arv | 4.91 → **10** | 1 / 0 | Gate missed ceiling (Arv −3) but opp whiff_prone + 7 IP |
+
+### Bad-game T1 / T2 (damage)
+
+| Tier | Arm | Actual | Grade |
+|------|-----|--------|-------|
+| T1 | **Merrill Kelly** | 6 H / **6 ER** / 2 K | **HIT** — flags (high_hr/exit_hr) printed |
+| T1 | **Jack Perkins** | **12 H / 6 ER** / 2 K | **HIT** — SPIKE outlook ≠ damage fade |
+| T1 | **Ryan Feltner** | **7 H** / 2 ER / 2 K | **H HIT** / ER push at 2.5 |
+| T1 | Adrian Houser | **2 H / 0 ER** / 5 K | **MISS** — T1 false positive (SPIKE + clean outing) |
+| T1 | Eric Lauer | 4 H / 1 ER / **6 K** | **MISS** — MATCHUP_OK K side won; damage thesis lost |
+| T1 | Cal Quantrill | 4 H / 1 ER / **6 K** | **MISS** — sheet marked thesis=False; correct skepticism |
+| T2 | Soriano / Ray | 4H/1ER · 2H/2ER | **MISS** damage — short/quiet |
+
+**Posted prop overs (partial book):** Kelly H/ER **HIT**, K MISS · Perkins H/ER **HIT**, K MISS · Houser K **HIT**, H/ER **MISS** · Wheeler H/ER **HIT** vs chalk U on K7.5 · May K **HIT** · Rasmussen ER **HIT**, K/H MISS.
+
+### Biggest K deltas
+
+**Model high (misses):** Mlodzinski −4.1 · Perkins −2.6 · Thornton −2.4 · Baz −2.3 · Kelly −2.3 · Matthews −2.2  
+**Model low (undershoots):** Castillo **+5.1** · May +2.1 · Lynch +2.0 · Leahy +1.8 · Mahle +1.6
+
+### Reinforced (lock)
+
+1. **K-good gate** — Miller-only PASS → 5 K floor; still require **elev_hr / exit_hr size-down** before calling a “good game” ticket.
+2. **ELITE + whiff_prone needs Stuff+≥100 + ArvOpp > 0** — Matthews 6.22→4 stands (see mid-slate note below).
+3. **MATCHUP_OK = O3.5 floor + length check** — Mlodzinski 2.1 IP / 1 K; Thornton 2 K; do not juice without clear IP.
+4. **Bad-game T1 ≠ auto ticket** — demand BIP/contact_heavy + risk flags; fade when SPIKE + soft-contact alone (Houser gem). Quantrill thesis=False was the right tell.
+5. **Never soft-under SPIKE** — held (no chalk unders on Houser/Wheeler/Soriano).
+6. **UNDER_OK + Stuff+≥100** — May 6 K; treat as thin under / prefer H-ER elsewhere (Feltner H cashed).
+7. **FILLER ≠ fade every over** — Quantrill Exp inflated but 6 K; FILLER means “not a K anchor,” not “must under.”
+
+### Watch only
+
+| Read | Note |
+|------|------|
+| Castillo-style Arv− / whiff_prone | Ceiling can still nuke — don’t hard-fade K when opp is whiff_prone + 5+ IP |
+| Houser T1 | Soft-contact + elev_hr without contact_heavy BIP → false damage |
+| Warren SPIKE | 3 K / 5 ER / 3 HR — SPIKE without elite Arv still chaos, not under chalk |
+
+**Process stance after 8/12:** K-gate + Matthews rule held; damage lane only when thesis+flags align (Kelly/Perkins); length veto on MATCHUP_OK; UNDER_OK needs Stuff+ check before chalk under.
+
+---
+
 ## 2026-08-12 mid-slate — Zebby Matthews K miss (what broke)
 
-Partial finals in `backtest-2026-08-12-partial.csv`. Focus arm: **Matthews vs BAL**.
+Partial note (kept for ticket timeline). Full finals in `backtest-2026-08-12.csv`. Focus arm: **Matthews vs BAL**.
 
 | | Pregame | Actual |
 |--|---------|--------|
@@ -43,15 +118,6 @@ Partial finals in `backtest-2026-08-12-partial.csv`. Focus arm: **Matthews vs BA
 - **ELITE + whiff_prone is not enough** without **Stuff+ ≥ ~100** *and* **arsenal_vs_opp clearly >0** (prefer ≥+1). Matthews 8/12 is the exhibit: Exp 6.24 → 4 K.
 - Treat **high_hr / exit_hr** as a hard size-down on K overs even when contact_grade = whiff_prone.
 - L3 K9 SPIKE alone does **not** override soft Stuff+.
-
-### Same-day finals context
-
-| Arm | Exp → Act | Note |
-|-----|-----------|------|
-| Matthews | 6.24 → **4** | Soft Stuff+ ELITE miss |
-| Baz | 4.31 → **2** | Contact_heavy + Arv −1.7; crushed (9 H / 5 ER / 3 IP) |
-| Wheeler | 4.79 → **5** | Near flat; 6 H / 4 ER despite Stuff+104 |
-| Leahy | 4.20 → **6** | Over-performed (contact_heavy PHI; soft Stuff+) |
 
 ## 2026-08-11 grade — hits lane cashed; TRUST dud + SPIKE under killed ticket
 

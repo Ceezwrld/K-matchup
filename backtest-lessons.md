@@ -14,6 +14,20 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
+## 2026-08-13 early — Messick / Gilbert user legs (partial)
+
+Ticket: **Messick O5.5 K** · **Gilbert O4.5 K**. Full slate grade later in `backtest-2026-08-13.csv`.
+
+| Arm | Exp → Act | User leg | Result | Note |
+|-----|-----------|----------|--------|------|
+| **Parker Messick** | 5.70 → **6** (5.2 IP) | O5.5 | **HIT** | AVG/WHIFF · aligned 5.5 book · DET wRC+ leash didn't kill Ks (3 H / 2 ER) |
+| **Logan Gilbert** | 6.09 → **7** (6.0 IP) | O4.5 | **HIT** | ELITE+WHIFF+Stuff+109 floor cashed clean (4 H / 0 ER); O5.5/O6.5 also would HIT |
+
+**Confirm:** board-clear WHIFF / TRUST-ish stacks on OFF nines; safe Gilbert floor sizing worked. Messick O5.5 needed the full script and got it.
+
+Also early finals context (not on ticket): Ashcraft **10 K** / Phillips **6 K** · Montero **0 K** (UNDER_OK) · Abbott **3 K / 7 H / 5 ER** (damage) · Martin short.
+
+
 ## 2026-08-12 grade — K-gate held; bad-game T1 split; MATCHUP_OK length veto
 
 Full slate in `backtest-2026-08-12.csv` (n=**29** with Exp K; Jackson Kent unscored). Mean Exp K **4.37 → 3.93** act (bias **−0.44**, MAE **1.55**). Model ran slightly hot on Ks — same MAE band as 8/11.

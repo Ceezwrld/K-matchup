@@ -1,0 +1,31 @@
+rank,pitcher,game,ip,k,h,er,bb,hr,bf,pitches,strikes,exp_k,delta_k,matchup,arsenal_abs,style,stuff_plus,arsenal_vs_opp,contact_grade,spike,outlook,risk_flags,ip_proj,outing_risk,lineup_source,soft_contact
+1.0,Zebby Matthews,BAL@MIN,5.0,4,6,4,2,1,22,94,60,6.225,-2.225,elite,elite,balanced,94.9,0.47,whiff_prone,True,,"high_hr,elev_xfip,exit_hr",5.39,medium,official,False
+2.0,Cal Quantrill,TEX@LAA,5.0,6,4,1,3,0,22,85,50,6.113,-0.113,soft,soft,fly_popup,89.6,-5.6,,False,FILLER,"elev_hr,high_xfip",6.95,medium,official,True
+3.0,David Peterson,CHC@WSH,5.0,6,9,3,3,0,27,90,59,5.858,0.142,avg,avg,contact_gb,89.0,-2.16,whiff_prone,False,,elev_bb,6.21,low,official,False
+4.0,Bryce Miller,SEA@NYY,6.0,5,8,5,1,1,25,89,63,5.779,-0.779,elite,elite,whiff,107.9,3.18,whiff_prone,True,,elev_hr,5.89,low,official,False
+5.0,Tyler Mahle,NYM@ATL,6.0,7,4,1,0,1,21,93,58,5.379,1.621,strong,strong,balanced,88.2,1.58,neutral,True,,elev_hr,5.26,low,official,False
+6.0,Carmen Mlodzinski,PIT@MIA,2.1,1,5,4,3,0,15,59,34,5.133,-4.133,elite,elite,balanced,92.1,2.6,neutral,False,MATCHUP_OK,"elev_xfip,short_recent_ip",6.6,low,official,True
+7.0,Will Warren,SEA@NYY,4.0,3,6,5,4,3,21,81,51,4.981,-1.981,avg,avg,balanced,104.0,1.04,neutral,True,,,5.11,clear,official,False
+8.0,Rhett Lowder,CIN@CWS,5.1,4,7,2,1,1,23,94,59,4.964,-0.964,elite,elite,balanced,86.1,0.37,whiff_prone,False,,"elev_bb,elev_xfip",4.77,medium,official,False
+9.0,Adrian Houser,HOU@SF,6.0,5,2,0,1,0,19,73,50,4.94,0.06,soft,soft,balanced,89.8,-3.42,neutral,True,SPIKE,"elev_hr,elev_xfip,short_recent_ip",5.83,medium,official,True
+10.0,Luis Castillo,CIN@CWS,7.0,10,1,0,2,0,23,104,60,4.91,5.09,avg,avg,balanced,97.1,-3.0,whiff_prone,False,,"elev_hr,elev_xfip",5.45,medium,official,False
+11.0,Eric Lauer,KC@LAD,6.1,6,4,1,2,0,27,112,73,4.776,1.224,strong,strong,fly_popup,88.4,2.29,,False,MATCHUP_OK,"high_hr,high_xfip,exit_hr",5.76,high,official,True
+12.0,Zack Wheeler,PHI@STL,5.0,5,6,4,1,0,23,84,53,4.718,0.282,soft,soft,whiff,104.5,-0.4,neutral,True,SPIKE,short_recent_ip,5.43,clear,official,False
+13.0,Jack Perkins,TB@ATH,5.0,2,12,6,1,1,27,97,65,4.59,-2.59,soft,soft,whiff,98.5,0.14,contact_heavy,True,SPIKE,"elev_bb,high_hr,elev_xfip,short_recent_ip,exit_hr",5.12,high,official,False
+14.0,Foster Griffin,CLE@DET,5.0,3,4,1,1,1,21,83,55,4.511,-1.511,avg,avg,balanced,97.8,-1.14,,False,,elev_hr,5.65,low,official,False
+15.0,Robbie Ray,MIL@SD,4.0,4,2,2,3,1,17,84,53,4.423,-0.423,avg,avg,balanced,94.6,0.9,whiff_prone,False,,"high_bb,high_xfip,exit_xfip_bb",4.78,high,official,False
+16.0,Zac Thornton,NYM@ATL,6.0,2,7,3,1,1,24,80,47,4.42,-2.42,strong,strong,balanced,97.1,3.69,neutral,False,MATCHUP_OK,elev_xfip,5.62,low,official,True
+17.0,Drew Rasmussen,TB@ATH,5.0,3,4,2,1,0,21,84,57,4.401,-1.401,soft,soft,whiff,108.9,-5.16,neutral,True,SPIKE,,5.62,clear,official,False
+18.0,Shane Baz,BAL@MIN,3.0,2,9,5,1,0,19,65,41,4.312,-2.312,soft,soft,balanced,98.6,-1.63,contact_heavy,False,,,5.81,clear,official,False
+19.0,Merrill Kelly,COL@AZ,5.0,2,6,6,3,2,23,71,42,4.284,-2.284,avg,avg,balanced,88.9,-1.13,neutral,False,FILLER,"elev_bb,high_hr,high_xfip,exit_hr,exit_xfip_bb",5.08,high,official,True
+20.0,Kyle Leahy,PHI@STL,5.0,6,6,1,0,0,20,81,57,4.203,1.797,soft,soft,balanced,91.9,0.57,contact_heavy,False,,,4.73,clear,official,False
+21.0,Dustin May,MIL@SD,7.0,6,4,1,2,1,25,83,57,3.92,2.08,soft,soft,balanced,101.6,-1.81,contact_heavy,False,UNDER_OK,,5.3,clear,official,False
+22.0,Ranger Suarez,BOS@TOR,5.0,2,6,1,1,0,21,81,54,3.866,-1.866,soft,soft,whiff,94.4,0.29,contact_heavy,False,UNDER_OK,short_recent_ip,4.79,low,official,False
+23.0,George Klassen,TEX@LAA,6.0,5,5,2,1,1,24,87,60,3.725,1.275,elite,elite,contact_gb,96.7,2.07,,True,,"high_bb,high_xfip,short_recent_ip,exit_xfip_bb",3.15,high,prior:2026-08-11,False
+24.0,Janson Junk,PIT@MIA,6.0,2,4,1,1,0,23,81,56,3.681,-1.681,avg,avg,balanced,100.8,-0.66,whiff_prone,False,FILLER,"elev_hr,elev_xfip,short_recent_ip",4.42,medium,official,True
+25.0,José Soriano,BOS@TOR,6.0,4,4,1,2,1,22,90,63,3.482,0.518,soft,soft,balanced,97.5,-3.5,neutral,True,SPIKE,high_bb,4.76,medium,official,False
+26.0,Framber Valdez,CLE@DET,5.2,3,6,4,5,1,29,102,64,3.322,-0.322,soft,soft,contact_gb,102.5,-1.96,neutral,False,UNDER_OK,,5.07,clear,official,False
+27.0,Ryan Feltner,COL@AZ,5.0,2,7,2,3,0,24,93,59,2.979,-0.979,avg,avg,fly_popup,92.2,1.81,contact_heavy,False,UNDER_OK,"elev_bb,high_hr,high_xfip,exit_hr,exit_xfip_bb",4.17,high,official,True
+28.0,Bryan King,HOU@SF,0.2,1,0,1,2,0,4,19,11,1.826,-0.826,elite,elite,balanced,98.9,-1.79,neutral,True,,"elev_hr,elev_xfip,short_recent_ip",1.4,medium,official,False
+29.0,Daniel Lynch IV,KC@LAD,2.1,3,3,3,0,2,10,39,28,0.951,2.049,soft,soft,contact_gb,106.0,-2.09,,True,SPIKE,"elev_xfip,short_recent_ip",1.4,medium,official,True
+,Jackson Kent,CHC@WSH,4.0,6,3,3,5,0,19,78,37,,,,,,,,,False,,,5.4,clear,official,False

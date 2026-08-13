@@ -83,8 +83,14 @@ MARKET_PREFIX = {
 
 
 def resolve_api_key(explicit: str | None = None) -> str | None:
+    """Prefer an explicit key, then a replacement env, then the standard names.
+
+    ODDS_API_KEY_NEW wins over ODDS_API_KEY so a fresh key can be used without
+    waiting for the exhausted one to be removed from the environment.
+    """
     raw = (explicit or "").strip() or (
-        os.environ.get("ODDS_API_KEY")
+        os.environ.get("ODDS_API_KEY_NEW")
+        or os.environ.get("ODDS_API_KEY")
         or os.environ.get("THE_ODDS_API_KEY")
         or ""
     ).strip()

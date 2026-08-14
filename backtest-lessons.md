@@ -91,7 +91,7 @@ Full detail in `backtest-2026-08-13.csv`. Includes west-coast finals that closed
 
 ### Learn from the misses (rewrite checklist)
 
-1. **deGrom O6.5/TRUST miss** — Early hook (2 IP / 6 H). Add: even ELITE/TRUST needs **first-time-through stability**; if elev_hr + traffic early, do not assume Exp finishes.
+1. **deGrom O6.5/TRUST miss** — Left after **injury** (2 IP / 6 H). Injury exits are **out of process control** — do not rewrite ELITE/TRUST rules from injury hooks. Still note: traffic before exit is noise, not a matchup falsification.
 2. **Sasaki ELITE → 2 K** — Whiff_prone OFF was not enough vs **5 BB / patient MIL**. Spike stuff ≠ Ks when Zone/attacks fail. Size O4.5 max when pitch_count elevated + BB/9 ≥ ~3.4.
 3. **Cavalli fade** — Biggest process miss. Arv− underweighted opp whiff_prone + Stuff+102 + length.
 4. **Nola K undershoot** — Hits ticket correct; model Exp 4.26 vs **9 K** means soft arsenal can still punch out. Don’t treat soft matchup as “no Ks” — treat as **prefer hits/ER over juiced K-over**.

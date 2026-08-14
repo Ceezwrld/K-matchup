@@ -15,6 +15,19 @@ from typing import Any
 
 import pandas as pd
 
+from sharpen import (  # noqa: E402
+    ABS_MATCHUP_AVG,
+    ABS_MATCHUP_ELITE,
+    ABS_MATCHUP_STRONG,
+    CONTACT_HEAVY_BIP,
+    LEAGUE_BIP_PCT,
+    LEAGUE_K_PCT,
+    TRUST_TOTAL_EXP_KS,
+    UNDER_CONFIRM_EXP_KS,
+    UNDER_CONFIRM_MIN,
+    WHIFF_PRONE_BIP,
+)
+
 # Canonical public board URL. Bookmark this — never commit-SHA previews.
 # htmlpreview renders interactive tabs; always point at main (not a commit SHA).
 STABLE_BOARD_URL = (
@@ -50,6 +63,18 @@ def _json_safe(value: Any) -> Any:
     return value
 
 
+def _str_field(value: Any) -> str:
+    """Stringify a CSV/Series cell without choking on pandas NA."""
+    if value is None:
+        return ""
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    return str(value)
+
+
 def _esc(value: Any) -> str:
     if value is None:
         return ""
@@ -68,17 +93,25 @@ def _fmt(value: Any, digits: int = 2, *, signed: bool = False) -> str:
 
 
 def _heat_style(k: Any) -> str:
+    """Arsenal bar fill: green helps pitcher (high K%), red helps batters (low K%)."""
     v = _json_safe(k)
     if v is None:
         return "background:transparent;color:var(--muted)"
-    t = max(0.0, min(1.0, (float(v) - 8.0) / 32.0))
-    alpha = 0.12 + t * 0.55
-    color = "#063828" if t > 0.55 else "var(--ink)"
-    return f"background:rgba(15,106,77,{alpha:.3f});color:{color}"
+    band = _grade_for("batter_k_pct", v)
+    # Match rate-chip palette so bars and % chips read the same.
+    if band == "low":
+        return "background:rgba(140,40,40,0.62)"
+    if band == "mid":
+        return "background:rgba(154,91,18,0.58)"
+    if band == "high":
+        return "background:rgba(15,106,77,0.58)"
+    if band == "elite":
+        return "background:rgba(15,106,77,0.82)"
+    return "background:rgba(20,32,26,0.15)"
 
 
 def _grade_band(value: Any, low: float, mid: float, high: float) -> str | None:
-    """Map a numeric value onto low / mid / high / elite."""
+    """Map a numeric value onto low / mid / high / elite (higher = better)."""
     v = _json_safe(value)
     if v is None:
         return None
@@ -95,18 +128,140 @@ def _grade_band(value: Any, low: float, mid: float, high: float) -> str | None:
     return "elite"
 
 
+def _grade_band_desc(value: Any, best: float, good: float, ok: float) -> str | None:
+    """Map a numeric value onto elite / high / mid / low (lower = better)."""
+    v = _json_safe(value)
+    if v is None:
+        return None
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return None
+    if x <= best:
+        return "elite"
+    if x <= good:
+        return "high"
+    if x <= ok:
+        return "mid"
+    return "low"
+
+
 def _grade_for(metric: str, value: Any) -> str | None:
-    """Color-grade key projection metrics for the HTML board."""
+    """Color-grade key projection / rates metrics for the HTML board.
+
+    Bands are K-prop oriented: green = helps strikeout scripts / command,
+    red = soft for overs (does not invent unders by itself).
+    """
     if metric == "expected_ks":
         return _grade_band(value, 4.0, 5.0, 6.0)
     if metric == "expected_k_pct":
-        return _grade_band(value, 18.0, 21.0, 24.0)
+        # Align with solo arsenal bands: SOFT <20 · AVG ≥20 · STRONG ≥22.5 · ELITE ≥24
+        return _grade_band(value, ABS_MATCHUP_AVG, ABS_MATCHUP_STRONG, ABS_MATCHUP_ELITE)
     if metric == "projected_ip":
         return _grade_band(value, 5.0, 5.75, 6.5)
     if metric == "tto":
         return _grade_band(value, 2.2, 2.6, 3.0)
     if metric == "batter_k_pct":
         return _grade_band(value, 15.0, 20.0, 25.0)
+    if metric == "pitch_usage_pct":
+        # Featured pitch weight — higher = more of the outing / more trustworthy
+        return _grade_band(value, 12.0, 20.0, 30.0)
+    if metric == "pitch_usage_vs_hand":
+        # Platoon usage share for a pitch — high = that hand sees it a lot
+        return _grade_band(value, 20.0, 35.0, 50.0)
+    if metric == "pitch_whiff_pct":
+        # Per-pitch pitcher whiff — high helps Ks (good)
+        return _grade_band(value, 18.0, 26.0, 34.0)
+    if metric == "pitch_velo_fb":
+        # Fastball velo — higher = better stuff ceiling
+        return _grade_band(value, 92.0, 94.5, 96.5)
+    if metric == "pitch_velo_offspeed":
+        # Offspeed/breaking velo is not a good/bad K signal — leave ungraded
+        return None
+    # Arsenal matchup strip
+    if metric in ("arsenal_vs_league", "arsenal_vs_opp"):
+        # Signed edges vs league / vs opp K% — positive helps overs
+        return _grade_band(value, -1.0, 0.5, 2.0)
+    if metric == "opp_k_pct":
+        return _grade_band(value, 20.0, 23.0, 26.0)
+    if metric == "opp_bip_pct":
+        # Lower BIP helps overs (whiff_prone); higher helps unders
+        return _grade_band_desc(value, WHIFF_PRONE_BIP, LEAGUE_BIP_PCT, CONTACT_HEAVY_BIP)
+    if metric == "opp_bb_pct":
+        # Higher BB% = patient / pitch-count risk
+        return _grade_band_desc(value, 7.0, 9.0, 10.5)
+    if metric == "opp_woba":
+        # Lower offense quality helps pitcher Ks / length (lg ~.315)
+        return _grade_band_desc(value, 0.300, 0.315, 0.330)
+    if metric == "opp_wrc_plus":
+        # wRC+ 100 = league; lower = softer offense / longer leash OK
+        return _grade_band_desc(value, 90.0, 100.0, 110.0)
+    if metric == "opp_iso":
+        # Lower ISO = less power / crooked-number risk (lg ~.155)
+        return _grade_band_desc(value, 0.130, 0.155, 0.180)
+    # Rates / command — attack-plate pack thresholds from backtest-lessons.
+    if metric == "strike_pct":
+        # ≥66 elite · ≥65 good · ≥63 avg · <63 soft (≤62 poor for overs)
+        return _grade_band(value, 63.0, 65.0, 66.0)
+    if metric == "f_strike_pct":
+        # League F-Strike% ~60–61
+        return _grade_band(value, 58.0, 62.0, 65.0)
+    if metric == "zone_pct":
+        # ≥44 elite · ≥43 attack · ≥40 avg · <40 off-plate
+        return _grade_band(value, 40.0, 43.0, 44.0)
+    if metric == "swstr_pct":
+        # League SwStr% ~11; ≥13 elite miss · ≥11.5 good · ≥10 avg
+        return _grade_band(value, 10.0, 11.5, 13.0)
+    if metric == "csw_pct":
+        # CSW (C+SwStr%) ~28–29; ≥31 elite · ≥29.5 good · ≥27.5 avg
+        return _grade_band(value, 27.5, 29.5, 31.0)
+    if metric == "o_swing_pct":
+        # Pitcher O-Swing% (chase induced) ~33; ≥35 elite · ≥33 good · ≥30 avg
+        return _grade_band(value, 30.0, 33.0, 35.0)
+    if metric == "pitcher_soft_pct":
+        # Higher Soft% = soft-contact arm (helps FILLER/under; soft for K overs)
+        return _grade_band_desc(value, 17.0, 20.0, 22.0)
+    if metric in ("k9", "last3_k9", "last3_k9_adj"):
+        return _grade_band(value, 7.0, 8.5, 10.0)
+    if metric in ("last3_ks", "last3_ks_adj"):
+        return _grade_band(value, 3.5, 5.0, 6.5)
+    if metric == "last3_opp_k_pct":
+        # Higher = L3 faced juiced K clubs (form may be inflated)
+        return _grade_band_desc(value, 20.5, 22.5, 24.5)
+    if metric == "bb9":
+        return _grade_band_desc(value, 2.2, 2.8, 3.5)
+    if metric == "hr9":
+        return _grade_band_desc(value, 0.9, 1.2, 1.5)
+    if metric in ("xfip", "fip", "siera", "xera"):
+        # Lower ERA estimators = better (confirm-only; does not flip Exp K)
+        return _grade_band_desc(value, 3.40, 3.90, 4.50)
+    if metric == "pitcher_xwoba":
+        # Lower xwOBA allowed = better contact suppression (lg ~.315)
+        return _grade_band_desc(value, 0.300, 0.315, 0.330)
+    if metric == "pitcher_xba":
+        return _grade_band_desc(value, 0.230, 0.250, 0.270)
+    if metric == "pitcher_xslg":
+        return _grade_band_desc(value, 0.380, 0.410, 0.450)
+    if metric in ("stuff_plus", "location_plus", "pitching_plus", "pitch_stuff_plus"):
+        # FanGraphs Stuff+/Location+/Pitching+ — 100 = average
+        return _grade_band(value, 95.0, 105.0, 115.0)
+    if metric == "pitch_run_value_100":
+        # FanGraphs pitch run value / 100 — positive helps pitcher
+        return _grade_band(value, 0.0, 0.8, 1.5)
+    if metric == "pitch_run_value":
+        # Season total pitch run value — positive helps pitcher
+        return _grade_band(value, 0.0, 5.0, 12.0)
+    if metric == "pitcher_k_pct":
+        return _grade_band(value, 20.0, 24.0, 27.0)
+    if metric == "pitcher_contact_pct":
+        # Lower contact% = more whiff
+        return _grade_band_desc(value, 72.0, 76.0, 80.0)
+    if metric == "z_contact_pct":
+        # In-zone contact allowed — lower = zone whiff (helps K overs)
+        # League Z-Contact% typically ~80–83 for pitchers.
+        return _grade_band_desc(value, 76.0, 80.0, 83.0)
+    if metric == "stuff_whiff_pct":
+        return _grade_band(value, 20.0, 24.0, 28.0)
     return None
 
 
@@ -114,6 +269,155 @@ def _grade_class(metric: str, value: Any) -> str:
     band = _grade_for(metric, value)
     return f" grade-{band}" if band else ""
 
+
+def _rate_chip(
+    label: str,
+    value: Any,
+    metric: str,
+    digits: int = 1,
+    *,
+    suffix: str = "",
+    title: str = "",
+    signed: bool = False,
+    extra_class: str = "",
+) -> str:
+    """Colored pill for one Rates / form / arsenal matchup stat."""
+    band = _grade_for(metric, value)
+    shown = _fmt(value, digits, signed=signed)
+    extra = f" {extra_class.strip()}" if extra_class else ""
+    if shown == "—":
+        return (
+            f"<span class='rate-chip rate-na{extra}' title='{_esc(title or label)}'>"
+            f"{_esc(label)} —</span>"
+        )
+    cls = f"rate-chip grade-{band}{extra}" if band else f"rate-chip{extra}"
+    tip = title or label
+    return (
+        f"<span class='{cls}' title='{_esc(tip)}'>"
+        f"<span class='rate-lab'>{_esc(label)}</span> "
+        f"<span class='rate-val'>{_esc(shown)}{_esc(suffix)}</span>"
+        f"</span>"
+    )
+
+
+_SHORT_PITCH_NAMES = {
+    "4-seam fastball": "4-Seam FB",
+    "four-seam fastball": "4-Seam FB",
+    "4-seamer": "4-Seam FB",
+    "two-seam fastball": "2-Seam FB",
+    "2-seam fastball": "2-Seam FB",
+    "sinker": "Sinker",
+    "cutter": "Cutter",
+    "changeup": "Changeup",
+    "change-up": "Changeup",
+    "slider": "Slider",
+    "sweeper": "Sweeper",
+    "eephus": "Eephus",
+    "splitter": "Splitter",
+    "forkball": "Forkball",
+    "screwball": "Screwball",
+    "slurve": "Slurve",
+}
+
+
+def _short_pitch_name(pitch_name: Any, pitch_type: Any = None) -> str:
+    """Compact Arsenal header label so chips stay on one line."""
+    raw = str(pitch_name or pitch_type or "").strip()
+    if not raw:
+        return "—"
+    short = _SHORT_PITCH_NAMES.get(raw.lower())
+    if short:
+        return short
+    # Generic "X Fastball" → "X FB"
+    if raw.lower().endswith(" fastball"):
+        return raw[: -len(" Fastball")] + " FB"
+    return raw
+
+
+def _is_fastball_pitch(pitch_type: Any, pitch_name: Any = None) -> bool:
+    pt = str(pitch_type or "").upper()
+    if pt in {"FF", "FA", "SI", "FC", "FT"}:
+        return True
+    if pt in {"FS", "CH", "CU", "SL", "ST", "SV", "KC", "EP", "SC"}:
+        return False
+    name = str(pitch_name or "").lower()
+    return any(
+        tok in name
+        for tok in ("4-seam", "four-seam", "2-seam", "two-seam", "sinker", "cutter", "fastball")
+    ) or name.endswith(" fb")
+
+
+def _lineup_pitch_k_by_hand(
+    batters: list[dict[str, Any]], pitch_type: Any, bat_side: str
+) -> tuple[float | None, int]:
+    """Mean K% vs one pitch for *this opposing lineup's* L or R batters only.
+
+    Uses each batter's own pitch-type K% (vs this pitcher hand when available).
+    Skips league-average fills (†) and never uses the pitcher's season rates.
+    Returns (mean_k_pct, n_batters_in_average).
+    """
+    side = str(bat_side or "").upper()
+    vals: list[float] = []
+    for b in batters:
+        if str(b.get("bat_side") or "").upper() != side:
+            continue
+        hit = next(
+            (x for x in (b.get("pitches") or []) if x.get("pitch_type") == pitch_type),
+            {},
+        )
+        k = hit.get("k_percent")
+        if k is None:
+            continue
+        src = str(hit.get("k_source") or "")
+        # Lineup-only: drop league placeholders so the % is this nine, not lg avg.
+        if src in {"league_pitch", "league_platoon"}:
+            continue
+        try:
+            vals.append(float(k))
+        except (TypeError, ValueError):
+            continue
+    if not vals:
+        return None, 0
+    return sum(vals) / len(vals), len(vals)
+
+
+def _band_chip(label: str, band: str | None, *, title: str = "", value: str = "") -> str:
+    """Colored pill from an explicit band (elite/high/mid/low)."""
+    cls = f"rate-chip grade-{band}" if band else "rate-chip rate-na"
+    val = value or label
+    lab = label if value else ""
+    if lab:
+        return (
+            f"<span class='{cls}' title='{_esc(title or label)}'>"
+            f"<span class='rate-lab'>{_esc(lab)}</span> "
+            f"<span class='rate-val'>{_esc(val)}</span>"
+            f"</span>"
+        )
+    return (
+        f"<span class='{cls}' title='{_esc(title or label)}'>"
+        f"<span class='rate-val'>{_esc(val)}</span>"
+        f"</span>"
+    )
+
+
+def _solo_grade_band(abs_grade: str | None) -> str | None:
+    g = (abs_grade or "").strip().lower()
+    return {
+        "elite": "elite",
+        "strong": "high",
+        "avg": "mid",
+        "soft": "low",
+    }.get(g)
+
+
+def _contact_grade_band(contact_grade: str | None) -> str | None:
+    """whiff_prone helps overs (green); contact_heavy helps unders (red)."""
+    g = (contact_grade or "").strip().lower()
+    return {
+        "whiff_prone": "elite",
+        "neutral": "mid",
+        "contact_heavy": "low",
+    }.get(g)
 
 def _lineup_label(src: Any) -> tuple[str, str]:
     if not src:
@@ -140,7 +444,49 @@ def _hand_label(code: Any, role: str) -> str:
     return f"{c}HB"
 
 
+def _hand_side_class(code: Any) -> str:
+    """CSS side class for L/R/S hand chips (green / amber / muted)."""
+    c = str(code or "").upper()
+    if c == "L":
+        return "hand-l"
+    if c == "R":
+        return "hand-r"
+    if c == "S":
+        return "hand-s"
+    return ""
+
+
+def _hand_chip_html(code: Any, role: str, *, title: str = "") -> str:
+    """Hand chip — colored for pitchers (LHP/RHP); plain for batters (LHB/RHB)."""
+    label = _hand_label(code, role)
+    if not label:
+        return ""
+    # Color only pitcher hands; batter LHB/RHB stay neutral.
+    side = _hand_side_class(code) if role == "P" else ""
+    tip = title or (
+        "Left-handed batter"
+        if label == "LHB"
+        else "Right-handed batter"
+        if label == "RHB"
+        else "Switch-hitter"
+        if label == "SHB"
+        else "Left-handed pitcher"
+        if label == "LHP"
+        else "Right-handed pitcher"
+        if label == "RHP"
+        else "Handedness"
+    )
+    cls = f"hand {side}".strip()
+    return (
+        f" <span class='{cls}' title='{_esc(tip)}'>{_esc(label)}</span>"
+    )
+
+
 def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
+    # CSV reload path: empty cells become float NaN — normalize to None first.
+    df = df.copy()
+    df = df.astype(object)
+    df = df.where(pd.notna(df), None)
     rows: list[dict[str, Any]] = []
     for _, r in df.iterrows():
         detail = r.get("batter_detail") or []
@@ -208,6 +554,9 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "pitcher_whiff_pct": _json_safe(p.get("pitcher_whiff_pct")),
                     "pitcher_velo": _json_safe(p.get("pitcher_velo")),
                     "pitcher_k_pct": _json_safe(p.get("pitcher_k_pct")),
+                    "run_value": _json_safe(p.get("run_value")),
+                    "run_value_100": _json_safe(p.get("run_value_100")),
+                    "pitch_stuff_plus": _json_safe(p.get("pitch_stuff_plus")),
                 }
             )
         clean_pitch_avg = []
@@ -225,6 +574,9 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "pitcher_whiff_pct": _json_safe(p.get("pitcher_whiff_pct")),
                     "pitcher_velo": _json_safe(p.get("pitcher_velo")),
                     "pitcher_k_pct": _json_safe(p.get("pitcher_k_pct")),
+                    "run_value": _json_safe(p.get("run_value")),
+                    "run_value_100": _json_safe(p.get("run_value_100")),
+                    "pitch_stuff_plus": _json_safe(p.get("pitch_stuff_plus")),
                 }
             )
 
@@ -260,18 +612,46 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "hr9": _json_safe(r.get("hr9")),
                 "k9": _json_safe(r.get("k9")),
                 "xfip": _json_safe(r.get("xfip")),
+                "fip": _json_safe(r.get("fip")),
+                "siera": _json_safe(r.get("siera")),
+                "xera": _json_safe(r.get("xera")),
+                "stuff_plus": _json_safe(r.get("stuff_plus")),
+                "location_plus": _json_safe(r.get("location_plus")),
+                "pitching_plus": _json_safe(r.get("pitching_plus")),
+                "xba": _json_safe(r.get("xba")),
+                "xslg": _json_safe(r.get("xslg")),
+                "xwoba": _json_safe(r.get("xwoba")),
+                "strike_pct": _json_safe(r.get("strike_pct")),
+                "f_strike_pct": _json_safe(r.get("f_strike_pct")),
+                "zone_pct": _json_safe(r.get("zone_pct")),
+                "o_swing_pct": _json_safe(r.get("o_swing_pct")),
+                "pitches": _json_safe(r.get("pitches")),
+                "strikes": _json_safe(r.get("strikes")),
                 "outing_risk": r.get("outing_risk"),
                 "risk_flags": r.get("risk_flags") or "",
                 "bf_risk_factor": _json_safe(r.get("bf_risk_factor")),
                 "survival_flags": r.get("survival_flags") or "",
                 "last3_ks": _json_safe(r.get("last3_ks")),
                 "last3_k9": _json_safe(r.get("last3_k9")),
+                "last3_ks_adj": _json_safe(r.get("last3_ks_adj")),
+                "last3_k9_adj": _json_safe(r.get("last3_k9_adj")),
+                "last3_opp_k_pct": _json_safe(r.get("last3_opp_k_pct")),
+                "form_opp_factor": _json_safe(r.get("form_opp_factor")),
+                "form_opp_note": r.get("form_opp_note") or "",
                 "form_ks": _json_safe(r.get("form_ks")),
                 "form_weight": _json_safe(r.get("form_weight")),
                 "lineup_k_pct": _json_safe(r.get("lineup_k_pct")),
+                "lineup_k_pct_vs_lhp": _json_safe(r.get("lineup_k_pct_vs_lhp")),
+                "lineup_k_pct_vs_rhp": _json_safe(r.get("lineup_k_pct_vs_rhp")),
+                "lineup_k_pct_vs_hand": _json_safe(r.get("lineup_k_pct_vs_hand")),
+                "lineup_k_vs_hand_side": r.get("lineup_k_vs_hand_side") or "",
+                "lineup_k_vs_hand_source": r.get("lineup_k_vs_hand_source") or "",
                 "lineup_avg": _json_safe(r.get("lineup_avg")),
                 "lineup_bb_pct": _json_safe(r.get("lineup_bb_pct")),
                 "lineup_bip_pct": _json_safe(r.get("lineup_bip_pct")),
+                "lineup_woba": _json_safe(r.get("lineup_woba")),
+                "lineup_wrc_plus": _json_safe(r.get("lineup_wrc_plus")),
+                "lineup_iso": _json_safe(r.get("lineup_iso")),
                 "contact_grade": r.get("contact_grade") or "",
                 "offense_source": r.get("offense_source"),
                 "offense_factor": _json_safe(r.get("offense_factor")),
@@ -296,14 +676,48 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "spike_flags": r.get("spike_flags") or "",
                 "pitcher_k_pct": _json_safe(r.get("pitcher_k_pct")),
                 "pitcher_contact_pct": _json_safe(r.get("pitcher_contact_pct")),
+                "z_contact_pct": _json_safe(r.get("z_contact_pct")),
                 "pitcher_gb_pct": _json_safe(r.get("pitcher_gb_pct")),
                 "pitcher_fb_pct": _json_safe(r.get("pitcher_fb_pct")),
                 "pitcher_iffb_pct": _json_safe(r.get("pitcher_iffb_pct")),
                 "pitcher_soft_pct": _json_safe(r.get("pitcher_soft_pct")),
+                "swstr_pct": _json_safe(r.get("swstr_pct")),
+                "csw_pct": _json_safe(r.get("csw_pct")),
+                "stuff_ceiling_bump": _json_safe(r.get("stuff_ceiling_bump")),
+                "stuff_ceiling_note": r.get("stuff_ceiling_note") or "",
                 "pitcher_style": r.get("pitcher_style") or "",
                 "pitcher_style_flags": r.get("pitcher_style_flags") or "",
                 "ticket_outlook": r.get("ticket_outlook") or "",
                 "ticket_note": r.get("ticket_note") or "",
+                "k_line": _json_safe(r.get("k_line")),
+                "k_over_price": _json_safe(r.get("k_over_price")),
+                "k_under_price": _json_safe(r.get("k_under_price")),
+                "k_book": _str_field(r.get("k_book")),
+                "k_edge": _json_safe(r.get("k_edge")),
+                "k_p_over": _json_safe(r.get("k_p_over")),
+                "k_p_under": _json_safe(r.get("k_p_under")),
+                "k_p10": _json_safe(r.get("k_p10")),
+                "k_p50": _json_safe(r.get("k_p50")),
+                "k_p90": _json_safe(r.get("k_p90")),
+                "k_p_ge_9": _json_safe(r.get("k_p_ge_9")),
+                "k_dist_shape": _str_field(r.get("k_dist_shape")),
+                "k_dist_sd": _json_safe(r.get("k_dist_sd")),
+                "expected_ks_rate_x_bf": _json_safe(r.get("expected_ks_rate_x_bf")),
+                "book_model_note": r.get("book_model_note") or "",
+                "hits_line": _json_safe(r.get("hits_line")),
+                "hits_over_price": _json_safe(r.get("hits_over_price")),
+                "hits_under_price": _json_safe(r.get("hits_under_price")),
+                "hits_book": _str_field(r.get("hits_book")),
+                "er_line": _json_safe(r.get("er_line")),
+                "er_over_price": _json_safe(r.get("er_over_price")),
+                "er_under_price": _json_safe(r.get("er_under_price")),
+                "er_book": _str_field(r.get("er_book")),
+                "bb_line": _json_safe(r.get("bb_line")),
+                "bb_book": _str_field(r.get("bb_book")),
+                "outs_line": _json_safe(r.get("outs_line")),
+                "outs_book": _str_field(r.get("outs_book")),
+                "odds_status": _str_field(r.get("odds_status")),
+                "odds_updated": _str_field(r.get("odds_updated")),
                 "vs_team_games": _json_safe(r.get("vs_team_games")),
                 "vs_team_ks": _json_safe(r.get("vs_team_ks")),
                 "vs_team_pa": _json_safe(r.get("vs_team_pa")),
@@ -446,35 +860,162 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
 
     for i, p in enumerate(arsenal):
         pt = p.get("pitch_type")
-        pname = p.get("pitch_name") or pt
+        pname_full = p.get("pitch_name") or pt
+        pname = _short_pitch_name(pname_full, pt)
         avg_k = p.get("lineup_k_pct")
-        avg_txt = (
-            f"{_fmt(avg_k, 1)}% lineup avg" if avg_k is not None else "no lineup avg"
-        )
-        vs_l = p.get("usage_vs_lhb")
-        vs_r = p.get("usage_vs_rhb")
-        hand_txt = ""
-        if vs_l is not None or vs_r is not None:
-            hand_txt = (
-                f" · vs L {_fmt(vs_l, 0) if vs_l is not None else '—'}%"
-                f" / vs R {_fmt(vs_r, 0) if vs_r is not None else '—'}%"
-            )
-        stuff_txt = ""
+        # Line 1: pitch name · overall · lineup avg · whiff · (velo)
+        # Line 2: use vs LHB · use vs RHB · vs L · vs R
+        line1_chips: list[str] = [
+            _rate_chip(
+                "overall",
+                p.get("usage_pct"),
+                "pitch_usage_pct",
+                1,
+                suffix="%",
+                title="Pitch usage overall — green = featured pitch, red = sparse",
+            ),
+            _rate_chip(
+                "lineup avg",
+                avg_k,
+                "batter_k_pct",
+                1,
+                suffix="%",
+                title="Lineup-average K% vs this pitch — green helps the pitcher, red helps the batters",
+            ),
+        ]
         p_whiff = p.get("pitcher_whiff_pct")
+        if p_whiff is not None:
+            line1_chips.append(
+                _rate_chip(
+                    "whiff",
+                    p_whiff,
+                    "pitch_whiff_pct",
+                    1,
+                    suffix="%",
+                    title="Pitcher's whiff% on this pitch — green = miss / K helper, red = soft",
+                )
+            )
+        if p.get("pitch_stuff_plus") is not None:
+            line1_chips.append(
+                _rate_chip(
+                    "Stuff+",
+                    p.get("pitch_stuff_plus"),
+                    "pitch_stuff_plus",
+                    0,
+                    title="FanGraphs Stuff+ for this pitch type (100 = avg). Confirm only.",
+                )
+            )
+        if p.get("run_value_100") is not None:
+            line1_chips.append(
+                _rate_chip(
+                    "RV/100",
+                    p.get("run_value_100"),
+                    "pitch_run_value_100",
+                    2,
+                    signed=True,
+                    title=(
+                        "FanGraphs run value per 100 pitches — positive prevents runs "
+                        "(count/base-state aware linear weights). Confirm only."
+                    ),
+                )
+            )
+        elif p.get("run_value") is not None:
+            line1_chips.append(
+                _rate_chip(
+                    "RV",
+                    p.get("run_value"),
+                    "pitch_run_value",
+                    1,
+                    signed=True,
+                    title=(
+                        "FanGraphs season pitch run value — positive prevents runs. "
+                        "Confirm only."
+                    ),
+                )
+            )
+
+        line2_chips: list[str] = []
+        usage_l = p.get("usage_vs_lhb")
+        usage_r = p.get("usage_vs_rhb")
+        if usage_l is not None or usage_r is not None:
+            line2_chips.append(
+                _rate_chip(
+                    "use vs LHB",
+                    usage_l,
+                    "plain",
+                    0,
+                    suffix="%",
+                    title="Pitcher's season usage of this pitch vs LHB (informational)",
+                )
+            )
+            line2_chips.append(
+                _rate_chip(
+                    "use vs RHB",
+                    usage_r,
+                    "plain",
+                    0,
+                    suffix="%",
+                    title="Pitcher's season usage of this pitch vs RHB (informational)",
+                )
+            )
+        k_vs_l, n_l = _lineup_pitch_k_by_hand(batters, pt, "L")
+        k_vs_r, n_r = _lineup_pitch_k_by_hand(batters, pt, "R")
+        line2_chips.append(
+            _rate_chip(
+                "vs L",
+                k_vs_l,
+                "batter_k_pct",
+                1,
+                suffix="%",
+                extra_class="hand-l",
+                title=(
+                    "This opposing lineup's LHB only — mean batter K% vs this pitch "
+                    f"(n={n_l}). Not pitcher season stats. "
+                    "Green helps pitcher, red helps bats."
+                ),
+            )
+        )
+        line2_chips.append(
+            _rate_chip(
+                "vs R",
+                k_vs_r,
+                "batter_k_pct",
+                1,
+                suffix="%",
+                extra_class="hand-r",
+                title=(
+                    "This opposing lineup's RHB only — mean batter K% vs this pitch "
+                    f"(n={n_r}). Not pitcher season stats. "
+                    "Green helps pitcher, red helps bats."
+                ),
+            )
+        )
         p_velo = p.get("pitcher_velo")
-        if p_whiff is not None or p_velo is not None:
-            bits = []
-            if p_whiff is not None:
-                bits.append(f"his whiff {_fmt(p_whiff, 1)}%")
-            if p_velo is not None:
-                bits.append(f"{_fmt(p_velo, 1)} mph")
-            stuff_txt = " · " + " · ".join(bits)
+        if p_velo is not None:
+            velo_metric = (
+                "pitch_velo_fb"
+                if _is_fastball_pitch(pt, pname_full)
+                else "pitch_velo_offspeed"
+            )
+            line2_chips.append(
+                _rate_chip(
+                    "velo",
+                    p_velo,
+                    velo_metric,
+                    1,
+                    suffix=" mph",
+                    title=(
+                        "Fastball velo — green = plus heat"
+                        if velo_metric == "pitch_velo_fb"
+                        else "Offspeed/breaking velo (informational — not a good/bad K grade)"
+                    ),
+                )
+            )
         open_attr = " open" if i == 0 else ""
 
         rows_html: list[str] = []
         for b in batters:
-            side = _hand_label(b.get("bat_side"), "B")
-            side_html = f" <span class='hand'>{_esc(side)}</span>" if side else ""
+            side_html = _hand_chip_html(b.get("bat_side"), "B")
             hit = next(
                 (x for x in (b.get("pitches") or []) if x.get("pitch_type") == pt),
                 {},
@@ -487,6 +1028,10 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             pa = hit.get("pa")
             pa_txt = "—" if pa is None else _fmt(pa, 0)
             k_grade = _grade_class("batter_k_pct", k)
+            tip = (
+                f"source {_esc(src or 'pitch')} · PA {_esc(pa_txt)} — "
+                "green helps pitcher · amber medium · red helps batters"
+            )
             rows_html.append(
                 "<div class='pitch-row'>"
                 "<div class='who'>"
@@ -496,8 +1041,7 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
                 "<div class='meter'>"
                 f"<span class='bar' style='width:{width:.0f}%;{_heat_style(k)}'></span>"
                 "</div>"
-                f"<div class='kval{k_grade}' "
-                f"title='source {_esc(src or 'pitch')} · PA {_esc(pa_txt)}'>"
+                f"<div class='kval{k_grade}' title='{tip}'>"
                 f"{k_txt}</div>"
                 "</div>"
             )
@@ -510,16 +1054,21 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
             "<div class='meter'>"
             f"<span class='bar' style='width:{width_avg:.0f}%;{_heat_style(avg_k)}'></span>"
             "</div>"
-            f"<div class='kval{avg_grade}'>"
+            f"<div class='kval{avg_grade}' "
+            "title='Lineup avg — green helps pitcher · amber medium · red helps batters'>"
             f"{'—' if avg_k is None else _fmt(avg_k, 1) + '%'}</div>"
             "</div>"
         )
         blocks.append(
             f"<details class='pitch-block'{open_attr}>"
             "<summary>"
-            f"<span class='pname'>{_esc(pname)}</span>"
-            f"<span class='pmeta'>{_fmt(p.get('usage_pct'), 1)}% overall"
-            f"{_esc(hand_txt)}{stuff_txt} · {_esc(avg_txt)}</span>"
+            f"<span class='pmeta-lines'>"
+            f"<span class='pmeta-line pmeta-line1'>"
+            f"<span class='pname' title='{_esc(pname_full)}'>{_esc(pname)}</span>"
+            f"{''.join(line1_chips)}"
+            f"</span>"
+            f"<span class='pmeta-line pmeta-line2'>{''.join(line2_chips)}</span>"
+            f"</span>"
             "</summary>"
             f"<div class='pitch-list'>{''.join(rows_html)}</div>"
             "</details>"
@@ -529,13 +1078,17 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
         "<div class='pitch-stack'>"
         f"{''.join(blocks)}"
         "<p class='hint'>"
-        "Open a pitch to see each batter’s K% vs that pitch. "
+        "Line 1: <strong>pitch</strong> · <strong>overall</strong> · "
+        "<strong>lineup avg</strong> · <strong>whiff</strong> "
+        "(green/amber/red by whether it helps the pitcher). "
+        "Line 2: <strong>use vs LHB / use vs RHB</strong> (pitcher season usage — "
+        "uncolored) · <strong>vs L / vs R</strong> (this opposing lineup’s batter "
+        "K% vs the pitch — green helps pitcher). "
+        "Open a pitch for each batter’s K% — same scale. "
         "Rates prefer true K% vs this pitcher’s hand when sample ≥15 PA; "
         "else overall pitch K%; "
         "<code>†</code> = same-handed league average. "
-        "Pitcher <em>his whiff / mph</em> is own-stuff (ceiling) — "
-        "does not change Exp K. "
-        "Longer/darker bar = more K-prone."
+        "Whiff / velo are own-stuff ceiling — do not change Exp K."
         "</p>"
         "</div>"
     )
@@ -549,8 +1102,7 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
         k_raw = None if miss else b.get("expected_k_pct")
         k = "n/a" if miss else f"{_fmt(k_raw, 1)}%"
         k_grade = "" if miss else _grade_class("batter_k_pct", k_raw)
-        side = _hand_label(b.get("bat_side"), "B")
-        side_html = f" <span class='hand'>{_esc(side)}</span>" if side else ""
+        side_html = _hand_chip_html(b.get("bat_side"), "B")
         hits = b.get("hits_score")
         hits_html = ""
         if hits is not None:
@@ -561,11 +1113,17 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
                 f"{'' if b.get('hard_hit_pct') is None else ' · hh ' + _fmt(b.get('hard_hit_pct'), 1) + '%'}"
                 f"</span>"
             )
+        tip = (
+            ""
+            if miss
+            else " title='Arsenal-weighted K% — green helps pitcher · "
+            "amber medium · red helps batters'"
+        )
         cards.append(
             f"<div class='batter {'missing' if miss else ''}'>"
             f"<span><span class='slot'>{_esc(b.get('slot'))}.</span> "
             f"{_esc(b.get('batter') or '—')}{side_html}{hits_html}</span>"
-            f"<span class='k{k_grade}'>{k}</span>"
+            f"<span class='k{k_grade}'{tip}>{k}</span>"
             "</div>"
         )
     if not cards:
@@ -573,14 +1131,22 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
     return (
         f"<div class='batter-grid'>{''.join(cards)}</div>"
         "<p class='hint'>Right-side values are arsenal-weighted <strong>K%</strong> vs this "
-        "starter. Hits / barrel / hard-hit scores are a separate Hits-prop layer and "
+        "starter — <strong>green</strong> helps the pitcher, "
+        "<strong class='hint-amber'>amber</strong> medium, "
+        "<strong class='hint-red'>red</strong> helps the batters. "
+        "Hits / barrel / hard-hit scores are a separate Hits-prop layer and "
         "<strong>do not</strong> change expected strikeouts.</p>"
     )
 
 
 def _render_hits_board(hits_board: list[dict[str, Any]] | None) -> str:
     if not hits_board:
-        return ""
+        return (
+            "<section class='hits-board' id='hitsBoard'>"
+            "<h2>Hits board <span>(display-only)</span></h2>"
+            "<p class='hits-lede'>No hits props ranked for this slate yet.</p>"
+            "</section>"
+        )
     rows = []
     for r in hits_board[:15]:
         rows.append(
@@ -610,6 +1176,54 @@ def _render_hits_board(hits_board: list[dict[str, Any]] | None) -> str:
     )
 
 
+def _amer_price(p: Any) -> str:
+    if p is None:
+        return "—"
+    try:
+        i = int(p)
+    except (TypeError, ValueError):
+        return "—"
+    return f"+{i}" if i > 0 else str(i)
+
+
+def _odds_meta_html(row: dict[str, Any]) -> str:
+    """Compact book-line chips for the card meta strip."""
+    status = (row.get("odds_status") or "").strip()
+    chips: list[str] = []
+
+    def add(label: str, line_key: str, book_key: str, over_key: str, under_key: str) -> None:
+        line = row.get(line_key)
+        if line is None:
+            return
+        try:
+            lv = float(line)
+        except (TypeError, ValueError):
+            return
+        book = (row.get(book_key) or "").strip()
+        tip = (
+            f"{label} {lv:.1f} · O {_amer_price(row.get(over_key))} / "
+            f"U {_amer_price(row.get(under_key))}"
+            f"{'' if not book else ' · ' + book}"
+        )
+        chips.append(
+            f"<span class='rate-chip' title='{_esc(tip)}'>"
+            f"{_esc(label)} {_esc(f'{lv:.1f}')}</span>"
+        )
+
+    add("K", "k_line", "k_book", "k_over_price", "k_under_price")
+    add("H", "hits_line", "hits_book", "hits_over_price", "hits_under_price")
+    add("ER", "er_line", "er_book", "er_over_price", "er_under_price")
+    add("BB", "bb_line", "bb_book", "bb_over_price", "bb_under_price")
+    add("Outs", "outs_line", "outs_book", "outs_over_price", "outs_under_price")
+    if chips:
+        return " ".join(chips)
+    if status in ("", "skipped_no_key"):
+        return "<span class='muted'>no key / skipped</span>"
+    if status == "ok":
+        return "—"
+    return f"<span class='muted'>{_esc(status)}</span>"
+
+
 def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     kind, label = _lineup_label(row.get("lineup_source"))
     tto = row.get("times_through_order")
@@ -617,10 +1231,8 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     status = row.get("status") or ""
     scored = status == "ok" and row.get("expected_ks") is not None
     pitcher_hand = _hand_label(row.get("pitch_hand"), "P")
-    hand_html = (
-        f" <span class='hand'>{_esc(pitcher_hand)}</span>" if pitcher_hand else ""
-    )
-    outlook = (row.get("ticket_outlook") or "").strip()
+    hand_html = _hand_chip_html(row.get("pitch_hand"), "P")
+    outlook = _str_field(row.get("ticket_outlook")).strip()
     search = " ".join(
         str(x)
         for x in [
@@ -635,7 +1247,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             outlook,
             row.get("matchup_grade"),
         ]
-        if x
+        if x is not None and not (isinstance(x, float) and pd.isna(x)) and str(x) not in ("", "nan")
     ).lower()
 
     uid = f"m{idx}"
@@ -648,6 +1260,67 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     ip_grade = _grade_class("projected_ip", row.get("projected_ip"))
     tto_grade = _grade_class("tto", row.get("times_through_order"))
     kpct_grade = _grade_class("expected_k_pct", row.get("expected_k_pct"))
+
+    # Book K line + edge (Odds API) — display only; edge is a question.
+    k_line = row.get("k_line")
+    k_edge = row.get("k_edge")
+    k_p_over = row.get("k_p_over")
+    line_html = "—"
+    edge_html = "—"
+    pover_html = "—"
+    line_title = "Book K O/U (The Odds API) — not used in Exp K"
+    edge_title = (
+        "Exp K − book line (positive = model above the number). "
+        "Question-first — books may be sharper; edge ≠ ticket."
+    )
+    pover_title = (
+        "Model P(K > book line) from PA-level K probs × projected BF. "
+        "Shape cue for props — not a bet recommendation."
+    )
+    edge_grade = ""
+    if k_line is not None:
+        try:
+            kl = float(k_line)
+            book = (row.get("k_book") or "").strip()
+            line_html = f"{kl:.1f}"
+            line_title = (
+                f"Book K O/U {kl:.1f} "
+                f"(O {_amer_price(row.get('k_over_price'))} / "
+                f"U {_amer_price(row.get('k_under_price'))}"
+                f"{'' if not book else ' · ' + book}). "
+                f"Display only — does not change Exp K. Compare to model, then ask why."
+            )
+        except (TypeError, ValueError):
+            line_html = "—"
+    if k_edge is not None:
+        try:
+            ke = float(k_edge)
+            edge_html = f"{ke:+.2f}"
+            if ke >= 0.75:
+                edge_grade = " grade-high"
+            elif ke <= -0.75:
+                edge_grade = " grade-low"
+        except (TypeError, ValueError):
+            edge_html = "—"
+    if k_p_over is not None:
+        try:
+            pover_html = f"{100 * float(k_p_over):.0f}%"
+            p10 = row.get("k_p10")
+            p90 = row.get("k_p90")
+            shape = (row.get("k_dist_shape") or "").strip()
+            band = ""
+            if p10 is not None and p90 is not None:
+                try:
+                    band = f" P10–P90 {float(p10):.0f}–{float(p90):.0f}."
+                except (TypeError, ValueError):
+                    band = ""
+            pover_title = (
+                f"Model P(over line) ≈ {pover_html}.{band}"
+                f"{'' if not shape else ' Shape: ' + shape + '.'} "
+                f"Built from pitcher×hitter PA K probs + projected BF — not season K% alone."
+            )
+        except (TypeError, ValueError):
+            pover_html = "—"
 
     badge_html = f"<span class='badge {kind}'>{_esc(label)}</span>"
     if outlook:
@@ -738,10 +1411,13 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
         f"{game_html}"
         "<div class='stat-row'>"
-        f"{_stat(f'ks{ks_grade}', _fmt(row.get('expected_ks')), 'Exp K', 'Expected strikeouts')}"
+        f"{_stat(f'ks{ks_grade}', _fmt(row.get('expected_ks')), 'Exp K', 'Expected strikeouts from PA matchups × volume (not pitcher season K% alone)')}"
+        f"{_stat('kline', line_html, 'Line', line_title)}"
+        f"{_stat(f'kedge{edge_grade}', edge_html, 'Edge', edge_title)}"
+        f"{_stat('kpover', pover_html, 'P(O)', pover_title)}"
         f"{_stat(f'ip{ip_grade}', _fmt(row.get('projected_ip'), 1), 'IP', 'Projected innings pitched')}"
         f"{_stat(f'tto{tto_grade}', tto_s, 'TTO', 'Times through the order')}"
-        f"<div class='num kpct{kpct_grade}' title='Arsenal K% vs opposing lineup'>"
+        f"<div class='num kpct{kpct_grade}' title='Arsenal K% vs opposing lineup (PA interaction environment)'>"
         f"{chips_html}"
         f"<span class='nval'>"
         f"<span class='kpct-val'>{_fmt(row.get('expected_k_pct'))}</span>"
@@ -775,31 +1451,294 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
     outing_val = (
         f"{_fmt(row.get('projected_ip'), 1)} IP · {tto_s} · BF {_esc(bf)} · cover {cover}"
     )
-    rates_val = (
-        f"BB/9 {_fmt(row.get('bb9'), 2)} · HR/9 {_fmt(row.get('hr9'), 2)} · "
-        f"xFIP {_fmt(row.get('xfip'), 2)} · K9 {_fmt(row.get('k9'), 1)}"
-    )
-    form_bits = []
+    rates_chips = [
+        _rate_chip(
+            "BB/9",
+            row.get("bb9"),
+            "bb9",
+            2,
+            title="Walk rate — lower is better for command / length",
+        ),
+        _rate_chip(
+            "HR/9",
+            row.get("hr9"),
+            "hr9",
+            2,
+            title="Home-run rate — lower is better",
+        ),
+        _rate_chip(
+            "FIP",
+            row.get("fip"),
+            "fip",
+            2,
+            title="FIP — fielding-independent ERA estimator; lower is better (confirm only)",
+        ),
+        _rate_chip(
+            "xFIP",
+            row.get("xfip"),
+            "xfip",
+            2,
+            title="Expected FIP — HR/FB normalized; lower is better (confirm only)",
+        ),
+        _rate_chip(
+            "SIERA",
+            row.get("siera"),
+            "siera",
+            2,
+            title="SIERA — skill-interactive ERA; credits GB/popup weak contact (confirm only)",
+        ),
+        _rate_chip(
+            "xERA",
+            row.get("xera"),
+            "xera",
+            2,
+            title="Expected ERA (Savant/FG) — quality of contact allowed (confirm only)",
+        ),
+        _rate_chip(
+            "K9",
+            row.get("k9"),
+            "k9",
+            1,
+            title="Season K/9 — higher helps K scripts",
+        ),
+    ]
+    if row.get("xwoba") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "xwOBA",
+                row.get("xwoba"),
+                "pitcher_xwoba",
+                3,
+                title="Expected wOBA allowed (Savant) — lower = better contact suppression",
+            )
+        )
+    if row.get("xba") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "xBA",
+                row.get("xba"),
+                "pitcher_xba",
+                3,
+                title="Expected BA allowed (Savant) — lower is better",
+            )
+        )
+    if row.get("xslg") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "xSLG",
+                row.get("xslg"),
+                "pitcher_xslg",
+                3,
+                title="Expected SLG allowed (Savant) — lower is better",
+            )
+        )
+    if row.get("strike_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "Strike%",
+                row.get("strike_pct"),
+                "strike_pct",
+                1,
+                title="Strikes ÷ pitches · ≥~65 confirms attack-plate overs",
+            )
+        )
+    if row.get("f_strike_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "F-Strike%",
+                row.get("f_strike_pct"),
+                "f_strike_pct",
+                1,
+                title="First-pitch strike rate — higher = more ahead counts",
+            )
+        )
+    if row.get("zone_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "Zone%",
+                row.get("zone_pct"),
+                "zone_pct",
+                1,
+                title="In-zone rate · ≥~43 with high Strike% = attacks the plate",
+            )
+        )
+    if row.get("z_contact_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "Z-Contact%",
+                row.get("z_contact_pct"),
+                "z_contact_pct",
+                1,
+                title=(
+                    "In-zone contact allowed (FanGraphs Z-Contact%) — "
+                    "lower = zone whiff / K confirm; Rates confirm only"
+                ),
+            )
+        )
+    if row.get("swstr_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "SwStr%",
+                row.get("swstr_pct"),
+                "swstr_pct",
+                1,
+                title="Swinging-strike rate — miss confirm (does not flip arsenal side)",
+            )
+        )
+    if row.get("o_swing_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "O-Swing%",
+                row.get("o_swing_pct"),
+                "o_swing_pct",
+                1,
+                title="Chase rate induced (FanGraphs O-Swing%) — higher = more chase; Rates confirm only",
+            )
+        )
+    if row.get("csw_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "CSW%",
+                row.get("csw_pct"),
+                "csw_pct",
+                1,
+                title="Called + swinging strike (FanGraphs C+SwStr%) — command/miss pack",
+            )
+        )
+    if row.get("pitcher_soft_pct") is not None:
+        rates_chips.append(
+            _rate_chip(
+                "Soft%",
+                row.get("pitcher_soft_pct"),
+                "pitcher_soft_pct",
+                1,
+                title="Soft-contact rate · ≥~20 helps FILLER / UNDER_OK confirms",
+            )
+        )
+    form_chips: list[str] = []
     if row.get("last3_ks") is not None:
-        form_bits.append(f"L3 {_fmt(row.get('last3_ks'), 1)} K")
+        form_chips.append(
+            _rate_chip(
+                "L3 K",
+                row.get("last3_ks"),
+                "last3_ks",
+                1,
+                title="Avg strikeouts over last 3 starts (raw)",
+            )
+        )
     if row.get("last3_k9") is not None:
-        form_bits.append(f"{_fmt(row.get('last3_k9'), 1)} K/9")
-    form_val = " · ".join(form_bits) if form_bits else "no L3 form"
-    stuff_bits = []
+        form_chips.append(
+            _rate_chip(
+                "L3 K/9",
+                row.get("last3_k9"),
+                "last3_k9",
+                1,
+                title="K/9 over last 3 starts (raw)",
+            )
+        )
+    if row.get("last3_k9_adj") is not None:
+        tip = "L3 K/9 scaled by league K% ÷ mean opponent-team K% faced"
+        note = (row.get("form_opp_note") or "").strip()
+        if note:
+            tip = f"{tip} · {note}"
+        form_chips.append(
+            _rate_chip(
+                "L3 K/9 adj",
+                row.get("last3_k9_adj"),
+                "last3_k9_adj",
+                1,
+                title=tip,
+            )
+        )
+    if row.get("last3_opp_k_pct") is not None:
+        form_chips.append(
+            _rate_chip(
+                "L3 opp K%",
+                row.get("last3_opp_k_pct"),
+                "last3_opp_k_pct",
+                1,
+                title=(
+                    row.get("form_opp_note")
+                    or "Mean season K% of teams faced in last 3 starts"
+                ),
+            )
+        )
+    form_html = (
+        "".join(form_chips)
+        if form_chips
+        else "<span class='rate-chip rate-na'>no L3 form</span>"
+    )
+    rates_html = "".join(rates_chips) + form_html
+
+    stuff_bits: list[str] = []
+    if row.get("stuff_plus") is not None:
+        stuff_bits.append(
+            _rate_chip(
+                "Stuff+",
+                row.get("stuff_plus"),
+                "stuff_plus",
+                0,
+                title="FanGraphs Stuff+ — pitch quality vs average (100). Confirm only; does not change Exp K.",
+            )
+        )
+    if row.get("location_plus") is not None:
+        stuff_bits.append(
+            _rate_chip(
+                "Loc+",
+                row.get("location_plus"),
+                "location_plus",
+                0,
+                title="FanGraphs Location+ — command / location quality (100 = avg). Confirm only.",
+            )
+        )
+    if row.get("pitching_plus") is not None:
+        stuff_bits.append(
+            _rate_chip(
+                "Pit+",
+                row.get("pitching_plus"),
+                "pitching_plus",
+                0,
+                title="FanGraphs Pitching+ — Stuff+ and Location+ combined (100 = avg). Confirm only.",
+            )
+        )
     if row.get("stuff_whiff_pct") is not None:
         sg = (row.get("stuff_grade") or "").strip()
+        tip = f"Usage-weighted pitcher whiff%{'' if not sg else ' (' + sg + ')'}"
         stuff_bits.append(
-            f"stuff whiff {_fmt(row.get('stuff_whiff_pct'), 1)}%"
-            f"{'' if not sg else ' (' + sg + ')'}"
+            _rate_chip(
+                "stuff whiff",
+                row.get("stuff_whiff_pct"),
+                "stuff_whiff_pct",
+                1,
+                suffix="%" + (f" ({sg})" if sg else ""),
+                title=tip,
+            )
         )
     if row.get("stuff_fb_velo") is not None:
+        pitch = row.get("stuff_fb_pitch") or "FB"
         stuff_bits.append(
-            f"{row.get('stuff_fb_pitch') or 'FB'} "
-            f"{_fmt(row.get('stuff_fb_velo'), 1)} mph"
+            f"<span class='rate-chip rate-na' title='Primary fastball velocity'>"
+            f"<span class='rate-lab'>{_esc(pitch)}</span> "
+            f"<span class='rate-val'>{_esc(_fmt(row.get('stuff_fb_velo'), 1))} mph</span>"
+            f"</span>"
         )
     if row.get("spike_risk"):
-        stuff_bits.append(f"SPIKE {row.get('spike_flags') or ''}".strip())
-    stuff_val = " · ".join(stuff_bits) if stuff_bits else ""
+        stuff_bits.append(
+            f"<span class='rate-chip rate-spike' title='Stuff / K9 ceiling — no soft U6'>"
+            f"<span class='rate-lab'>SPIKE</span> "
+            f"<span class='rate-val'>{_esc(row.get('spike_flags') or '')}</span>"
+            f"</span>"
+        )
+    bump = row.get("stuff_ceiling_bump")
+    if bump is not None and float(bump or 0) > 0:
+        tip = row.get("stuff_ceiling_note") or "Attack-plate stuff bump on Exp K"
+        stuff_bits.append(
+            f"<span class='rate-chip grade-high' title='{_esc(tip)}'>"
+            f"<span class='rate-lab'>stuff bump</span> "
+            f"<span class='rate-val'>+{_esc(_fmt(bump, 2))}</span>"
+            f"</span>"
+        )
+    stuff_val = "".join(stuff_bits)
 
     style_bits: list[str] = []
     pstyle = (row.get("pitcher_style") or "").strip().lower()
@@ -810,57 +1749,257 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             "fly_popup": "Fly / popup",
             "balanced": "Balanced",
         }
-        style_bits.append(style_names.get(pstyle, pstyle))
+        style_bits.append(
+            f"<span class='rate-chip rate-na'>"
+            f"<span class='rate-val'>{_esc(style_names.get(pstyle, pstyle))}</span>"
+            f"</span>"
+        )
         if row.get("pitcher_k_pct") is not None:
-            style_bits.append(f"K% {_fmt(row.get('pitcher_k_pct'), 1)}")
+            style_bits.append(
+                _rate_chip(
+                    "K%",
+                    row.get("pitcher_k_pct"),
+                    "pitcher_k_pct",
+                    1,
+                    title="Season pitcher K% — higher confirms WHIFF",
+                )
+            )
         if row.get("pitcher_contact_pct") is not None:
-            style_bits.append(f"Con% {_fmt(row.get('pitcher_contact_pct'), 1)}")
+            style_bits.append(
+                _rate_chip(
+                    "Con%",
+                    row.get("pitcher_contact_pct"),
+                    "pitcher_contact_pct",
+                    1,
+                    title="Season contact% — lower = more swing-and-miss",
+                )
+            )
         if row.get("pitcher_gb_pct") is not None:
-            style_bits.append(f"GB% {_fmt(row.get('pitcher_gb_pct'), 1)}")
+            style_bits.append(
+                f"<span class='rate-chip rate-na' title='Ground-ball rate'>"
+                f"<span class='rate-lab'>GB%</span> "
+                f"<span class='rate-val'>{_esc(_fmt(row.get('pitcher_gb_pct'), 1))}</span>"
+                f"</span>"
+            )
         if row.get("pitcher_fb_pct") is not None:
-            style_bits.append(f"FB% {_fmt(row.get('pitcher_fb_pct'), 1)}")
+            style_bits.append(
+                f"<span class='rate-chip rate-na' title='Fly-ball rate'>"
+                f"<span class='rate-lab'>FB%</span> "
+                f"<span class='rate-val'>{_esc(_fmt(row.get('pitcher_fb_pct'), 1))}</span>"
+                f"</span>"
+            )
         if row.get("pitcher_iffb_pct") is not None:
-            style_bits.append(f"IFFB% {_fmt(row.get('pitcher_iffb_pct'), 1)}")
-    style_val = " · ".join(style_bits) if style_bits else ""
-
+            style_bits.append(
+                f"<span class='rate-chip rate-na' title='Infield-fly rate'>"
+                f"<span class='rate-lab'>IFFB%</span> "
+                f"<span class='rate-val'>{_esc(_fmt(row.get('pitcher_iffb_pct'), 1))}</span>"
+                f"</span>"
+            )
+    style_val = "".join(style_bits)
     opp = row.get("opponent") or "opp"
-    matchup_bits = []
+    matchup_bits: list[str] = []
     if abs_grade:
-        matchup_bits.append(f"<strong>{_esc(abs_grade.upper())}</strong> solo vs {_esc(opp)}")
+        matchup_bits.append(
+            _band_chip(
+                "solo",
+                _solo_grade_band(abs_grade),
+                value=f"{abs_grade.upper()} vs {opp}",
+                title=(
+                    "Solo arsenal vs this nine — picks the side "
+                    "(ELITE/STRONG over · SOFT under · AVG usually pass)"
+                ),
+            )
+        )
     if row.get("expected_k_pct") is not None:
-        matchup_bits.append(f"arsenal K% {_fmt(row.get('expected_k_pct'), 1)}")
+        matchup_bits.append(
+            _rate_chip(
+                "arsenal K%",
+                row.get("expected_k_pct"),
+                "expected_k_pct",
+                1,
+                title=(
+                    f"Arsenal-weighted K% vs lineup · "
+                    f"ELITE≥{ABS_MATCHUP_ELITE:g} STRONG≥{ABS_MATCHUP_STRONG:g} "
+                    f"AVG≥{ABS_MATCHUP_AVG:g} SOFT<{ABS_MATCHUP_AVG:g}"
+                ),
+            )
+        )
     if row.get("arsenal_vs_league") is not None:
-        matchup_bits.append(f"{_fmt(row.get('arsenal_vs_league'), 1, signed=True)} vs league")
+        matchup_bits.append(
+            _rate_chip(
+                "vs league",
+                row.get("arsenal_vs_league"),
+                "arsenal_vs_league",
+                1,
+                signed=True,
+                title="Arsenal K% minus league ~22.5% — positive helps overs",
+            )
+        )
     if row.get("arsenal_vs_opp") is not None:
-        matchup_bits.append(f"{_fmt(row.get('arsenal_vs_opp'), 1, signed=True)} vs opp K%")
+        matchup_bits.append(
+            _rate_chip(
+                "vs opp K%",
+                row.get("arsenal_vs_opp"),
+                "arsenal_vs_opp",
+                1,
+                signed=True,
+                title="Mix vs lineup raw K% — positive = mix beats the nine's tendency",
+            )
+        )
     if ark is not None:
         slate_g = (row.get("matchup_grade") or "").strip()
+        slate_band = _solo_grade_band(slate_g) if slate_g else None
+        slate_txt = f"#{ark}" + (f" {slate_g}" if slate_g else "")
         matchup_bits.append(
-            f"slate #{_esc(ark)}"
-            f"{'' if not slate_g else ' ' + _esc(slate_g)}"
+            _band_chip(
+                "slate",
+                slate_band,
+                value=slate_txt,
+                title="Slate-relative arsenal rank only — secondary to solo grade",
+            )
         )
-    if row.get("lineup_k_pct") is not None:
-        src = row.get("offense_source") or ""
+    # Prefer opp K% vs this pitcher's hand; keep overall as secondary chip.
+    opp_hand = row.get("lineup_k_pct_vs_hand")
+    opp_side = str(row.get("lineup_k_vs_hand_side") or "").strip().upper()
+    if opp_hand is not None:
+        side_lab = f"vs {opp_side}HP" if opp_side in ("L", "R") else "vs hand"
         matchup_bits.append(
-            f"opp K% {_fmt(row.get('lineup_k_pct'), 1)}"
-            f"{'' if not src else ' (' + _esc(src) + ')'}"
+            _rate_chip(
+                f"opp K% {side_lab}",
+                opp_hand,
+                "opp_k_pct",
+                1,
+                title=(
+                    f"Lineup season K% {side_lab} — primary opp-K confirm "
+                    "(higher helps overs)"
+                ),
+            )
+        )
+        if row.get("lineup_k_pct") is not None:
+            src = row.get("offense_source") or ""
+            matchup_bits.append(
+                _rate_chip(
+                    "opp K% all",
+                    row.get("lineup_k_pct"),
+                    "opp_k_pct",
+                    1,
+                    title=(
+                        "Overall lineup K%"
+                        + (f" ({src})" if src else "")
+                        + " — secondary to vs-hand"
+                    ),
+                )
+            )
+    elif row.get("lineup_k_pct") is not None:
+        src = row.get("offense_source") or ""
+        tip = "Opposing lineup K%" + (f" ({src})" if src else "")
+        matchup_bits.append(
+            _rate_chip(
+                "opp K%",
+                row.get("lineup_k_pct"),
+                "opp_k_pct",
+                1,
+                title=tip + " — higher helps overs",
+            )
         )
     if row.get("lineup_bip_pct") is not None:
         cg = (row.get("contact_grade") or "").strip()
+        bip_band = _contact_grade_band(cg) or _grade_for(
+            "opp_bip_pct", row.get("lineup_bip_pct")
+        )
+        bip_label = "opp BIP"
+        bip_val = _fmt(row.get("lineup_bip_pct"), 1) + "%"
+        if cg:
+            bip_val += f" {cg.replace('_', ' ')}"
         matchup_bits.append(
-            f"opp BIP {_fmt(row.get('lineup_bip_pct'), 1)}%"
-            f"{'' if not cg else ' (' + _esc(cg.replace('_', ' ')) + ')'}"
+            _band_chip(
+                bip_label,
+                bip_band,
+                value=bip_val,
+                title=(
+                    "Lineup balls-in-play % — whiff_prone helps overs · "
+                    "contact_heavy helps unders"
+                ),
+            )
         )
     if row.get("lineup_bb_pct") is not None:
-        matchup_bits.append(f"opp BB% {_fmt(row.get('lineup_bb_pct'), 1)}")
+        matchup_bits.append(
+            _rate_chip(
+                "opp BB%",
+                row.get("lineup_bb_pct"),
+                "opp_bb_pct",
+                1,
+                title="Opposing lineup BB% — high = patient / pitch-count risk",
+            )
+        )
+    if row.get("lineup_woba") is not None:
+        matchup_bits.append(
+            _rate_chip(
+                "opp wOBA",
+                row.get("lineup_woba"),
+                "opp_woba",
+                3,
+                title=(
+                    "Lineup PA-weighted FanGraphs wOBA — lower = softer offense "
+                    "(helps length / K comfort); leash confirm only"
+                ),
+            )
+        )
+    if row.get("lineup_wrc_plus") is not None:
+        matchup_bits.append(
+            _rate_chip(
+                "opp wRC+",
+                row.get("lineup_wrc_plus"),
+                "opp_wrc_plus",
+                0,
+                title=(
+                    "Lineup PA-weighted FanGraphs wRC+ (100=lg) — lower = softer "
+                    "offense / longer leash OK; does not flip solo grade"
+                ),
+            )
+        )
+    if row.get("lineup_iso") is not None:
+        matchup_bits.append(
+            _rate_chip(
+                "opp ISO",
+                row.get("lineup_iso"),
+                "opp_iso",
+                3,
+                title=(
+                    "Lineup PA-weighted FanGraphs ISO — lower = less power / "
+                    "crooked-number risk; leash confirm only"
+                ),
+            )
+        )
     grade = (row.get("discipline_grade") or "").strip()
     if grade:
-        matchup_bits.append(_esc(grade.replace("_", " ")))
+        disc_band = {
+            "aggressive": "high",
+            "free_swing": "elite",
+            "neutral": "mid",
+            "patient": "low",
+            "three_true": "mid",
+        }.get(grade.lower())
+        matchup_bits.append(
+            _band_chip(
+                "disc",
+                disc_band,
+                value=grade.replace("_", " "),
+                title="Plate-discipline grade for the opposing nine",
+            )
+        )
     pc = (row.get("pitch_count_risk") or "").strip()
     if pc and pc not in ("neutral", "low"):
-        matchup_bits.append(f"pitch-count {_esc(pc)}")
-    matchup_val = " · ".join(matchup_bits) if matchup_bits else "—"
-
+        pc_band = "low" if pc in ("elevated", "high") else "mid"
+        matchup_bits.append(
+            _band_chip(
+                "pitch-count",
+                pc_band,
+                value=pc,
+                title="Pitch-count risk from patient / walk-heavy nines",
+            )
+        )
+    matchup_val = "".join(matchup_bits) if matchup_bits else "—"
     vs_g = row.get("vs_team_games")
     vs_bits: list[str] = []
     if vs_g is not None and int(vs_g or 0) > 0:
@@ -901,30 +2040,34 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
 
     head = (
         "<div class='meta-strip'>"
-        # Style first so it's visible without scrolling the meta strip.
+        # Card read order: solo arsenal → style → stuff → rates → outing → history.
+        "<div class='meta-cell meta-matchup'>"
+        "<span class='meta-label'>Arsenal matchup</span>"
+        f"<span class='meta-value meta-rates'>{matchup_val}</span>"
+        "</div>"
         "<div class='meta-cell meta-pstyle'>"
         "<span class='meta-label'>Pitcher style (Ks vs BIP outs)</span>"
-        f"<span class='meta-value'>"
-        f"{_esc(style_val) if style_val else '—'}"
+        f"<span class='meta-value meta-rates'>"
+        f"{style_val if style_val else '—'}"
         "</span>"
         "</div>"
         "<div class='meta-cell meta-stuff'>"
         "<span class='meta-label'>Stuff ceiling (velo / whiff)</span>"
-        f"<span class='meta-value'>"
-        f"{_esc(stuff_val) if stuff_val else '—'}"
+        f"<span class='meta-value meta-rates'>"
+        f"{stuff_val if stuff_val else '—'}"
         "</span>"
         "</div>"
-        "<div class='meta-cell'>"
-        "<span class='meta-label'>Outing</span>"
-        f"<span class='meta-value'>{outing_val}{role_html}</span>"
-        "</div>"
-        "<div class='meta-cell'>"
+        "<div class='meta-cell meta-rates-cell'>"
         "<span class='meta-label'>Rates / form</span>"
-        f"<span class='meta-value'>{_esc(rates_val)} · {_esc(form_val)} {risk_chip}</span>"
+        f"<span class='meta-value meta-rates'>{rates_html} {risk_chip}</span>"
         "</div>"
-        "<div class='meta-cell meta-matchup'>"
-        "<span class='meta-label'>Arsenal matchup</span>"
-        f"<span class='meta-value'>{matchup_val}</span>"
+        "<div class='meta-cell meta-odds'>"
+        "<span class='meta-label'>Book lines (Odds API)</span>"
+        f"<span class='meta-value meta-rates'>{_odds_meta_html(row)}</span>"
+        "</div>"
+        "<div class='meta-cell'>"
+        "<span class='meta-label'>Outing / form</span>"
+        f"<span class='meta-value'>{outing_val}{role_html}</span>"
         "</div>"
         "<div class='meta-cell meta-history'>"
         f"<span class='meta-label'>vs {_esc(opp)} history (HOME/AWAY)</span>"
@@ -933,6 +2076,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
     )
     ticket_note = (row.get("ticket_note") or "").strip()
+    book_note = (row.get("book_model_note") or "").strip()
     # Banner for flagged outlooks (FILLER / MATCHUP_OK / SPIKE / THIN_TOTAL / UNDER_OK).
     if outlook:
         note = _esc(ticket_note) if ticket_note else matchup_val
@@ -940,6 +2084,13 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
             f"<div class='outlook-banner outlook-{_esc(outlook.lower())}'>"
             f"<strong>{_esc(outlook.replace('_', ' '))}</strong>"
             f"<span>{note}</span>"
+            "</div>"
+        )
+    if book_note and scored:
+        head += (
+            "<div class='outlook-banner outlook-book'>"
+            "<strong>Book vs model</strong>"
+            f"<span>{_esc(book_note)}</span>"
             "</div>"
         )
 
@@ -972,6 +2123,8 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"data-lineup='{_esc(row.get('lineup_source') or '')}' "
         f"data-status='{'scored' if scored else 'missing'}' "
         f"data-expected-ks='{_json_safe(row.get('expected_ks'))}' "
+        f"data-k-line='{_json_safe(row.get('k_line'))}' "
+        f"data-k-edge='{_json_safe(row.get('k_edge'))}' "
         f"data-projected-ip='{_json_safe(row.get('projected_ip'))}' "
         f"data-tto='{_json_safe(row.get('times_through_order'))}' "
         f"data-kpct='{_json_safe(row.get('expected_k_pct'))}' "
@@ -980,6 +2133,206 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"<summary>{summary}</summary>"
         f"<div class='detail'>{head}{tabs}</div>"
         "</details>"
+    )
+
+
+def _key_chip(text: str, css: str, title: str = "") -> str:
+    tip = f" title='{_esc(title)}'" if title else ""
+    return f"<span class='key-chip {_esc(css)}'{tip}>{_esc(text)}</span>"
+
+
+def _key_notes(*lines: str) -> str:
+    """Stack key-legend notes on separate spaced rows."""
+    return (
+        "<span class='key-notes'>"
+        + "".join(f"<span class='key-note'>{line}</span>" for line in lines if line)
+        + "</span>"
+    )
+
+
+def _render_model_keys(*, avg_strike_pct: float | None = None) -> str:
+    """Top-of-board legend: color-coded BIP / solo / style / outlook keys."""
+    bip_chips = (
+        _key_chip(
+            f"whiff_prone ≤{WHIFF_PRONE_BIP:g}%",
+            "key-bip-whiff",
+            "Low BIP / high-K nines — helps overs",
+        )
+        + _key_chip(
+            f"league ~{LEAGUE_BIP_PCT:g}%",
+            "key-bip-league",
+            "Neutral contact environment",
+        )
+        + _key_chip(
+            f"contact_heavy ≥{CONTACT_HEAVY_BIP:g}%",
+            "key-bip-contact",
+            "High BIP nines — helps unders (also ≥69% with K% ≤19.5)",
+        )
+    )
+    bip_notes = _key_notes(
+        "Low BIP helps overs · high BIP helps unders.",
+        "contact_heavy also if BIP ≥69% with K% ≤19.5.",
+    )
+    offense_chips = (
+        _key_chip(
+            "wRC+ ≤90",
+            "rate-chip grade-elite",
+            "Soft offense — longer leash / K comfort",
+        )
+        + _key_chip(
+            "~100 lg",
+            "rate-chip grade-mid",
+            "League-average offense quality",
+        )
+        + _key_chip(
+            "wRC+ ≥110",
+            "rate-chip grade-low",
+            "Good offense — shorter leash risk",
+        )
+        + _key_chip(
+            "low wOBA/ISO",
+            "rate-chip grade-high",
+            "Softer damage / less power",
+        )
+        + _key_chip(
+            "high wOBA/ISO",
+            "rate-chip grade-low",
+            "Damage + power — caution clear-IP",
+        )
+    )
+    offense_notes = _key_notes(
+        "Lineup PA-weighted FanGraphs wOBA / wRC+ / ISO (season).",
+        "Lower = softer offense → longer leash OK with WHIFF scripts.",
+        "Higher = good offense → size down overs / don’t trust clear IP alone.",
+        "Confirm only — does not flip solo grade. Pitch-type Ks stay on Arsenal.",
+    )
+    solo_chips = (
+        _key_chip(f"ELITE ≥{ABS_MATCHUP_ELITE:g}%", "ark ark-elite")
+        + _key_chip(f"STRONG ≥{ABS_MATCHUP_STRONG:g}%", "ark ark-strong")
+        + _key_chip(f"AVG ≥{ABS_MATCHUP_AVG:g}%", "ark ark-avg")
+        + _key_chip(f"SOFT <{ABS_MATCHUP_AVG:g}%", "ark ark-soft")
+    )
+    solo_notes = _key_notes(
+        f"Arsenal K% vs this nine (league ~{LEAGUE_K_PCT:g}%).",
+        "Side first — Exp K sizes the line.",
+    )
+    style_chips = (
+        _key_chip("WHIFF", "ark-pstyle-whiff", "Trust K totals")
+        + _key_chip("GB", "ark-pstyle-contact_gb", "Ground-ball / BIP outs")
+        + _key_chip("FLY", "ark-pstyle-fly_popup", "Fly / popup BIP outs")
+        + _key_chip("BAL", "ark-pstyle-balanced", "Mixed profile — caution on juiced totals")
+    )
+    style_notes = _key_notes(
+        "WHIFF = trust K totals.",
+        "GB/FLY = BIP outs (thin juiced totals).",
+        "BAL = caution.",
+    )
+    outlook_chips = (
+        _key_chip(
+            "TRUST",
+            "outlook outlook-trust",
+            f"ELITE/STRONG + WHIFF + Exp K ≥{TRUST_TOTAL_EXP_KS:g}",
+        )
+        + _key_chip(
+            "THIN TOTAL",
+            "outlook outlook-thin_total",
+            "High Exp K but GB/FLY — O3.5 / thin O4.5 only",
+        )
+        + _key_chip(
+            "UNDER OK",
+            "outlook outlook-under_ok",
+            f"SOFT + ≥{UNDER_CONFIRM_MIN:g} of GB/FLY · contact_heavy · "
+            f"Exp K ≤{UNDER_CONFIRM_EXP_KS:g} · Soft%≥20",
+        )
+        + _key_chip("SPIKE", "outlook outlook-spike", "No soft U6")
+        + _key_chip("MATCHUP OK", "outlook outlook-matchup_ok", "Thin O3.5 only")
+        + _key_chip("FILLER", "outlook outlook-filler", "Pass K overs")
+    )
+    outlook_notes = _key_notes(
+        f"TRUST needs Exp K ≥{TRUST_TOTAL_EXP_KS:g}.",
+        f"UNDER_OK needs ≥{UNDER_CONFIRM_MIN:g} confirms (incl Soft%).",
+        "SPIKE blocks soft U6.",
+    )
+    strike_chips = (
+        _key_chip(
+            "Strike% ≥66",
+            "rate-chip grade-elite",
+            "Elite command — sizes up WHIFF overs",
+        )
+        + _key_chip(
+            "≥65",
+            "rate-chip grade-high",
+            "Attack-plate confirm (≥~65 Strike% / ≥~43 Zone%)",
+        )
+        + _key_chip(
+            "~63–65",
+            "rate-chip grade-mid",
+            "Average strike rate",
+        )
+        + _key_chip(
+            "<63",
+            "rate-chip grade-low",
+            "Soft for overs — does not auto-under SPIKE/WHIFF",
+        )
+        + _key_chip(
+            "Zone% ≥43",
+            "rate-chip grade-high",
+            "In-zone attack — pair with high Strike%",
+        )
+        + _key_chip(
+            "Zone% <40",
+            "rate-chip grade-low",
+            "Off-plate / nibble profile",
+        )
+    )
+    if avg_strike_pct is not None:
+        strike_chips += _key_chip(
+            f"slate avg {_fmt(avg_strike_pct, 1)}%",
+            "rate-chip grade-mid",
+            "Average Strike% across today's scored starters",
+        )
+    strike_notes = _key_notes(
+        "Green = good for K scripts · amber = average · red = soft for overs.",
+        "Rates chips: Strike%/Zone%/Z-Contact%/SwStr%/O-Swing%/CSW% "
+        "(miss+chase+command) · Soft% (elevated helps FILLER/under).",
+        "L3 K/9 adj = form scaled for opponent K% faced. "
+        "Command/chase confirms the script — they do not flip the side. "
+        "Attack-plate + WHIFF + strong stuff can add a tiny Exp K bump.",
+    )
+    return (
+        "<div class='model-keys' aria-label='Model keys'>"
+        "<div class='keys-title'>Keys — what to aim for</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Opp BIP</span>"
+        f"<span class='key-val'><span class='key-chips'>{bip_chips}</span>"
+        f"{bip_notes}</span>"
+        "</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Opp offense</span>"
+        f"<span class='key-val'><span class='key-chips'>{offense_chips}</span>"
+        f"{offense_notes}</span>"
+        "</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Strike%</span>"
+        f"<span class='key-val'><span class='key-chips'>{strike_chips}</span>"
+        f"{strike_notes}</span>"
+        "</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Solo grade</span>"
+        f"<span class='key-val'><span class='key-chips'>{solo_chips}</span>"
+        f"{solo_notes}</span>"
+        "</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Style</span>"
+        f"<span class='key-val'><span class='key-chips'>{style_chips}</span>"
+        f"{style_notes}</span>"
+        "</div>"
+        "<div class='key-row'>"
+        "<span class='key-lab'>Outlook</span>"
+        f"<span class='key-val'><span class='key-chips'>{outlook_chips}</span>"
+        f"{outlook_notes}</span>"
+        "</div>"
+        "</div>"
     )
 
 
@@ -992,6 +2345,22 @@ def write_interactive_html(
     hits_board: list[dict[str, Any]] | None = None,
 ) -> None:
     rows = rows_for_html(df)
+    # Guard: CSV reload drops nested arsenal / batter_detail. Never publish a
+    # stripped board that looks complete but has empty Arsenal tabs.
+    scored_ok = [r for r in rows if r.get("status") == "ok"]
+    with_arsenal = [
+        r
+        for r in scored_ok
+        if (r.get("arsenal") or r.get("pitch_lineup_avg") or r.get("batter_detail"))
+    ]
+    if len(scored_ok) >= 5 and len(with_arsenal) * 2 < len(scored_ok):
+        raise RuntimeError(
+            f"Refusing to write HTML: only {len(with_arsenal)}/{len(scored_ok)} "
+            f"scored pitchers have arsenal payload. CSV reload strips nested "
+            f"columns — re-run mlb-k-matchups/k_matchups.py end-to-end "
+            f"(do not rebuild HTML from rankings CSV alone)."
+        )
+
     # Opposing batting-team K% rank on this slate (#1 = highest lineup K%).
     opp_scored = [
         (i, float(r["lineup_k_pct"]))
@@ -1020,6 +2389,12 @@ def write_interactive_html(
         if any(r.get("times_through_order") is not None for r in scored)
         else None
     )
+    strike_vals = [
+        float(r["strike_pct"])
+        for r in scored
+        if r.get("strike_pct") is not None
+    ]
+    avg_strike_pct = (sum(strike_vals) / len(strike_vals)) if strike_vals else None
 
     # Prefer scored first, then missing — same as CLI rank order already in df.
     cards = "\n".join(_render_matchup_card(r, i) for i, r in enumerate(rows))
@@ -1031,6 +2406,10 @@ def write_interactive_html(
         ("Generated", generated),
         ("Avg proj IP", _fmt(avg_ip, 1) if avg_ip is not None else "—"),
         ("Avg TTO", f"{_fmt(avg_tto)}×" if avg_tto is not None else "—"),
+        (
+            "Avg Strike%",
+            f"{_fmt(avg_strike_pct, 1)}%" if avg_strike_pct is not None else "—",
+        ),
         ("Scored", str(len(scored))),
         ("Official lineups", f"{official}/{len(scored)}"),
     ]
@@ -1049,6 +2428,7 @@ def write_interactive_html(
         f"Hard-refresh before tickets; never use old commit / htmlpreview links."
         f"</div>"
     )
+    model_keys = _render_model_keys(avg_strike_pct=avg_strike_pct)
 
     payload = {
         "generated_at": generated,
@@ -1057,6 +2437,7 @@ def write_interactive_html(
         "batters_faced_override": batters_faced,
         "avg_projected_ip": avg_ip,
         "avg_times_through": avg_tto,
+        "avg_strike_pct": avg_strike_pct,
         "row_count": len(rows),
         "official_lineups": official,
         "hits_board_count": len(hits_board or []),
@@ -1065,6 +2446,7 @@ def write_interactive_html(
     html = HTML_TEMPLATE
     html = html.replace("__META_CHIPS__", meta_html)
     html = html.replace("__FRESHNESS__", freshness)
+    html = html.replace("__MODEL_KEYS__", model_keys)
     html = html.replace("__HITS_BOARD__", hits_html)
     html = html.replace("__MATCHUP_CARDS__", cards)
     html = html.replace("__DATA_JSON__", json.dumps(payload, ensure_ascii=False))
@@ -1084,13 +2466,32 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
+<meta name="color-scheme" content="light dark" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script>
+  (function () {
+    try {
+      var key = "k-matchup-theme";
+      var stored = localStorage.getItem(key);
+      var theme =
+        stored === "light" || stored === "dark"
+          ? stored
+          : window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  })();
+</script>
 <style>
-  :root {
+  :root, html[data-theme="light"] {
     --bg0: #e8f0e4;
     --bg1: #f7f3ea;
+    --bg-end: #eef4ea;
     --ink: #14201a;
     --muted: #5c6b62;
     --line: rgba(20, 32, 26, 0.12);
@@ -1098,10 +2499,76 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     --warn: #9a5b12;
     --ok: #0f6a4d;
     --panel: rgba(255, 252, 246, 0.92);
+    --panel-soft: rgba(255, 255, 255, 0.55);
+    --panel-solid: rgba(255, 255, 255, 0.72);
+    --controls-bg: rgba(247, 243, 234, 0.94);
+    --detail-bg: rgba(20, 32, 26, 0.03);
+    --meta-cell: rgba(255, 255, 255, 0.7);
+    --hand-bg: rgba(255, 255, 255, 0.7);
+    --glow-ok: rgba(15, 106, 77, 0.18);
+    --glow-warn: rgba(154, 91, 18, 0.12);
     --shadow: 0 18px 50px rgba(20, 32, 26, 0.08);
     --radius: 18px;
     --mono: "Manrope", system-ui, sans-serif;
     --display: "Archivo Black", "Arial Black", sans-serif;
+    --grade-elite: #064832;
+    --grade-high: #0f6a4d;
+    --grade-mid: #8a4b0f;
+    --grade-low: #8c2828;
+    --grade-elite-soft: rgba(6, 72, 50, 0.72);
+    --chip-fill-elite: #c8ebd9;
+    --chip-fill-high: #d9f0e4;
+    --chip-fill-mid: #f3e0c4;
+    --chip-fill-low: #f0d0d0;
+    --chip-fill-na: #e8ebe9;
+    --chip-ink-na: #4a554e;
+    --chip-border-elite: #2f8a5f;
+    --chip-border-high: #4a9a72;
+    --chip-border-mid: #c47a1a;
+    --chip-border-low: #c45a5a;
+    --chip-border-na: #b7c0bb;
+    --row-rule: rgba(0, 0, 0, 0.05);
+    --noscript-ink: #6b3f0c;
+  }
+  html[data-theme="dark"] {
+    /* Black chrome only — grade / status chip colors stay identical to light */
+    --bg0: #050505;
+    --bg1: #0a0a0a;
+    --bg-end: #000000;
+    --ink: #f2f2f2;
+    --muted: #a0a0a0;
+    --line: rgba(255, 255, 255, 0.12);
+    --accent: #f5f5f5;
+    --warn: #9a5b12;
+    --ok: #0f6a4d;
+    --panel: rgba(18, 18, 18, 0.96);
+    --panel-soft: rgba(255, 255, 255, 0.05);
+    --panel-solid: rgba(22, 22, 22, 0.96);
+    --controls-bg: rgba(10, 10, 10, 0.96);
+    --detail-bg: rgba(0, 0, 0, 0.45);
+    --meta-cell: rgba(255, 255, 255, 0.04);
+    --hand-bg: rgba(255, 255, 255, 0.06);
+    --glow-ok: rgba(255, 255, 255, 0.04);
+    --glow-warn: rgba(255, 255, 255, 0.03);
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    --grade-elite: #064832;
+    --grade-high: #0f6a4d;
+    --grade-mid: #8a4b0f;
+    --grade-low: #8c2828;
+    --grade-elite-soft: rgba(6, 72, 50, 0.72);
+    --chip-fill-elite: #c8ebd9;
+    --chip-fill-high: #d9f0e4;
+    --chip-fill-mid: #f3e0c4;
+    --chip-fill-low: #f0d0d0;
+    --chip-fill-na: #e8ebe9;
+    --chip-ink-na: #4a554e;
+    --chip-border-elite: #2f8a5f;
+    --chip-border-high: #4a9a72;
+    --chip-border-mid: #c47a1a;
+    --chip-border-low: #c45a5a;
+    --chip-border-na: #b7c0bb;
+    --row-rule: rgba(255, 255, 255, 0.07);
+    --noscript-ink: #e0b06a;
   }
   * { box-sizing: border-box; }
   html {
@@ -1109,7 +2576,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     overflow-x: hidden;
     overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
+    color-scheme: light;
   }
+  html[data-theme="dark"] { color-scheme: dark; }
   body {
     margin: 0;
     min-height: 100%;
@@ -1119,9 +2588,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--ink);
     font-family: var(--mono);
     background:
-      radial-gradient(1200px 600px at 10% -10%, rgba(15, 106, 77, 0.18), transparent 55%),
-      radial-gradient(900px 500px at 100% 0%, rgba(154, 91, 18, 0.12), transparent 50%),
-      linear-gradient(165deg, var(--bg0), var(--bg1) 55%, #eef4ea);
+      radial-gradient(1200px 600px at 10% -10%, var(--glow-ok), transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, var(--glow-warn), transparent 50%),
+      linear-gradient(165deg, var(--bg0), var(--bg1) 55%, var(--bg-end));
   }
   .wrap {
     width: min(1120px, calc(100% - 2rem));
@@ -1139,6 +2608,44 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     min-width: 0;
   }
   .hero { display: grid; gap: 0.85rem; margin-bottom: 1.5rem; }
+  .hero-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+  }
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel-soft);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  }
+  .theme-toggle:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .theme-toggle svg {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+  }
+  html[data-theme="light"] .theme-toggle .icon-sun { display: none; }
+  html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   .brand {
     font-family: var(--display);
     font-size: clamp(2.6rem, 7vw, 4.4rem);
@@ -1152,7 +2659,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .chip {
     display: inline-flex; gap: 0.35rem; align-items: center;
     padding: 0.35rem 0.7rem; border: 1px solid var(--line);
-    background: rgba(255,255,255,0.55); border-radius: 999px;
+    background: var(--panel-soft); border-radius: 999px;
     font-size: 0.82rem; color: var(--muted);
   }
   .chip strong { color: var(--ink); }
@@ -1165,6 +2672,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     color: var(--ink);
     font-size: 0.88rem;
     line-height: 1.4;
+  }
+  html[data-theme="dark"] .freshness {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
   }
   .freshness a { color: var(--accent); font-weight: 700; word-break: break-all; }
   .controls {
@@ -1179,7 +2690,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     padding: 0.75rem 0.85rem;
     border: 1px solid var(--line);
     border-radius: 14px;
-    background: rgba(247, 243, 234, 0.94);
+    background: var(--controls-bg);
     backdrop-filter: blur(8px);
   }
   @media (max-width: 820px) { .controls { grid-template-columns: 1fr 1fr; } }
@@ -1200,7 +2711,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .colhead, .summary-grid {
     display: grid;
-    grid-template-columns: 3rem minmax(9rem, 1.35fr) minmax(5.5rem, 0.85fr) repeat(4, minmax(4.6rem, 0.85fr)) minmax(5.5rem, 0.9fr);
+    grid-template-columns: 3rem minmax(9rem, 1.35fr) minmax(5.5rem, 0.85fr) repeat(7, minmax(3.4rem, 0.7fr)) minmax(5.5rem, 0.9fr);
     gap: 0.75rem 0.9rem;
     align-items: center;
   }
@@ -1257,7 +2768,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   summary::-webkit-details-marker { display: none; }
   summary:hover { background: rgba(15, 106, 77, 0.05); }
-  .rank { font-family: var(--display); color: var(--accent); font-size: 1.05rem; }
+  .muted { color: var(--muted); font-size: 0.85em; }
   .pitcher { font-weight: 700; }
   .hand {
     display: inline-block;
@@ -1265,12 +2776,87 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     padding: 0.05rem 0.4rem;
     border-radius: 999px;
     border: 1px solid var(--line);
-    background: rgba(255,255,255,0.7);
+    background: var(--hand-bg);
     color: var(--muted);
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.02em;
     vertical-align: middle;
+  }
+  /* Arsenal / lineup hand separation — L amber · R green · S muted */
+  .hand.hand-l {
+    background: rgba(154, 91, 18, 0.14);
+    border-color: rgba(154, 91, 18, 0.35);
+    color: var(--grade-mid);
+  }
+  .hand.hand-r {
+    background: rgba(15, 106, 77, 0.14);
+    border-color: rgba(15, 106, 77, 0.32);
+    color: var(--grade-high);
+  }
+  .hand.hand-s {
+    background: rgba(20, 32, 26, 0.08);
+    border-color: rgba(20, 32, 26, 0.18);
+    color: var(--muted);
+  }
+  html[data-theme="dark"] summary:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .pitch-stack .pmeta-lines {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+    flex: 1;
+  }
+  .pitch-stack .pmeta-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.28rem 0.35rem;
+    min-width: 0;
+  }
+  .pitch-stack .pmeta-line .pname {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--ink);
+    margin-right: 0.1rem;
+  }
+  .pitch-stack .pmeta-line .rate-chip {
+    margin: 0;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.55rem;
+  }
+  /* Stronger fills in Arsenal headers so good/bad reads on htmlpreview */
+  .pitch-stack .pmeta-line .rate-chip.grade-elite {
+    background: var(--chip-fill-elite);
+    color: var(--grade-elite);
+    border-color: var(--chip-border-elite);
+  }
+  .pitch-stack .pmeta-line .rate-chip.grade-high {
+    background: var(--chip-fill-high);
+    color: var(--grade-high);
+    border-color: var(--chip-border-high);
+  }
+  .pitch-stack .pmeta-line .rate-chip.grade-mid {
+    background: var(--chip-fill-mid);
+    color: var(--grade-mid);
+    border-color: var(--chip-border-mid);
+  }
+  .pitch-stack .pmeta-line .rate-chip.grade-low {
+    background: var(--chip-fill-low);
+    color: var(--grade-low);
+    border-color: var(--chip-border-low);
+  }
+  .pitch-stack .pmeta-line .rate-chip.rate-na,
+  .pitch-stack .pmeta-line .rate-chip:not([class*="grade-"]) {
+    background: var(--chip-fill-na);
+    color: var(--chip-ink-na);
+    border-color: var(--chip-border-na);
+  }
+  /* No L/R edge tint — chips stay a single good/bad fill color */
+  .pitch-stack .pmeta-line .rate-chip.hand-l,
+  .pitch-stack .pmeta-line .rate-chip.hand-r {
+    box-shadow: none;
   }
   .sub { color: var(--muted); font-size: 0.8rem; margin-top: 0.12rem; }
   .game {
@@ -1311,17 +2897,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     white-space: nowrap;
   }
   .ks .nval { font-size: 1.05rem; }
-  .grade-low { color: #6a7a72; }
-  .grade-mid { color: var(--ink); }
-  .grade-high { color: #0f6a4d; }
+  .grade-low { color: var(--grade-low); }
+  .grade-mid { color: var(--grade-mid); }
+  .grade-high { color: var(--grade-high); }
   .grade-elite {
-    color: #064832;
+    color: var(--grade-elite);
     background: rgba(15, 106, 77, 0.14);
     border-radius: 8px;
     padding: 0.22rem 0.55rem 0.28rem;
     justify-self: start;
   }
-  .grade-elite .nlab { color: rgba(6, 72, 50, 0.72); }
+  .grade-elite .nlab { color: var(--grade-elite-soft); }
   .grade-legend {
     display: flex;
     flex-wrap: wrap;
@@ -1344,6 +2930,99 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     height: 0.55rem;
     border-radius: 999px;
     background: currentColor;
+  }
+  .model-keys {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 0.35rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel-soft);
+  }
+  .model-keys .keys-title {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .model-keys .key-row {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 0.55rem 0.75rem;
+    align-items: start;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+  @media (max-width: 640px) {
+    .model-keys .key-row { grid-template-columns: 1fr; gap: 0.15rem; }
+  }
+  .model-keys .key-lab {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 0.12rem;
+  }
+  .model-keys .key-val {
+    display: grid;
+    gap: 0.3rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .model-keys .key-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .model-keys .key-notes {
+    display: grid;
+    gap: 0.35rem;
+  }
+  .model-keys .key-note {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+  .model-keys .key-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .model-keys .key-chip.ark {
+    border-radius: 6px;
+    letter-spacing: 0.03em;
+  }
+  .model-keys .key-bip-whiff {
+    background: rgba(15, 106, 77, 0.16);
+    color: var(--grade-elite);
+    border-color: rgba(15, 106, 77, 0.28);
+  }
+  .model-keys .key-bip-league {
+    background: rgba(20, 32, 26, 0.08);
+    color: var(--muted);
+    border-color: rgba(20, 32, 26, 0.16);
+  }
+  .model-keys .key-bip-contact {
+    background: rgba(30, 90, 160, 0.14);
+    color: #1a4a7a;
+    border-color: rgba(30, 90, 160, 0.28);
+  }
+  .outlook-trust {
+    background: rgba(15, 106, 77, 0.18);
+    color: var(--grade-elite);
   }
   .badge {
     display: inline-flex; padding: 0.22rem 0.55rem; border-radius: 999px;
@@ -1377,13 +3056,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em;
     background: rgba(20, 32, 26, 0.08); color: var(--muted);
   }
-  .ark-elite { background: rgba(15, 106, 77, 0.16); color: #064832; }
+  .ark-elite { background: rgba(15, 106, 77, 0.16); color: var(--grade-elite); }
   .ark-strong { background: rgba(15, 106, 77, 0.10); color: var(--ok); }
   .ark-avg { background: rgba(154, 91, 18, 0.12); color: var(--warn); }
-  .ark-soft { background: rgba(140, 40, 40, 0.12); color: #8c2828; }
+  .ark-soft { background: rgba(140, 40, 40, 0.12); color: var(--grade-low); }
   .ark-spike {
     background: rgba(154, 40, 18, 0.16);
-    color: #8a2410;
+    color: var(--grade-low);
     font-weight: 700;
     letter-spacing: 0.03em;
   }
@@ -1408,7 +3087,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .ark-pstyle-whiff, .style-chip.ark-pstyle-whiff {
     background: rgba(15, 106, 77, 0.16);
-    color: #064832;
+    color: var(--grade-elite);
     border-color: rgba(15, 106, 77, 0.28);
   }
   .ark-pstyle-contact_gb, .style-chip.ark-pstyle-contact_gb {
@@ -1444,27 +3123,27 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .risk-clear { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
   .risk-low { background: rgba(154, 91, 18, 0.12); color: var(--warn); }
-  .risk-medium { background: rgba(154, 91, 18, 0.18); color: #8a4b0f; }
-  .risk-high { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
+  .risk-medium { background: rgba(154, 91, 18, 0.18); color: var(--grade-mid); }
+  .risk-high { background: rgba(140, 40, 40, 0.14); color: var(--grade-low); }
   .role {
     display: inline-flex; margin-left: 0.35rem; padding: 0.15rem 0.45rem;
     border-radius: 999px; font-size: 0.72rem; font-weight: 700;
   }
-  .role-opener_likely { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
-  .role-swingman { background: rgba(154, 91, 18, 0.16); color: #8a4b0f; }
+  .role-opener_likely { background: rgba(140, 40, 40, 0.14); color: var(--grade-low); }
+  .role-swingman { background: rgba(154, 91, 18, 0.16); color: var(--grade-mid); }
   .outlook {
     display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 999px;
     font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
   }
-  .outlook-filler { background: rgba(140, 40, 40, 0.14); color: #8c2828; }
-  .outlook-spike { background: rgba(154, 40, 18, 0.16); color: #8a2410; }
+  .outlook-filler { background: rgba(140, 40, 40, 0.14); color: var(--grade-low); }
+  .outlook-spike { background: rgba(154, 40, 18, 0.16); color: var(--grade-low); }
   .outlook-matchup_ok { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
-  .outlook-thin_total { background: rgba(154, 91, 18, 0.16); color: #8a4b0f; }
+  .outlook-thin_total { background: rgba(154, 91, 18, 0.16); color: var(--grade-mid); }
   .outlook-under_ok { background: rgba(30, 90, 160, 0.14); color: #1a4a7a; }
   .detail {
     padding: 0 1rem 1.15rem;
     border-top: 1px solid var(--line);
-    background: rgba(20, 32, 26, 0.03);
+    background: var(--detail-bg);
     overflow: visible;
     animation: detailIn 0.22s ease-out;
   }
@@ -1474,18 +3153,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .meta-strip {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
     margin: 0.85rem 0 0.75rem;
-  }
-  @media (max-width: 820px) {
-    .meta-strip { grid-template-columns: 1fr; gap: 0.4rem; }
   }
   .meta-cell {
     padding: 0.55rem 0.7rem;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: rgba(255,255,255,0.7);
+    background: var(--meta-cell);
     min-width: 0;
   }
   .meta-matchup {
@@ -1513,6 +3189,68 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem;
     font-size: 0.84rem; line-height: 1.4; color: var(--ink); font-weight: 600;
   }
+  .meta-value.meta-rates {
+    gap: 0.35rem;
+  }
+  .rate-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.22rem;
+    padding: 0.16rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--panel-soft);
+    color: var(--ink);
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    line-height: 1.25;
+  }
+  .rate-chip .rate-lab {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    opacity: 0.78;
+  }
+  .rate-chip .rate-val {
+    font-weight: 800;
+  }
+  .rate-chip.grade-elite {
+    background: rgba(15, 106, 77, 0.18);
+    color: var(--grade-elite);
+    border-color: rgba(15, 106, 77, 0.32);
+  }
+  .rate-chip.grade-high {
+    background: rgba(15, 106, 77, 0.11);
+    color: var(--grade-high);
+    border-color: rgba(15, 106, 77, 0.24);
+  }
+  .rate-chip.grade-mid {
+    background: rgba(154, 91, 18, 0.12);
+    color: var(--grade-mid);
+    border-color: rgba(154, 91, 18, 0.26);
+  }
+  .rate-chip.grade-low {
+    background: rgba(140, 40, 40, 0.12);
+    color: var(--grade-low);
+    border-color: rgba(140, 40, 40, 0.26);
+  }
+  .rate-chip.rate-na {
+    background: rgba(20, 32, 26, 0.05);
+    color: var(--muted);
+    border-color: rgba(20, 32, 26, 0.12);
+    font-weight: 600;
+  }
+  .rate-chip.rate-spike {
+    background: rgba(154, 40, 18, 0.14);
+    color: var(--grade-low);
+    border-color: rgba(154, 40, 18, 0.28);
+  }
+  .model-keys .key-chip.rate-chip {
+    border-radius: 999px;
+  }
   .outlook-banner {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -1529,19 +3267,23 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .outlook-banner.outlook-filler {
     background: rgba(140, 40, 40, 0.08); border-color: rgba(140, 40, 40, 0.22);
-    color: #6e2020;
+    color: var(--grade-low);
   }
   .outlook-banner.outlook-spike {
     background: rgba(154, 40, 18, 0.10); border-color: rgba(154, 40, 18, 0.28);
-    color: #7a220e;
+    color: var(--grade-low);
   }
   .outlook-banner.outlook-matchup_ok {
     background: rgba(15, 106, 77, 0.08); border-color: rgba(15, 106, 77, 0.22);
-    color: #0a4a36;
+    color: var(--grade-elite);
   }
   .outlook-banner.outlook-thin_total {
     background: rgba(154, 91, 18, 0.10); border-color: rgba(154, 91, 18, 0.28);
-    color: #6e3a0c;
+    color: var(--grade-mid);
+  }
+  .outlook-banner.outlook-book {
+    background: rgba(30, 90, 120, 0.10);
+    border-color: rgba(30, 90, 120, 0.28);
   }
   .outlook-banner.outlook-under_ok {
     background: rgba(30, 90, 160, 0.08); border-color: rgba(30, 90, 160, 0.24);
@@ -1560,7 +3302,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     padding: 0.25rem;
     border: 1px solid var(--line);
     border-radius: 14px;
-    background: rgba(255,255,255,0.55);
+    background: var(--panel-soft);
   }
   .tabs > input {
     position: absolute;
@@ -1582,6 +3324,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .tabs > input:checked + .tab {
     background: var(--accent); color: #fff;
     box-shadow: 0 6px 16px rgba(15, 106, 77, 0.22);
+  }
+  html[data-theme="dark"] .tabs > input:checked + .tab {
+    background: #f2f2f2;
+    color: #0a0a0a;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
   }
   .tab-panel {
     display: none;
@@ -1664,11 +3411,65 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .batter {
     display: flex; justify-content: space-between; gap: 0.5rem;
     padding: 0.45rem 0.55rem; border-radius: 10px;
-    background: rgba(255,255,255,0.65); border: 1px solid var(--line); font-size: 0.86rem;
+    background: var(--panel-solid); border: 1px solid var(--line); font-size: 0.86rem;
   }
   .batter.missing { opacity: 0.55; }
   .batter .slot { color: var(--muted); min-width: 1.2rem; }
-  .batter .k { font-weight: 700; }
+  .batter .k {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.86rem;
+    padding: 0.14rem 0.42rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .batter .k.grade-elite,
+  .kval.grade-elite,
+  .kchip.grade-elite {
+    background: rgba(15, 106, 77, 0.18);
+    color: var(--grade-elite);
+    border-color: rgba(15, 106, 77, 0.32);
+  }
+  .batter .k.grade-high,
+  .kval.grade-high,
+  .kchip.grade-high {
+    background: rgba(15, 106, 77, 0.11);
+    color: var(--grade-high);
+    border-color: rgba(15, 106, 77, 0.24);
+  }
+  .batter .k.grade-mid,
+  .kval.grade-mid,
+  .kchip.grade-mid {
+    background: rgba(154, 91, 18, 0.12);
+    color: var(--grade-mid);
+    border-color: rgba(154, 91, 18, 0.26);
+  }
+  .batter .k.grade-low,
+  .kval.grade-low,
+  .kchip.grade-low {
+    background: rgba(140, 40, 40, 0.12);
+    color: var(--grade-low);
+    border-color: rgba(140, 40, 40, 0.26);
+  }
+  .kchip {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    padding: 0.08rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .kchip.rate-na {
+    background: rgba(20, 32, 26, 0.05);
+    color: var(--muted);
+    border-color: rgba(20, 32, 26, 0.12);
+    font-weight: 600;
+  }
+  .hint-amber { color: var(--grade-mid); }
+  .hint-red { color: var(--grade-low); }
   .pitch-stack {
     display: grid;
     gap: 0.45rem;
@@ -1678,7 +3479,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .pitch-block {
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: rgba(255,255,255,0.72);
+    background: var(--panel-solid);
     overflow: hidden;
   }
   .pitch-block > summary {
@@ -1704,11 +3505,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 0.92rem;
     color: var(--ink);
   }
-  .pitch-block > summary .pmeta {
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 500;
-  }
   .pitch-block[open] > summary {
     border-bottom: 1px solid var(--line);
     background: rgba(15, 106, 77, 0.06);
@@ -1720,7 +3516,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .pitch-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 36%) 3.6rem;
+    grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 36%) 4.4rem;
     gap: 0.55rem;
     align-items: center;
     padding: 0.5rem 0.15rem;
@@ -1745,7 +3541,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .meter {
     height: 0.55rem;
     border-radius: 999px;
-    background: rgba(20, 32, 26, 0.08);
+    background: var(--panel-soft);
     overflow: hidden;
   }
   .bar {
@@ -1758,8 +3554,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .kval {
     text-align: right;
     font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    font-size: 0.88rem;
+    font-weight: 800;
+    font-size: 0.82rem;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    justify-self: end;
   }
   @media (max-width: 560px) {
     .tab {
@@ -1779,7 +3580,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       gap: 0.15rem 0.45rem;
     }
     .pitch-block > summary .pname { font-size: 0.84rem; }
-    .pitch-block > summary .pmeta { font-size: 0.7rem; }
+    .pitch-stack .pmeta-line .rate-chip { font-size: 0.72rem; }
     .pitch-list { padding: 0.1rem 0.65rem 0.45rem; }
   }
   .hint { margin: 0.65rem 0 0; color: var(--muted); font-size: 0.78rem; }
@@ -1787,10 +3588,69 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     display: inline-block; margin-left: 0.45rem; color: var(--muted);
     font-size: 0.72rem; font-weight: 500;
   }
+  .view-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin: 0 0 1.15rem;
+    padding: 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel-soft);
+  }
+  .view-tabs > input {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0; border: 0;
+    clip: rect(0 0 0 0);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .view-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .view-tab:hover { color: var(--ink); }
+  .view-tabs > input:checked + .view-tab {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(15, 106, 77, 0.22);
+  }
+  html[data-theme="dark"] .view-tabs > input:checked + .view-tab {
+    background: #f2f2f2;
+    color: #0a0a0a;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  }
+  .view-tab .tab-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    opacity: 0.8;
+  }
+  .view-panel {
+    display: none;
+    grid-column: 1 / -1;
+    margin-top: 0.65rem;
+    padding: 0.15rem 0.1rem 0.2rem;
+    animation: panelIn 0.18s ease-out;
+  }
+  .view-tabs > input#view-pitchers:checked ~ .panel-pitchers { display: block; }
+  .view-tabs > input#view-hits:checked ~ .panel-hits { display: block; }
   .hits-board {
-    margin: 0 0 1.25rem; padding: 1rem 1.1rem 1.15rem;
+    margin: 0; padding: 0.85rem 0.95rem 1rem;
     border: 1px solid var(--line); border-radius: 14px;
-    background: rgba(255,255,255,0.55);
+    background: var(--panel-soft);
   }
   .hits-board h2 {
     margin: 0 0 0.25rem; font-family: "Archivo Black", sans-serif;
@@ -1807,7 +3667,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;
     color: var(--muted); padding: 0 0 0.35rem; border-bottom: 1px solid var(--line);
   }
-  .hits-row { padding: 0.35rem 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.82rem; }
+  .hits-row { padding: 0.35rem 0; border-bottom: 1px solid var(--row-rule); font-size: 0.82rem; }
   .hits-row .rk { color: var(--muted); font-variant-numeric: tabular-nums; }
   .hits-row .name { font-weight: 650; }
   .hits-row .vs { color: var(--muted); font-size: 0.75rem; }
@@ -1824,14 +3684,155 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .footnote { margin-top: 1rem; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
   .noscript {
     margin: 0 0 1rem; padding: 0.75rem 0.9rem; border-radius: 12px;
-    background: rgba(154, 91, 18, 0.12); color: #6b3f0c; font-size: 0.9rem;
+    background: rgba(154, 91, 18, 0.12); color: var(--noscript-ink); font-size: 0.9rem;
+  }
+  /* Dark chrome surfaces only */
+  html[data-theme="dark"] .pitch-block[open] > summary,
+  html[data-theme="dark"] .vs-summary {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  /*
+   * Keep graded / status chips identical to light mode (solid fills + ink).
+   * Black theme is chrome-only; do not desaturate these.
+   */
+  html[data-theme="dark"] .ark-elite,
+  html[data-theme="dark"] .model-keys .key-bip-whiff,
+  html[data-theme="dark"] .outlook-trust,
+  html[data-theme="dark"] .ark-pstyle-whiff,
+  html[data-theme="dark"] .style-chip.ark-pstyle-whiff {
+    background: #c8ebd9;
+    color: #064832;
+    border-color: #2f8a5f;
+  }
+  html[data-theme="dark"] .ark-strong,
+  html[data-theme="dark"] .badge.official,
+  html[data-theme="dark"] .risk-clear,
+  html[data-theme="dark"] .outlook-matchup_ok,
+  html[data-theme="dark"] .site-home {
+    background: #d9f0e4;
+    color: #0f6a4d;
+    border-color: #4a9a72;
+  }
+  html[data-theme="dark"] .ark-avg,
+  html[data-theme="dark"] .badge.prior,
+  html[data-theme="dark"] .risk-low,
+  html[data-theme="dark"] .risk-medium,
+  html[data-theme="dark"] .outlook-thin_total,
+  html[data-theme="dark"] .role-swingman,
+  html[data-theme="dark"] .site-away,
+  html[data-theme="dark"] .ark-pstyle-fly_popup,
+  html[data-theme="dark"] .style-chip.ark-pstyle-fly_popup {
+    background: #f3e0c4;
+    color: #8a4b0f;
+    border-color: #c47a1a;
+  }
+  html[data-theme="dark"] .ark-soft,
+  html[data-theme="dark"] .ark-spike,
+  html[data-theme="dark"] .outlook-filler,
+  html[data-theme="dark"] .outlook-spike,
+  html[data-theme="dark"] .risk-high,
+  html[data-theme="dark"] .role-opener_likely {
+    background: #f0d0d0;
+    color: #8c2828;
+    border-color: #c45a5a;
+  }
+  html[data-theme="dark"] .outlook-under_ok,
+  html[data-theme="dark"] .model-keys .key-bip-contact,
+  html[data-theme="dark"] .ark-pstyle-contact_gb,
+  html[data-theme="dark"] .style-chip.ark-pstyle-contact_gb {
+    background: rgba(30, 90, 160, 0.14);
+    color: #1a4a7a;
+    border-color: rgba(30, 90, 160, 0.28);
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-filler {
+    background: #f0d0d0; border-color: #c45a5a; color: #8c2828;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-spike {
+    background: #f0d0d0; border-color: #c45a5a; color: #8c2828;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-matchup_ok {
+    background: #d9f0e4; border-color: #4a9a72; color: #0f6a4d;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-thin_total {
+    background: #f3e0c4; border-color: #c47a1a; color: #8a4b0f;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-under_ok {
+    background: rgba(30, 90, 160, 0.14); border-color: rgba(30, 90, 160, 0.28); color: #163a5c;
+  }
+  html[data-theme="dark"] .rate-chip.grade-elite,
+  html[data-theme="dark"] .batter .k.grade-elite,
+  html[data-theme="dark"] .kval.grade-elite,
+  html[data-theme="dark"] .kchip.grade-elite {
+    background: #c8ebd9;
+    color: #064832;
+    border-color: #2f8a5f;
+  }
+  html[data-theme="dark"] .rate-chip.grade-high,
+  html[data-theme="dark"] .batter .k.grade-high,
+  html[data-theme="dark"] .kval.grade-high,
+  html[data-theme="dark"] .kchip.grade-high {
+    background: #d9f0e4;
+    color: #0f6a4d;
+    border-color: #4a9a72;
+  }
+  html[data-theme="dark"] .rate-chip.grade-mid,
+  html[data-theme="dark"] .batter .k.grade-mid,
+  html[data-theme="dark"] .kval.grade-mid,
+  html[data-theme="dark"] .kchip.grade-mid {
+    background: #f3e0c4;
+    color: #8a4b0f;
+    border-color: #c47a1a;
+  }
+  html[data-theme="dark"] .rate-chip.grade-low,
+  html[data-theme="dark"] .rate-chip.rate-spike,
+  html[data-theme="dark"] .batter .k.grade-low,
+  html[data-theme="dark"] .kval.grade-low,
+  html[data-theme="dark"] .kchip.grade-low {
+    background: #f0d0d0;
+    color: #8c2828;
+    border-color: #c45a5a;
+  }
+  /* Summary Exp K / IP numbers need brighter ink on black (not chips) */
+  html[data-theme="dark"] .num.grade-elite {
+    color: #9ee0c0;
+    background: rgba(15, 106, 77, 0.28);
+  }
+  html[data-theme="dark"] .num.grade-elite .nlab { color: rgba(158, 224, 192, 0.75); }
+  html[data-theme="dark"] .num.grade-high,
+  html[data-theme="dark"] .grade-legend .grade-high { color: #6fcf9f; }
+  html[data-theme="dark"] .num.grade-mid,
+  html[data-theme="dark"] .grade-legend .grade-mid { color: #e0b06a; }
+  html[data-theme="dark"] .num.grade-low,
+  html[data-theme="dark"] .grade-legend .grade-low { color: #e08888; }
+  html[data-theme="dark"] .grade-legend .grade-elite { color: #9ee0c0; }
+  html[data-theme="dark"] .hand.hand-l {
+    background: #f3e0c4;
+    border-color: #c47a1a;
+    color: #8a4b0f;
+  }
+  html[data-theme="dark"] .hand.hand-r {
+    background: #d9f0e4;
+    border-color: #4a9a72;
+    color: #0f6a4d;
   }
 </style>
 </head>
 <body>
   <div class="wrap">
     <header class="hero">
-      <h1 class="brand">K-<span>Matchup</span></h1>
+      <div class="hero-top">
+        <h1 class="brand">K-<span>Matchup</span></h1>
+        <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to dark theme" title="Toggle light / dark theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5z"></path>
+          </svg>
+          <span class="theme-toggle-text">Dark</span>
+        </button>
+      </div>
       <p class="lede">
         Full-outing K projections from each starter’s arsenal against the opposing
         order. <strong>Arsenal K%</strong> is this pitcher’s mix vs <em>this</em> nine.
@@ -1843,77 +3844,129 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       __FRESHNESS__
       <div class="grade-legend" aria-label="Number color scale">
         Scale
-        <span class="swatch grade-low">low</span>
+        <span class="swatch grade-low">low / batter-friendly</span>
         <span class="swatch grade-mid">mid</span>
-        <span class="swatch grade-high">high</span>
+        <span class="swatch grade-high">high / pitcher-friendly</span>
         <span class="swatch grade-elite">elite</span>
-        <span>Exp K · IP · Arsenal K%</span>
+        <span>Exp K · IP · Arsenal %s</span>
       </div>
+      __MODEL_KEYS__
     </header>
 
     <noscript>
       <p class="noscript">
         JavaScript is off or blocked — rankings still work.
         Expand any pitcher, open <strong>Arsenal vs lineup</strong>, then open a pitch.
+        Use the <strong>Pitchers / Hits</strong> tabs above the boards.
       </p>
     </noscript>
 
-    <section class="controls" id="controls" autocomplete="off">
-      <label>Search
-        <input id="q" type="search" placeholder="Pitcher, team, game…" autocomplete="off" />
+    <section class="view-tabs" aria-label="Board view">
+      <input type="radio" name="board-view" id="view-pitchers" checked />
+      <label class="view-tab" for="view-pitchers">
+        Pitchers <span class="tab-count">K slate</span>
       </label>
-      <label>Lineup
-        <select id="lineupFilter" autocomplete="off">
-          <option value="all" selected>All sources</option>
-          <option value="official">Official only</option>
-          <option value="prior">Prior only</option>
-        </select>
+      <input type="radio" name="board-view" id="view-hits" />
+      <label class="view-tab" for="view-hits">
+        Hits <span class="tab-count">props</span>
       </label>
-      <label>Status
-        <select id="statusFilter" autocomplete="off">
-          <option value="scored" selected>Scored</option>
-          <option value="all">All rows</option>
-          <option value="missing">Missing / unresolved</option>
-        </select>
-      </label>
-      <label>Sort
-        <select id="sort" autocomplete="off">
-          <option value="expected_ks:desc" selected>Expected Ks ↓</option>
-          <option value="expected_ks:asc">Expected Ks ↑</option>
-          <option value="projected_ip:desc">Proj IP ↓</option>
-          <option value="tto:desc">TTO ↓</option>
-          <option value="kpct:desc">Arsenal K% ↓</option>
-          <option value="rank:asc">Rank</option>
-          <option value="pitcher:asc">Pitcher A–Z</option>
-        </select>
-      </label>
-    </section>
 
-    __HITS_BOARD__
+      <div class="view-panel panel-pitchers">
+        <section class="controls" id="controls" autocomplete="off">
+          <label>Search
+            <input id="q" type="search" placeholder="Pitcher, team, game…" autocomplete="off" />
+          </label>
+          <label>Lineup
+            <select id="lineupFilter" autocomplete="off">
+              <option value="all" selected>All sources</option>
+              <option value="official">Official only</option>
+              <option value="prior">Prior only</option>
+            </select>
+          </label>
+          <label>Status
+            <select id="statusFilter" autocomplete="off">
+              <option value="scored" selected>Scored</option>
+              <option value="all">All rows</option>
+              <option value="missing">Missing / unresolved</option>
+            </select>
+          </label>
+          <label>Sort
+            <select id="sort" autocomplete="off">
+              <option value="expected_ks:desc" selected>Expected Ks ↓</option>
+              <option value="expected_ks:asc">Expected Ks ↑</option>
+              <option value="k_edge:desc">K edge ↓</option>
+              <option value="k_line:asc">Book line ↑</option>
+              <option value="projected_ip:desc">Proj IP ↓</option>
+              <option value="tto:desc">TTO ↓</option>
+              <option value="kpct:desc">Arsenal K% ↓</option>
+              <option value="rank:asc">Rank</option>
+              <option value="pitcher:asc">Pitcher A–Z</option>
+            </select>
+          </label>
+        </section>
 
-    <div class="colhead">
-      <div>#</div><div>Pitcher</div><div>Game</div><div>Exp K</div>
-      <div>IP</div><div>TTO</div><div>K%</div><div>Flags</div>
-    </div>
+        <div class="colhead">
+          <div>#</div><div>Pitcher</div><div>Game</div><div>Exp K</div>
+          <div>Line</div><div>Edge</div><div>P(O)</div><div>IP</div><div>TTO</div><div>K%</div><div>Flags</div>
+        </div>
 
-    <div class="board" id="board">
+        <div class="board" id="board">
 __MATCHUP_CARDS__
-    </div>
-    <div class="empty" id="empty" hidden>
-      No matchups match these filters.
-      <span id="emptyHint"></span>
-    </div>
+        </div>
+        <div class="empty" id="empty" hidden>
+          No matchups match these filters.
+          <span id="emptyHint"></span>
+        </div>
 
-    <p class="footnote">
-      Expand a pitcher → <strong>Arsenal vs lineup</strong> for pitch-by-pitch K%,
-      or <strong>Batting order</strong> for the nine. Arsenal <strong>#</strong> ranks
-      this pitcher vs <em>this</em> lineup (absolute bands). The numeric <strong>#</strong> is
-      only today’s slate rank. FILLER / MATCHUP OK flag soft-contact arms.
-      Pre-lineup days are all <strong>Prior</strong> — use Lineup <strong>All sources</strong>.
-    </p>
+        <p class="footnote">
+          Expand a pitcher → <strong>Arsenal vs lineup</strong> for pitch-by-pitch K%,
+          or <strong>Batting order</strong> for the nine. Arsenal <strong>#</strong> ranks
+          this pitcher vs <em>this</em> lineup (absolute bands). The numeric <strong>#</strong> is
+          only today’s slate rank. FILLER / MATCHUP OK flag soft-contact arms.
+          Pre-lineup days are all <strong>Prior</strong> — use Lineup <strong>All sources</strong>.
+          Switch to the <strong>Hits</strong> tab for Hits / H+R+RBI props.
+        </p>
+      </div>
+
+      <div class="view-panel panel-hits">
+        __HITS_BOARD__
+      </div>
+    </section>
   </div>
 
   <script id="data" type="application/json">__DATA_JSON__</script>
+  <script>
+    (function () {
+      const THEME_KEY = "k-matchup-theme";
+      const root = document.documentElement;
+      const toggle = document.getElementById("themeToggle");
+      const label = toggle ? toggle.querySelector(".theme-toggle-text") : null;
+
+      function currentTheme() {
+        const t = root.getAttribute("data-theme");
+        return t === "dark" ? "dark" : "light";
+      }
+
+      function applyTheme(theme) {
+        const next = theme === "dark" ? "dark" : "light";
+        root.setAttribute("data-theme", next);
+        try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+        if (toggle) {
+          const other = next === "dark" ? "light" : "dark";
+          toggle.setAttribute("aria-label", "Switch to " + other + " theme");
+          toggle.setAttribute("aria-pressed", next === "dark" ? "true" : "false");
+          if (label) label.textContent = other.charAt(0).toUpperCase() + other.slice(1);
+        }
+      }
+
+      applyTheme(currentTheme());
+      if (toggle) {
+        toggle.addEventListener("click", function () {
+          applyTheme(currentTheme() === "dark" ? "light" : "dark");
+        });
+      }
+    })();
+  </script>
   <script>
     (function () {
       const board = document.getElementById("board");
@@ -1963,6 +4016,8 @@ __MATCHUP_CARDS__
 
         const attrKey = {
           expected_ks: "expectedKs",
+          k_edge: "kEdge",
+          k_line: "kLine",
           projected_ip: "projectedIp",
           tto: "tto",
           kpct: "kpct",

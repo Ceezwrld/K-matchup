@@ -27,7 +27,7 @@ Thin samples (`GS < 5`) shrink toward that default; uncapped season averages are
 
 These show as `outing_role` / `outing_source` in the CSV and HTML.
 
-**Lineup rollup**
+**Lineup rollup (PA interactions × volume — not pitcher season K% × BF alone)**
 
 ```
 expected_k_pct = mean(batter_k_pct over lineup batters with Savant rates)
@@ -36,6 +36,20 @@ expected_ks_1x = Σ batter_k_pct/100 for one trip through the nine (reference on
 ```
 
 No league-average blending: rates come only from the opposing lineup’s batters.
+
+**Distribution + book compare (when odds join)**
+
+Strikeout props care about *shape*, not only the mean. From the same PA-level K probabilities:
+
+```
+k_p10 / k_p50 / k_p90   — outing band (poisson-binomial over the order walk)
+k_p_ge_9 / k_dist_shape — right-tail / tight vs heavy_right_tail
+k_p_over                — P(K > book line) when k_line is present
+book_model_note         — plain-language book vs model + “why ~X Ks”
+expected_ks_rate_x_bf   — transparent rate% × BF next to order-walk Exp K
+```
+
+Mindset: sportsbooks are often sharper on public info — `k_edge` is a **question**, not a ticket. The product job is to explain **why** a pitcher can get X strikeouts (this lineup’s K environment + volume), then compare that story to the number.
 
 **Sharpening layers**
 
@@ -122,7 +136,51 @@ Useful flags:
 | `--detail` | Print each lineup batter’s arsenal-weighted K% |
 | `-o/--output` | Write full rankings CSV |
 | `--html` | Write self-contained interactive HTML rankings |
+| `--odds` / `--no-odds` | Join live book lines from The Odds API (default: on when key present) |
+| `--odds-key` | Odds API key (else `ODDS_API_KEY_NEW` / `ODDS_API_KEY` / `THE_ODDS_API_KEY`) |
+| `--odds-markets` | Comma-separated markets (default: **lite** = K / hits / ER = 3 credits/game) |
+| `--odds-force` | Bypass on-disk cache (normally reuses pulls ~120 min) |
+| `--odds-include-finished` | Also fetch props for games started >4.5h ago (default: skip) |
+| `--odds-daily-budget N` | Cap estimated credits per CT day (default: 500; 0 = unlimited) |
 | `-v/--verbose` | Log HTTP fetches |
+
+## Live odds (The Odds API)
+
+Display-only book lines join onto the board as `k_line` / `k_edge` (Exp K − line), plus hits / ER (and BB / outs when requested). **Never changes `expected_ks`.**
+
+```bash
+export ODDS_API_KEY_NEW="your_32_char_hex_key"   # preferred; else ODDS_API_KEY
+python3 mlb-k-matchups/k_matchups.py --date $(date +%F) -o rankings.csv --html rankings.html -v
+# model-only (0 odds credits):  ... --no-odds
+```
+
+### Stretching ~20k credits for a month
+
+Cost model: `/events` is **free**. Each `/events/{id}/odds` costs **markets × regions**. Default is **3 markets × 1 region = 3 credits per live game**. Cache hits, stale reuse, and skipped finished games cost **0**.
+
+**Month math (target):** 20,000 ÷ 30 ≈ **667 credits/day**. Soft cap defaults to **500/day** (`ODDS_DAILY_BUDGET`) → ~15k/month with ~5k buffer for spikes.
+
+| Habit | Approx cost |
+| --- | --- |
+| Full slate lite pull (~15 live games) | ~45 credits |
+| Same board again within ~120 min (cache) | ~0 |
+| Over daily budget | stale cache / skip network |
+| CI morning publish | **0** (`--no-odds`) |
+| CI afternoon publish | ~1 lite pull |
+| Local intentional Line/Edge pulls | aim **2–4 / day** |
+| Full markets (K+hits+ER+BB+outs) | 5 credits/game — avoid |
+| `--odds-force` every refresh | burns a full pull — avoid |
+
+Sustainable day (~180–225 credits): morning pack + lineup lock + pre-first-pitch (3 × ~45), plus CI afternoon. That is well under the 500 cap and leaves headroom for ~30 days.
+
+Tips:
+- Put the key in `.env` as `ODDS_API_KEY_NEW=…` (gitignored). Prefer the dashboard **API Key** (32-char hex), not the account UUID.
+- Refresh Savant/lineups with `--no-odds`; only pull odds when you need Line / Edge.
+- Over budget, the client reuses **stale** cache instead of spending — raise `ODDS_DAILY_BUDGET` only if you must.
+- Opt into walks/outs only when needed:  
+  `--odds-markets pitcher_strikeouts,pitcher_hits_allowed,pitcher_earned_runs,pitcher_walks,pitcher_outs`
+
+For GitHub Actions, add repo secret `ODDS_API_KEY` (or `ODDS_API_KEY_NEW`). Morning cron skips odds; afternoon cron spends one lite pull.
 
 ## Lineups
 
@@ -137,5 +195,6 @@ Useful flags:
 - [MLB Stats API schedule](https://statsapi.mlb.com/api/v1/schedule) with `hydrate=probablePitcher,team,lineups`
 - [MLB Stats API people](https://statsapi.mlb.com/api/v1/people) season pitching, game logs, and hitting `vl`/`vr` splits
 - [FanGraphs pitching leaders](https://www.fangraphs.com/) for xFIP / BB/9 / HR/9
+- [The Odds API](https://the-odds-api.com/) for live pitcher prop lines (optional; `ODDS_API_KEY`)
 
 Pitchers resolve by MLBAM `player_id` first, then name (`First Last` / `Last, First`). Missing arsenals get `missing_arsenal` / `unresolved` instead of crashing.

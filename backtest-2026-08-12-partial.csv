@@ -1,0 +1,5 @@
+rank,pitcher,game,ip,k,h,er,bb,hr,bf,pitches,strikes,exp_k,delta_k,matchup,arsenal_abs,style,stuff_plus,arsenal_vs_opp,contact_grade,spike,outlook,risk_flags,ip_proj,outing_risk
+1,Zebby Matthews,BAL@MIN,5.0,4,6,4,2,1,22,94,60,6.244,-2.244,elite,elite,balanced,94.9,0.48,whiff_prone,True,,"high_hr,elev_xfip,exit_hr",5.4,medium
+11,Zack Wheeler,PHI@STL,5.0,5,6,4,1,0,23,84,53,4.788,0.212,soft,soft,whiff,104.5,-0.47,neutral,True,SPIKE,short_recent_ip,5.49,clear
+17,Shane Baz,BAL@MIN,3.0,2,9,5,1,0,19,65,41,4.31,-2.31,soft,soft,balanced,98.6,-1.67,contact_heavy,False,,,5.81,clear
+19,Kyle Leahy,PHI@STL,5.0,6,6,1,0,0,20,81,57,4.201,1.799,avg,soft,balanced,91.9,0.57,contact_heavy,False,,,4.73,clear

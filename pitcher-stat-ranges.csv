@@ -1,0 +1,45 @@
+category,stat,good,average,bad,notes
+Whiff / miss,Stuff whiff%,">=26 (elite >=30)",22-26,<22,Usage-weighted own whiff; strongest pitcher miss read
+Whiff / miss,Stuff grade,strong / elite,avg,soft,Maps from stuff whiff%
+Whiff / miss,Per-pitch whiff%,">=26 (elite >=34)",18-26,<18,Arsenal pitch-level miss
+Whiff / miss,SwStr%,">=11.5 (elite >=13)",10-11.5,<10,League ~11
+Whiff / miss,CSW%,">=29.5 (elite >=31)",27.5-29.5,<27.5,Called + swinging strike; league ~28.5
+Whiff / miss,Contact%,"<=76 (best <=72)",76-80,>80,Lower = more miss
+Whiff / miss,Z-Contact%,"<=80 (best <=76)",80-83,>83,In-zone contact allowed; lower = zone whiff
+Whiff / miss,Pitcher K%,">=24 (elite >=27)",20-24,<20,">=24.5 helps STYLE WHIFF"
+Whiff / miss,K/9,">=8.5 (elite >=10)",7-8.5,<7,SPIKE often >=10
+Style,STYLE,WHIFF (K% >=24.5),BAL,GB / FLY,WHIFF = trust K totals; GB/FLY = BIP outs
+Command / chase,Strike%,">=65 (elite >=66)",63-65,<63,Attack-plate confirm; does not flip side alone
+Command / chase,Zone%,">=43 (elite >=44)",40-43,<40,Pair with high Strike%
+Command / chase,F-Strike%,">=62 (elite >=65)",58-62,<58,First-pitch strikes
+Command / chase,O-Swing%,">=33 (elite >=35)",30-33,<30,Chase induced
+Command / chase,Soft%,<=17 for overs (~>=20 helps unders),~17-20,">=22 for overs","Elevated Soft% helps FILLER / UNDER_OK"
+Length / risk,Proj IP,">=5.75 (elite >=6.5)",5.0-5.75,<5.0,Length for K totals
+Length / risk,TTO,">=2.6",2.2-2.6,<2.2,Times through order
+Length / risk,BB/9,"<=2.8 (best <=2.2)",2.8-3.5,">=3.5",Risk warn 3.5 / high 4.0
+Length / risk,HR/9,"<=1.2 (best <=0.9)",1.2-1.5,">=1.5",Risk warn 1.2 / high 1.5
+Length / risk,xFIP,"<=3.9 (best <=3.4)",3.9-4.5,">=4.5",FILLER soft often >=4.3
+Length / risk,FIP,"<=3.9 (best <=3.4)",3.9-4.5,">=4.5",Confirm only; same bands as xFIP
+Length / risk,SIERA,"<=3.9 (best <=3.4)",3.9-4.5,">=4.5",Credits GB/popup weak contact; confirm only
+Length / risk,xERA,"<=3.9 (best <=3.4)",3.9-4.5,">=4.5",Savant/FG expected ERA; luck check
+Expected / contact,xwOBA allowed,"<=0.300 (best)",0.300-0.330,">=0.330",Savant pitcher expected; lower better
+Expected / contact,xBA allowed,"<=0.230 (best)",0.230-0.270,">=0.270",Savant; lower better
+Expected / contact,xSLG allowed,"<=0.380 (best)",0.380-0.450,">=0.450",Savant; lower better
+Stuff+,Stuff+ (FG),">=105 (elite >=115)",95-105,<95,100 = average; confirm only — pairs with SPIKE proxy
+Stuff+,Location+ / Pitching+,">=105 (elite >=115)",95-105,<95,Command + combined quality; confirm only
+Stuff+,Pitch RV/100,">=0.8 (elite >=1.5)",0-0.8,<0,FanGraphs run value / 100 pitches; + prevents runs
+Length / risk,Outing risk,clear / low,medium,high,
+Length / risk,FB velo,">=94.5 (elite >=96.5)",92-94.5,<92,SPIKE helper with stuff when >=95
+Form,L3 K,">=5 (elite >=6.5)",3.5-5,<3.5,Last 3 starts avg Ks
+Form,L3 K/9,">=8.5 (elite >=10)",7-8.5,<7,Raw or opp-adjusted
+Matchup / board,Solo arsenal K%,">=22.5 (elite >=24)",20-22.5,<20,Vs this lineup; league ~22.5
+Matchup / board,Exp K,">=5.5 (elite >=6)",4-5.5,<4,TRUST needs >=5.5
+Matchup / board,Opp BIP,<=64,~68,">=71",whiff_prone <=64; contact_heavy >=71
+Matchup / board,Opp wOBA (lineup),<=0.300 (best),0.300-0.330,">=0.330",PA-weighted FG season; lower = softer offense / longer leash
+Matchup / board,Opp wRC+ (lineup),<=90 (best); <=100 good,90-110,">=110",100 = league; leash confirm — does not flip solo
+Matchup / board,Opp ISO (lineup),<=0.130 (best),0.130-0.180,">=0.180",Lower = less power / crooked-number risk
+Outlook,TRUST,"ELITE/STRONG + WHIFF + Exp K >=5.5",,,Trust soft O4.5 / O5.5 if IP clear
+Outlook,UNDER_OK,"SOFT + >=2 confirms (GB/FLY; contact_heavy; Exp K <=4.2; Soft% >=20)",,,Not SPIKE
+Outlook,SPIKE,"K9/L3 K9 >=10; or stuff whiff >=28; or stuff >=26 + FB >=95",,,No soft U6
+Outlook,Attack-plate bump,"ELITE/STRONG + WHIFF + Strike% >=65 + stuff strong",,,"+0.25 strong / +0.35 elite Exp K"
+Quick read,Whiff arm stack,"stuff >=26 + STYLE WHIFF + SwStr >=11.5 + Contact <=76",stuff 22-26 + BAL + SwStr ~11,"stuff <22 + GB/FLY + Contact >80",Then Strike% >=65 / Zone% >=43 to size the over

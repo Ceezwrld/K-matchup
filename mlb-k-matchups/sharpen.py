@@ -10,10 +10,19 @@
 8. Ticket outlook — soft-contact FILLER profile gated by opposing
    lineup arsenal rank (expected_k_pct vs slate)
 9. Pitcher stuff ceiling — own velo/whiff by pitch → SPIKE caution
-   (does not change expected_ks; blocks soft-under autopilot)
+   (blocks soft-under autopilot). Attack-plate stacks only get a tiny
+   capped Exp K bump (ELITE/STRONG + WHIFF + Strike%≥65 + strong stuff).
+10. Soft% → soft-contact / UNDER_OK confirms; SwStr% + CSW% + O-Swing% =
+    Rates confirms (do not flip arsenal side alone).
+11. Opponent-adjusted recent form — L3 K/9 scaled by league K% /
+    mean opponent-team K% faced (hot L3 vs juiced K clubs gets haircut).
 
 Hits-prop helpers (barrel / hard-hit / xwOBA) live here too but are
 display-only — they never modify expected_ks.
+
+12. Advanced confirm layer — FIP/SIERA/xERA, Savant xBA/xSLG/xwOBA,
+    FanGraphs Stuff+/Location+/Pitching+, and per-pitch run value.
+    Display-only; never modifies expected_ks or solo arsenal grade.
 """
 
 from __future__ import annotations
@@ -44,6 +53,19 @@ FANGRAPHS_PITCHING_URL = (
     "&postseason=&sortdir=default&sortstat=WAR"
 )
 
+FANGRAPHS_BATTING_URL = (
+    "https://www.fangraphs.com/api/leaders/major-league/data"
+    "?age=&pos=all&stats=bat&lg=all&qual=0&season={year}&season1={year}"
+    "&startdate={year}-01-01&enddate={year}-12-31&month=0&hand=&team=0"
+    "&pageitems=2000&pagenum=1&ind=0&rost=0&players=&type=8"
+    "&postseason=&sortdir=default&sortstat=WAR"
+)
+
+# Lineup offense-quality baselines (FanGraphs; leash / damage confirm).
+LEAGUE_WOBA = 0.315
+LEAGUE_WRC_PLUS = 100.0
+LEAGUE_ISO = 0.155
+
 PEOPLE_HITTING_SPLITS_URL = (
     "https://statsapi.mlb.com/api/v1/people"
     "?personIds={ids}"
@@ -60,6 +82,11 @@ PEOPLE_SEASON_PITCHING_URL = (
     "https://statsapi.mlb.com/api/v1/people"
     "?personIds={ids}"
     "&hydrate=stats(group=[pitching],type=[season],season={year})"
+)
+
+TEAM_SEASON_HITTING_URL = (
+    "https://statsapi.mlb.com/api/v1/teams/stats"
+    "?season={year}&group=hitting&stats=season&sportIds=1"
 )
 
 PEOPLE_HITTING_OFFENSE_URL = (
@@ -83,6 +110,30 @@ SAVANT_EXPECTED_URL = (
     "?type=batter&year={year}&position=&team=&filterType=pa&min=1&csv=true"
 )
 
+SAVANT_PITCHER_EXPECTED_URL = (
+    "https://baseballsavant.mlb.com/leaderboard/expected_statistics"
+    "?type=pitcher&year={year}&position=&team=&filterType=pa&min=1&csv=true"
+)
+
+# FanGraphs pitch-value / Stuff+ fields → Savant pitch_type codes.
+# Run values (wFB/wSL/…) are season totals; /C is per 100 pitches.
+# Stuff+ (sp_s_*) is 100-neutral pitch quality. Confirm-only — never moves Exp K.
+FG_PITCH_QUALITY: dict[str, dict[str, str | None]] = {
+    "FF": {"rv": "wFB", "rv100": "wFB/C", "stuff_plus": "sp_s_FF"},
+    "SI": {"rv": "wFB", "rv100": "wFB/C", "stuff_plus": "sp_s_SI"},
+    "FT": {"rv": "wFB", "rv100": "wFB/C", "stuff_plus": "sp_s_SI"},
+    "FC": {"rv": "wCT", "rv100": "wCT/C", "stuff_plus": "sp_s_FC"},
+    "SL": {"rv": "wSL", "rv100": "wSL/C", "stuff_plus": "sp_s_SL"},
+    "ST": {"rv": "wSL", "rv100": "wSL/C", "stuff_plus": "sp_s_SL"},
+    "SV": {"rv": "wSL", "rv100": "wSL/C", "stuff_plus": "sp_s_SL"},
+    "CU": {"rv": "wCB", "rv100": "wCB/C", "stuff_plus": "sp_s_CU"},
+    "KC": {"rv": "wCB", "rv100": "wCB/C", "stuff_plus": "sp_s_KC"},
+    "CH": {"rv": "wCH", "rv100": "wCH/C", "stuff_plus": "sp_s_CH"},
+    "FS": {"rv": "wSF", "rv100": "wSF/C", "stuff_plus": "sp_s_FS"},
+    "FO": {"rv": "wSF", "rv100": "wSF/C", "stuff_plus": "sp_s_FO"},
+    "KN": {"rv": "wKN", "rv100": "wKN/C", "stuff_plus": None},
+}
+
 # Ignore non-pitch / rare codes when building mixes.
 SKIP_PITCH_TYPES = {"PO", "IN", "AB", "UN", "FA", ""}
 
@@ -90,6 +141,11 @@ MIN_HAND_SPLIT_PITCHES = 80
 MIN_PA_PITCH_VS_HAND = 15
 FORM_BLEND = 0.30
 FORM_MIN_STARTS = 2
+# Bound opponent-quality haircut/boost on L3 K/9 so thin samples don't explode.
+FORM_OPP_FACTOR_MIN = 0.85
+FORM_OPP_FACTOR_MAX = 1.15
+FORM_OPP_JUICED_K = 24.5
+FORM_OPP_SOFT_K = 20.5
 PLATOON_FULL_PA = 80
 BB9_WARN = 3.5
 BB9_HIGH = 4.0
@@ -99,7 +155,7 @@ XFIP_WARN = 4.20
 XFIP_HIGH = 4.80
 
 # Pitcher-own stuff ceiling (usage-weighted whiff / primary FB velo).
-# Display + SPIKE gate only — never blended into expected_ks.
+# Default = display + SPIKE gate. Attack-plate stacks get a tiny Exp K bump.
 STUFF_WHIFF_ELITE = 30.0
 STUFF_WHIFF_STRONG = 26.0
 STUFF_WHIFF_AVG = 22.0
@@ -107,6 +163,14 @@ SPIKE_K9 = 10.0
 SPIKE_STUFF_WHIFF = 28.0
 SPIKE_STUFF_WHIFF_WITH_VELO = 26.0
 SPIKE_FB_VELO = 95.0
+# Tiny mean bump when the full attack-plate pack stacks (not a rebuild).
+ATTACK_PLATE_STRIKE_PCT = 65.0
+STUFF_CEILING_BUMP_STRONG = 0.25
+STUFF_CEILING_BUMP_ELITE = 0.35
+# Soft-contact / swing-miss Rates confirms (FanGraphs).
+FILLER_SOFT_PCT = 20.0  # elevated Soft% helps FILLER / under confirms
+LEAGUE_SWSTR_PCT = 11.0
+LEAGUE_CSW_PCT = 28.5
 
 # Total-trust / under-confirm gates (ticket sizing — do not move expected_ks).
 # ELITE/STRONG + high Exp K only trusts the *total* when STYLE is WHIFF (8/4 Dobbins/Tidwell).
@@ -145,6 +209,10 @@ OFFENSE_MIN_RECENT_PA = 25
 # Contact environment labels from lineup BIP% (+ K% confirmation).
 CONTACT_HEAVY_BIP = 71.0
 WHIFF_PRONE_BIP = 64.0
+# Lineup K% vs pitcher hand (season vl/vr splits). Min sample to trust.
+HAND_K_MIN_BATTER_PA = 25.0
+HAND_K_MIN_LINEUP_PA = 80.0
+HAND_K_MIN_N = 5
 
 # Plate discipline / pitch-count layer (lineup BB% + K% shape).
 LEAGUE_BB_PCT = 8.3
@@ -558,7 +626,8 @@ def apply_pitcher_stuff_overlay(
 ) -> pd.DataFrame:
     """Attach usage-weighted pitcher whiff / FB velo + SPIKE flag.
 
-    Ceiling / caution layer only — does not modify expected_ks.
+    Ceiling / SPIKE caution. Exp K bump is applied separately via
+    ``apply_attack_plate_stuff_bump`` for full attack-plate stacks only.
     """
     out = df.copy()
     for col, default in (
@@ -679,6 +748,72 @@ def apply_pitcher_stuff_overlay(
         out.at[idx, "stuff_source"] = "+".join(source_bits) if source_bits else (
             "statcast_velo" if fb_velo is not None else ""
         )
+    return out
+
+
+def _finite(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        if isinstance(value, float) and pd.isna(value):
+            return None
+        x = float(value)
+    except (TypeError, ValueError):
+        return None
+    if pd.isna(x):
+        return None
+    return x
+
+
+def attack_plate_stuff_bump(row: dict[str, Any]) -> tuple[float, str]:
+    """Tiny Exp K bump when attack-plate pack + strong/elite stuff stack.
+
+    Requires: solo arsenal ELITE/STRONG · STYLE WHIFF · Strike% ≥65 ·
+    stuff whiff ≥ strong. Cap +0.25 strong / +0.35 elite. Never applied on
+    SOFT/AVG solo, GB/FLY/BAL, or soft Strike%.
+    """
+    kpct = _finite(row.get("expected_k_pct"))
+    if kpct is None or absolute_matchup_grade(kpct) not in ("elite", "strong"):
+        return 0.0, ""
+    style = str(row.get("pitcher_style") or "").strip().lower()
+    if style != "whiff":
+        return 0.0, ""
+    strike = _finite(row.get("strike_pct"))
+    if strike is None or strike < ATTACK_PLATE_STRIKE_PCT:
+        return 0.0, ""
+    stuff = _finite(row.get("stuff_whiff_pct"))
+    if stuff is None or stuff < STUFF_WHIFF_STRONG:
+        return 0.0, ""
+    if stuff >= STUFF_WHIFF_ELITE:
+        bump = STUFF_CEILING_BUMP_ELITE
+        label = "elite"
+    else:
+        bump = STUFF_CEILING_BUMP_STRONG
+        label = "strong"
+    return bump, (
+        f"attack-plate stuff bump +{bump:.2f} "
+        f"({label} whiff {stuff:.1f}%, Strike% {strike:.1f})"
+    )
+
+
+def apply_attack_plate_stuff_bump(df: pd.DataFrame) -> pd.DataFrame:
+    """Apply capped stuff-ceiling bump to expected_ks for attack-plate stacks."""
+    out = df.copy()
+    for col, default in (
+        ("stuff_ceiling_bump", 0.0),
+        ("stuff_ceiling_note", ""),
+    ):
+        if col not in out.columns:
+            out[col] = default
+
+    scored = out["status"].eq("ok") & out["expected_ks"].notna()
+    for idx in out.index[scored]:
+        row = out.loc[idx]
+        bump, note = attack_plate_stuff_bump(row.to_dict())
+        out.at[idx, "stuff_ceiling_bump"] = bump
+        out.at[idx, "stuff_ceiling_note"] = note
+        if bump > 0:
+            out.at[idx, "expected_ks"] = float(row["expected_ks"]) + bump
     return out
 
 
@@ -864,6 +999,74 @@ def platoon_adjust_k_pct(
     return arsenal_k_pct * factor, factor, label
 
 
+def fetch_team_season_k_pct(
+    year: int, verbose: bool, log: Callable[[bool, str], None]
+) -> dict[int, float]:
+    """Season team batting K% (SO/PA) keyed by Stats API team id."""
+    url = TEAM_SEASON_HITTING_URL.format(year=year)
+    try:
+        payload = _get(url, verbose, log).json()
+    except Exception as exc:  # noqa: BLE001
+        log(verbose, f"Team season K% fetch failed: {exc}")
+        return {}
+    out: dict[int, float] = {}
+    for block in payload.get("stats") or []:
+        for split in block.get("splits") or []:
+            team = split.get("team") or {}
+            tid = team.get("id")
+            if tid is None:
+                continue
+            stat = split.get("stat") or {}
+            try:
+                pa = float(stat.get("plateAppearances") or 0)
+                so = float(stat.get("strikeOuts") or 0)
+            except (TypeError, ValueError):
+                continue
+            if pa <= 0:
+                continue
+            out[int(tid)] = 100.0 * so / pa
+    return out
+
+
+def _apply_opp_adjust_to_form(
+    form: dict[str, Any],
+    team_k_pct: dict[int, float],
+) -> None:
+    """Mutate form with opponent-adjusted L3 K/9 (league K% / mean opp K%)."""
+    starts = form.get("last3_starts") or []
+    opp_ks: list[float] = []
+    for s in starts:
+        tid = s.get("opp_team_id")
+        if tid is None:
+            continue
+        k = team_k_pct.get(int(tid))
+        if k is None:
+            continue
+        opp_ks.append(float(k))
+    if not opp_ks:
+        form["last3_opp_k_pct"] = None
+        form["last3_k9_adj"] = form.get("last3_k9")
+        form["last3_ks_adj"] = form.get("last3_ks")
+        form["form_opp_factor"] = None
+        form["form_opp_note"] = ""
+        return
+    opp_avg = sum(opp_ks) / len(opp_ks)
+    form["last3_opp_k_pct"] = opp_avg
+    raw_factor = LEAGUE_K_PCT / opp_avg if opp_avg > 0 else 1.0
+    factor = max(FORM_OPP_FACTOR_MIN, min(FORM_OPP_FACTOR_MAX, raw_factor))
+    form["form_opp_factor"] = factor
+    k9 = form.get("last3_k9")
+    ks = form.get("last3_ks")
+    form["last3_k9_adj"] = (float(k9) * factor) if k9 is not None else None
+    form["last3_ks_adj"] = (float(ks) * factor) if ks is not None else None
+    if opp_avg >= FORM_OPP_JUICED_K:
+        form["form_opp_note"] = f"L3 vs juiced K opps ({opp_avg:.1f}%)"
+    elif opp_avg <= FORM_OPP_SOFT_K:
+        form["form_opp_note"] = f"L3 vs soft K opps ({opp_avg:.1f}%)"
+    else:
+        form["form_opp_note"] = f"L3 opp K% {opp_avg:.1f}"
+
+
 def fetch_pitcher_recent_form(
     pitcher_ids: list[int],
     year: int,
@@ -871,7 +1074,7 @@ def fetch_pitcher_recent_form(
     log: Callable[[bool, str], None],
     last_n: int = 3,
 ) -> dict[int, dict[str, Any]]:
-    """Last-N starts: avg Ks, K/9, IP."""
+    """Last-N starts: avg Ks, K/9, IP + opponent-adjusted K/9."""
     ids = sorted({int(x) for x in pitcher_ids if x is not None})
     out: dict[int, dict[str, Any]] = {}
     for i in range(0, len(ids), 30):
@@ -892,12 +1095,20 @@ def fetch_pitcher_recent_form(
                         continue
                     ip = parse_innings_pitched(stat.get("inningsPitched")) or 0.0
                     so = float(stat.get("strikeOuts") or 0)
+                    opp = split.get("opponent") or {}
+                    opp_id = opp.get("id")
+                    try:
+                        opp_team_id = int(opp_id) if opp_id is not None else None
+                    except (TypeError, ValueError):
+                        opp_team_id = None
                     starts.append(
                         {
                             "date": split.get("date"),
                             "ip": ip,
                             "so": so,
                             "k9": (so * 9.0 / ip) if ip > 0 else None,
+                            "opp_team_id": opp_team_id,
+                            "is_home": bool(split.get("isHome")),
                         }
                     )
             # API returns newest last for some payloads; sort by date.
@@ -912,7 +1123,23 @@ def fetch_pitcher_recent_form(
                 "last3_ks": so_sum / len(recent),
                 "last3_ip": ip_sum / len(recent),
                 "last3_k9": (so_sum * 9.0 / ip_sum) if ip_sum > 0 else None,
+                "last3_starts": recent,
+                "last3_opp_k_pct": None,
+                "last3_k9_adj": None,
+                "last3_ks_adj": None,
+                "form_opp_factor": None,
+                "form_opp_note": "",
             }
+
+    if out:
+        team_k = fetch_team_season_k_pct(year, verbose, log)
+        if team_k:
+            for form in out.values():
+                _apply_opp_adjust_to_form(form, team_k)
+        else:
+            for form in out.values():
+                form["last3_k9_adj"] = form.get("last3_k9")
+                form["last3_ks_adj"] = form.get("last3_ks")
     return out
 
 
@@ -921,17 +1148,44 @@ def apply_recent_form_overlay(
     projected_ip: float,
     form: dict[str, Any] | None,
 ) -> tuple[float, float | None, float | None]:
-    """Blend model Ks with last-3 K/9 run rate. Returns (blended, form_ks, weight)."""
+    """Blend model Ks with opp-adjusted L3 K/9 (raw fallback).
+
+    Returns (blended, form_ks, weight).
+    """
     if not form or expected_ks is None:
         return expected_ks, None, None
     gs = int(form.get("last3_gs") or 0)
-    k9 = form.get("last3_k9")
+    k9 = form.get("last3_k9_adj")
+    if k9 is None:
+        k9 = form.get("last3_k9")
     if gs < FORM_MIN_STARTS or k9 is None or not projected_ip:
         return expected_ks, None, None
     form_ks = float(k9) / 9.0 * float(projected_ip)
     weight = FORM_BLEND * min(1.0, gs / 3.0)
     blended = (1.0 - weight) * float(expected_ks) + weight * form_ks
     return blended, form_ks, weight
+
+
+def _fg_float(value: Any) -> float:
+    if value is None:
+        return float("nan")
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return float("nan")
+    return f if not pd.isna(f) else float("nan")
+
+
+def _strike_pct_from_counts(strikes: Any, pitches: Any) -> float:
+    """Pitches thrown for strikes / all pitches → 0–100 Strike%."""
+    try:
+        s = float(strikes)
+        p = float(pitches)
+    except (TypeError, ValueError):
+        return float("nan")
+    if pd.isna(s) or pd.isna(p) or p <= 0:
+        return float("nan")
+    return 100.0 * s / p
 
 
 def _fg_pct(value: Any) -> float:
@@ -949,15 +1203,15 @@ def _fg_pct(value: Any) -> float:
     return f
 
 
-def fetch_fangraphs_pitching(
+def fetch_fangraphs_batting(
     year: int, verbose: bool, log: Callable[[bool, str], None]
 ) -> dict[int, dict[str, float]]:
-    """xFIP / rates / contact profile (K%, Contact%, GB%, FB%, IFFB%) by MLBAM id."""
-    url = FANGRAPHS_PITCHING_URL.format(year=year)
+    """Season wOBA / wRC+ / ISO by MLBAM id (lineup offense-quality chips)."""
+    url = FANGRAPHS_BATTING_URL.format(year=year)
     try:
         payload = _get(url, verbose, log).json()
     except Exception as exc:  # noqa: BLE001
-        log(verbose, f"FanGraphs fetch failed: {exc}")
+        log(verbose, f"FanGraphs batting fetch failed: {exc}")
         return {}
     out: dict[int, dict[str, float]] = {}
     for row in payload.get("data") or []:
@@ -966,20 +1220,245 @@ def fetch_fangraphs_pitching(
             continue
         try:
             out[int(pid)] = {
+                "woba": float(row["wOBA"]) if row.get("wOBA") is not None else float("nan"),
+                "wrc_plus": (
+                    float(row["wRC+"]) if row.get("wRC+") is not None else float("nan")
+                ),
+                "iso": float(row["ISO"]) if row.get("ISO") is not None else float("nan"),
+                "pa": float(row["PA"]) if row.get("PA") is not None else float("nan"),
+            }
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _fg_optional(value: Any) -> float | None:
+    """FanGraphs numeric → float, or None when missing/NaN."""
+    f = _fg_float(value)
+    if pd.isna(f):
+        return None
+    return float(f)
+
+
+def _fg_pitch_quality_map(row: dict[str, Any]) -> dict[str, dict[str, float | None]]:
+    """Per Savant pitch_type: FanGraphs run value + Stuff+ (confirm-only)."""
+    out: dict[str, dict[str, float | None]] = {}
+    for pt, fields in FG_PITCH_QUALITY.items():
+        rv = _fg_optional(row.get(fields["rv"])) if fields.get("rv") else None
+        rv100 = _fg_optional(row.get(fields["rv100"])) if fields.get("rv100") else None
+        sp = (
+            _fg_optional(row.get(fields["stuff_plus"]))
+            if fields.get("stuff_plus")
+            else None
+        )
+        if rv is None and rv100 is None and sp is None:
+            continue
+        out[pt] = {
+            "run_value": rv,
+            "run_value_100": rv100,
+            "stuff_plus": sp,
+        }
+    return out
+
+
+def fetch_fangraphs_pitching(
+    year: int, verbose: bool, log: Callable[[bool, str], None]
+) -> dict[int, dict[str, Any]]:
+    """FanGraphs pitcher rates + FIP/SIERA/xERA + Stuff+ + pitch run values."""
+    url = FANGRAPHS_PITCHING_URL.format(year=year)
+    try:
+        payload = _get(url, verbose, log).json()
+    except Exception as exc:  # noqa: BLE001
+        log(verbose, f"FanGraphs fetch failed: {exc}")
+        return {}
+    out: dict[int, dict[str, Any]] = {}
+    for row in payload.get("data") or []:
+        pid = row.get("xMLBAMID")
+        if pid is None:
+            continue
+        try:
+            out[int(pid)] = {
                 "xfip": float(row["xFIP"]) if row.get("xFIP") is not None else float("nan"),
                 "fip": float(row["FIP"]) if row.get("FIP") is not None else float("nan"),
+                "siera": (
+                    float(row["SIERA"]) if row.get("SIERA") is not None else float("nan")
+                ),
+                "xera": (
+                    float(row["xERA"]) if row.get("xERA") is not None else float("nan")
+                ),
+                "stuff_plus": _fg_optional(row.get("sp_stuff")),
+                "location_plus": _fg_optional(row.get("sp_location")),
+                "pitching_plus": _fg_optional(row.get("sp_pitching")),
                 "bb9": float(row["BB/9"]) if row.get("BB/9") is not None else float("nan"),
                 "hr9": float(row["HR/9"]) if row.get("HR/9") is not None else float("nan"),
                 "k9": float(row["K/9"]) if row.get("K/9") is not None else float("nan"),
                 "pitcher_k_pct": _fg_pct(row.get("K%")),
                 "pitcher_contact_pct": _fg_pct(row.get("Contact%")),
+                "z_contact_pct": _fg_pct(row.get("Z-Contact%")),
                 "pitcher_gb_pct": _fg_pct(row.get("GB%")),
                 "pitcher_fb_pct": _fg_pct(row.get("FB%")),
                 "pitcher_iffb_pct": _fg_pct(row.get("IFFB%")),
                 "pitcher_soft_pct": _fg_pct(row.get("Soft%")),
+                "swstr_pct": _fg_pct(row.get("SwStr%")),
+                # FanGraphs labels CSW as C+SwStr% (called + swinging strike).
+                "csw_pct": _fg_pct(row.get("C+SwStr%")),
+                "o_swing_pct": _fg_pct(row.get("O-Swing%")),
+                "strike_pct": _strike_pct_from_counts(
+                    row.get("Strikes"), row.get("Pitches")
+                ),
+                "f_strike_pct": _fg_pct(row.get("F-Strike%")),
+                "zone_pct": _fg_pct(row.get("Zone%")),
+                "pitches": _fg_float(row.get("Pitches")),
+                "strikes": _fg_float(row.get("Strikes")),
+                "pitch_quality": _fg_pitch_quality_map(row),
             }
         except (TypeError, ValueError):
             continue
+    return out
+
+
+def fetch_savant_pitcher_expected(
+    year: int, verbose: bool, log: Callable[[bool, str], None]
+) -> dict[int, dict[str, float]]:
+    """Savant expected stats vs pitcher: xBA / xSLG / xwOBA / xERA (confirm-only)."""
+    url = SAVANT_PITCHER_EXPECTED_URL.format(year=year)
+    try:
+        text = _get(url, verbose, log).content.decode("utf-8-sig")
+        df = pd.read_csv(StringIO(text))
+    except Exception as exc:  # noqa: BLE001
+        log(verbose, f"Savant pitcher expected fetch failed: {exc}")
+        return {}
+    if df.empty or "player_id" not in df.columns:
+        return {}
+    out: dict[int, dict[str, float]] = {}
+    for _, row in df.iterrows():
+        try:
+            pid = int(row["player_id"])
+        except (TypeError, ValueError):
+            continue
+
+        def _num(key: str) -> float:
+            val = row.get(key)
+            try:
+                f = float(val)
+            except (TypeError, ValueError):
+                return float("nan")
+            return f
+
+        out[pid] = {
+            "xba": _num("est_ba"),
+            "xslg": _num("est_slg"),
+            "xwoba": _num("est_woba"),
+            "xera": _num("xera"),
+            "ba": _num("ba"),
+            "slg": _num("slg"),
+            "woba": _num("woba"),
+            "era": _num("era"),
+        }
+    return out
+
+
+def attach_pitch_quality(
+    arsenal: list[dict[str, Any]] | None,
+    pitch_quality: dict[str, dict[str, float | None]] | None,
+) -> list[dict[str, Any]]:
+    """Copy FanGraphs RV / Stuff+ onto arsenal pitch rows (display-only)."""
+    if not arsenal:
+        return []
+    pq = pitch_quality or {}
+    out: list[dict[str, Any]] = []
+    for pitch in arsenal:
+        row = dict(pitch)
+        pt = str(row.get("pitch_type") or "").upper()
+        meta = pq.get(pt) or {}
+        row["run_value"] = meta.get("run_value")
+        row["run_value_100"] = meta.get("run_value_100")
+        row["pitch_stuff_plus"] = meta.get("stuff_plus")
+        out.append(row)
+    return out
+
+
+def apply_pitcher_advanced_metrics(
+    df: pd.DataFrame,
+    *,
+    fangraphs: dict[int, dict[str, Any]] | None = None,
+    savant_expected: dict[int, dict[str, float]] | None = None,
+) -> pd.DataFrame:
+    """Attach FIP/SIERA/Stuff+/expected + per-pitch RV (confirm-only; no Exp K)."""
+    out = df.copy()
+    fangraphs = fangraphs or {}
+    savant_expected = savant_expected or {}
+    for col, default in (
+        ("fip", pd.NA),
+        ("siera", pd.NA),
+        ("xera", pd.NA),
+        ("stuff_plus", pd.NA),
+        ("location_plus", pd.NA),
+        ("pitching_plus", pd.NA),
+        ("xba", pd.NA),
+        ("xslg", pd.NA),
+        ("xwoba", pd.NA),
+        ("ba_against", pd.NA),
+        ("slg_against", pd.NA),
+        ("woba_against", pd.NA),
+    ):
+        if col not in out.columns:
+            out[col] = default
+
+    for i, row in out.iterrows():
+        pid_raw = row.get("pitcher_id")
+        try:
+            pid = int(pid_raw) if pid_raw is not None and not pd.isna(pid_raw) else None
+        except (TypeError, ValueError):
+            pid = None
+        if pid is None:
+            continue
+        fg = fangraphs.get(pid) or {}
+        exp = savant_expected.get(pid) or {}
+
+        def _set(col: str, val: Any) -> None:
+            if val is None:
+                return
+            try:
+                f = float(val)
+            except (TypeError, ValueError):
+                return
+            if pd.isna(f):
+                return
+            out.at[i, col] = f
+
+        # Prefer row values already merged from risk_metrics; fill gaps from FG.
+        for col in (
+            "fip",
+            "siera",
+            "xera",
+            "stuff_plus",
+            "location_plus",
+            "pitching_plus",
+        ):
+            cur = row.get(col)
+            if cur is None or (isinstance(cur, float) and pd.isna(cur)):
+                _set(col, fg.get(col))
+
+        # Savant expected contact quality allowed (pitcher perspective).
+        _set("xba", exp.get("xba"))
+        _set("xslg", exp.get("xslg"))
+        _set("xwoba", exp.get("xwoba"))
+        _set("ba_against", exp.get("ba"))
+        _set("slg_against", exp.get("slg"))
+        _set("woba_against", exp.get("woba"))
+        # Prefer Savant xERA when present; else keep FanGraphs xERA.
+        if exp.get("xera") is not None and not pd.isna(exp.get("xera")):
+            _set("xera", exp.get("xera"))
+
+        pq = fg.get("pitch_quality") or row.get("pitch_quality") or {}
+        if not isinstance(pq, dict):
+            pq = {}
+        for key in ("arsenal", "pitch_lineup_avg"):
+            pitches = row.get(key)
+            if isinstance(pitches, list) and pitches:
+                out.at[i, key] = attach_pitch_quality(pitches, pq)
+
     return out
 
 
@@ -1012,9 +1491,14 @@ def fetch_pitcher_rate_stats(
                     so = float(stat.get("strikeOuts") or 0)
                     go = float(stat.get("groundOuts") or 0)
                     ao = float(stat.get("airOuts") or 0)
+                    strikes = float(stat.get("strikes") or 0)
+                    pitches = float(stat.get("numberOfPitches") or 0)
                 except (TypeError, ValueError):
-                    bf = so = go = ao = 0.0
+                    bf = so = go = ao = strikes = pitches = 0.0
                 bip_outs = go + ao
+                strike_pct = _fg_pct(stat.get("strikePercentage"))
+                if pd.isna(strike_pct):
+                    strike_pct = _strike_pct_from_counts(strikes, pitches)
                 out[int(pid)] = {
                     "bb9": float(stat["walksPer9Inn"])
                     if stat.get("walksPer9Inn") not in (None, "")
@@ -1031,8 +1515,17 @@ def fetch_pitcher_rate_stats(
                     "pitcher_gb_pct": (100.0 * go / bip_outs) if bip_outs > 0 else float("nan"),
                     "pitcher_fb_pct": (100.0 * ao / bip_outs) if bip_outs > 0 else float("nan"),
                     "pitcher_contact_pct": float("nan"),
+                    "z_contact_pct": float("nan"),
                     "pitcher_iffb_pct": float("nan"),
                     "pitcher_soft_pct": float("nan"),
+                    "swstr_pct": float("nan"),
+                    "csw_pct": float("nan"),
+                    "o_swing_pct": float("nan"),
+                    "strike_pct": strike_pct,
+                    "f_strike_pct": float("nan"),
+                    "zone_pct": float("nan"),
+                    "pitches": pitches if pitches > 0 else float("nan"),
+                    "strikes": strikes if strikes > 0 else float("nan"),
                 }
                 break
     return out
@@ -1116,7 +1609,7 @@ def classify_pitcher_style(
 
 def merge_risk_metrics(
     pitcher_id: int | None,
-    fangraphs: dict[int, dict[str, float]],
+    fangraphs: dict[int, dict[str, Any]],
     api_rates: dict[int, dict[str, float]],
 ) -> dict[str, Any]:
     empty = {
@@ -1124,12 +1617,28 @@ def merge_risk_metrics(
         "hr9": None,
         "k9": None,
         "xfip": None,
+        "fip": None,
+        "siera": None,
+        "xera": None,
+        "stuff_plus": None,
+        "location_plus": None,
+        "pitching_plus": None,
+        "pitch_quality": {},
         "pitcher_k_pct": None,
         "pitcher_contact_pct": None,
+        "z_contact_pct": None,
         "pitcher_gb_pct": None,
         "pitcher_fb_pct": None,
         "pitcher_iffb_pct": None,
         "pitcher_soft_pct": None,
+        "swstr_pct": None,
+        "csw_pct": None,
+        "o_swing_pct": None,
+        "strike_pct": None,
+        "f_strike_pct": None,
+        "zone_pct": None,
+        "pitches": None,
+        "strikes": None,
         "pitcher_style": "",
         "pitcher_style_flags": "",
         "risk_source": None,
@@ -1158,12 +1667,30 @@ def merge_risk_metrics(
     hr9 = _pick("hr9")
     k9 = _pick("k9")
     xfip = _pick("xfip")
+    fip = _pick("fip")
+    siera = _pick("siera")
+    xera = _pick("xera")
+    stuff_plus = _pick("stuff_plus")
+    location_plus = _pick("location_plus")
+    pitching_plus = _pick("pitching_plus")
+    pitch_quality = fg.get("pitch_quality") or {}
+    if not isinstance(pitch_quality, dict):
+        pitch_quality = {}
     pk = _pick("pitcher_k_pct")
     pc = _pick("pitcher_contact_pct")
+    zc = _pick("z_contact_pct")
     gb = _pick("pitcher_gb_pct")
     fb = _pick("pitcher_fb_pct")
     iffb = _pick("pitcher_iffb_pct")
     soft = _pick("pitcher_soft_pct")
+    swstr = _pick("swstr_pct")
+    csw = _pick("csw_pct")
+    o_swing = _pick("o_swing_pct")
+    strike_pct = _pick("strike_pct")
+    f_strike_pct = _pick("f_strike_pct")
+    zone_pct = _pick("zone_pct")
+    pitches = _pick("pitches")
+    strikes = _pick("strikes")
     style, style_flags = classify_pitcher_style(
         k_pct=pk,
         contact_pct=pc,
@@ -1178,12 +1705,28 @@ def merge_risk_metrics(
         "hr9": hr9,
         "k9": k9,
         "xfip": xfip,
+        "fip": fip,
+        "siera": siera,
+        "xera": xera,
+        "stuff_plus": stuff_plus,
+        "location_plus": location_plus,
+        "pitching_plus": pitching_plus,
+        "pitch_quality": pitch_quality,
         "pitcher_k_pct": pk,
         "pitcher_contact_pct": pc,
+        "z_contact_pct": zc,
         "pitcher_gb_pct": gb,
         "pitcher_fb_pct": fb,
         "pitcher_iffb_pct": iffb,
         "pitcher_soft_pct": soft,
+        "swstr_pct": swstr,
+        "csw_pct": csw,
+        "o_swing_pct": o_swing,
+        "strike_pct": strike_pct,
+        "f_strike_pct": f_strike_pct,
+        "zone_pct": zone_pct,
+        "pitches": pitches,
+        "strikes": strikes,
         "pitcher_style": style,
         "pitcher_style_flags": style_flags,
         "risk_source": source,
@@ -1437,11 +1980,153 @@ def classify_contact_grade(
     return "neutral"
 
 
+def _empty_lineup_k_vs_hand() -> dict[str, Any]:
+    return {
+        "lineup_k_pct_vs_lhp": None,
+        "lineup_k_pct_vs_rhp": None,
+        "lineup_k_pct_vs_hand": None,
+        "lineup_k_vs_hand_side": None,
+        "lineup_k_vs_hand_pa": 0.0,
+        "lineup_k_vs_hand_n": 0,
+        "lineup_k_vs_hand_source": None,
+    }
+
+
+def summarize_lineup_k_vs_hand(
+    lineup: list[dict[str, Any]],
+    hand_rates: dict[int, dict[str, Any]] | None,
+    pitcher_hand: str | None,
+) -> dict[str, Any]:
+    """PA-weighted lineup K% vs LHP / vs RHP from season vl/vr splits.
+
+    Picks `lineup_k_pct_vs_hand` for this pitcher's hand when sample is enough
+    (≥HAND_K_MIN_N batters, ≥HAND_K_MIN_LINEUP_PA, each batter ≥HAND_K_MIN_BATTER_PA).
+    """
+    out = _empty_lineup_k_vs_hand()
+    if not lineup or not hand_rates:
+        return out
+
+    l_rows: list[tuple[float, float]] = []
+    r_rows: list[tuple[float, float]] = []
+    for slot in lineup:
+        try:
+            bid = int(slot["batter_id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        rates = hand_rates.get(bid) or {}
+        pa_l = float(rates.get("pa_vs_lhp") or 0.0)
+        k_l = rates.get("k_pct_vs_lhp")
+        if k_l is not None and pa_l >= HAND_K_MIN_BATTER_PA:
+            l_rows.append((pa_l, float(k_l)))
+        pa_r = float(rates.get("pa_vs_rhp") or 0.0)
+        k_r = rates.get("k_pct_vs_rhp")
+        if k_r is not None and pa_r >= HAND_K_MIN_BATTER_PA:
+            r_rows.append((pa_r, float(k_r)))
+
+    def _wavg(rows: list[tuple[float, float]]) -> tuple[float | None, float, int]:
+        if not rows:
+            return None, 0.0, 0
+        tw = sum(r[0] for r in rows)
+        if tw <= 0:
+            return None, 0.0, 0
+        return sum(r[0] * r[1] for r in rows) / tw, tw, len(rows)
+
+    k_l, pa_l, n_l = _wavg(l_rows)
+    k_r, pa_r, n_r = _wavg(r_rows)
+    out["lineup_k_pct_vs_lhp"] = k_l
+    out["lineup_k_pct_vs_rhp"] = k_r
+
+    hand = (pitcher_hand or "").strip().upper()
+    if hand == "L" and k_l is not None and n_l >= HAND_K_MIN_N and pa_l >= HAND_K_MIN_LINEUP_PA:
+        out["lineup_k_pct_vs_hand"] = k_l
+        out["lineup_k_vs_hand_side"] = "L"
+        out["lineup_k_vs_hand_pa"] = pa_l
+        out["lineup_k_vs_hand_n"] = n_l
+        out["lineup_k_vs_hand_source"] = "season_vs_lhp"
+    elif hand == "R" and k_r is not None and n_r >= HAND_K_MIN_N and pa_r >= HAND_K_MIN_LINEUP_PA:
+        out["lineup_k_pct_vs_hand"] = k_r
+        out["lineup_k_vs_hand_side"] = "R"
+        out["lineup_k_vs_hand_pa"] = pa_r
+        out["lineup_k_vs_hand_n"] = n_r
+        out["lineup_k_vs_hand_source"] = "season_vs_rhp"
+    return out
+
+
+def _lineup_fg_quality(
+    lineup: list[dict[str, Any]],
+    fangraphs_batting: dict[int, dict[str, float]] | None,
+    profiles: dict[int, dict[str, Any]],
+) -> dict[str, Any]:
+    """PA-weighted lineup wOBA / wRC+ / ISO from FanGraphs season batting."""
+    empty = {
+        "lineup_woba": None,
+        "lineup_wrc_plus": None,
+        "lineup_iso": None,
+        "lineup_quality_n": 0,
+        "lineup_quality_pa": 0.0,
+        "lineup_quality_source": None,
+    }
+    if not fangraphs_batting:
+        return empty
+    rows: list[tuple[float, float, float, float]] = []
+    for slot in lineup:
+        try:
+            bid = int(slot["batter_id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        fg = fangraphs_batting.get(bid) or {}
+        woba = fg.get("woba")
+        wrc = fg.get("wrc_plus")
+        iso = fg.get("iso")
+        try:
+            woba_f = float(woba) if woba is not None and not pd.isna(woba) else None
+            wrc_f = float(wrc) if wrc is not None and not pd.isna(wrc) else None
+            iso_f = float(iso) if iso is not None and not pd.isna(iso) else None
+        except (TypeError, ValueError):
+            continue
+        if woba_f is None and wrc_f is None and iso_f is None:
+            continue
+        pa = float(fg.get("pa") or 0.0)
+        if pa <= 0 or pd.isna(pa):
+            pa = float((profiles.get(bid) or {}).get("season_pa") or 0.0) or 1.0
+        rows.append(
+            (
+                pa,
+                woba_f if woba_f is not None else LEAGUE_WOBA,
+                wrc_f if wrc_f is not None else LEAGUE_WRC_PLUS,
+                iso_f if iso_f is not None else LEAGUE_ISO,
+            )
+        )
+    if not rows:
+        return empty
+    tw = sum(r[0] for r in rows)
+    if tw <= 0:
+        return empty
+    return {
+        "lineup_woba": sum(r[0] * r[1] for r in rows) / tw,
+        "lineup_wrc_plus": sum(r[0] * r[2] for r in rows) / tw,
+        "lineup_iso": sum(r[0] * r[3] for r in rows) / tw,
+        "lineup_quality_n": len(rows),
+        "lineup_quality_pa": tw,
+        "lineup_quality_source": "fangraphs",
+    }
+
+
 def summarize_lineup_offense(
     lineup: list[dict[str, Any]],
     profiles: dict[int, dict[str, Any]],
+    *,
+    hand_rates: dict[int, dict[str, Any]] | None = None,
+    pitcher_hand: str | None = None,
+    fangraphs_batting: dict[int, dict[str, float]] | None = None,
 ) -> dict[str, Any]:
-    """PA-weighted lineup K% / AVG / BB% / BIP%; prefer recent when sample OK."""
+    """PA-weighted lineup K% / AVG / BB% / BIP%; prefer recent when sample OK.
+
+    Also attaches season lineup K% vs LHP / vs RHP when hand splits are provided,
+    plus FanGraphs lineup wOBA / wRC+ / ISO (leash / damage confirm).
+    """
+    hand_bits = summarize_lineup_k_vs_hand(lineup, hand_rates, pitcher_hand)
+    quality = _lineup_fg_quality(lineup, fangraphs_batting, profiles)
     # rows: pa, k, avg, bb, bip
     recent_rows: list[tuple[float, float, float, float, float]] = []
     season_rows: list[tuple[float, float, float, float, float]] = []
@@ -1516,6 +2201,8 @@ def summarize_lineup_offense(
             "offense_source": None,
             "offense_n": 0,
             "discipline_grade": None,
+            **quality,
+            **hand_bits,
         }
 
     grade = classify_discipline_grade(bb_pct, k_pct)
@@ -1530,8 +2217,9 @@ def summarize_lineup_offense(
         "offense_source": source,
         "offense_n": n,
         "discipline_grade": grade,
+        **quality,
+        **hand_bits,
     }
-
 
 def classify_discipline_grade(
     bb_pct: float | None, k_pct: float | None
@@ -1573,13 +2261,46 @@ def apply_lineup_offense_overlay(
         "offense_source": None,
         "offense_factor": None,
         "discipline_grade": None,
+        "lineup_woba": None,
+        "lineup_wrc_plus": None,
+        "lineup_iso": None,
+        "lineup_quality_n": 0,
+        "lineup_quality_pa": 0.0,
+        "lineup_quality_source": None,
+        **_empty_lineup_k_vs_hand(),
     }
+
+    def _quality_bits(src: dict[str, Any] | None) -> dict[str, Any]:
+        if not src:
+            return {
+                "lineup_woba": None,
+                "lineup_wrc_plus": None,
+                "lineup_iso": None,
+                "lineup_quality_n": 0,
+                "lineup_quality_pa": 0.0,
+                "lineup_quality_source": None,
+            }
+        return {
+            "lineup_woba": src.get("lineup_woba"),
+            "lineup_wrc_plus": src.get("lineup_wrc_plus"),
+            "lineup_iso": src.get("lineup_iso"),
+            "lineup_quality_n": src.get("lineup_quality_n") or 0,
+            "lineup_quality_pa": src.get("lineup_quality_pa") or 0.0,
+            "lineup_quality_source": src.get("lineup_quality_source"),
+        }
+
     if expected_ks is None or summary is None:
         return expected_ks, None, empty
     k_pct = summary.get("lineup_k_pct")
     avg = summary.get("lineup_avg")
     bip_pct = summary.get("lineup_bip_pct")
-    if k_pct is None:
+    # Prefer season K% vs this pitcher's hand for the K-edge when sample holds.
+    k_for_edge = summary.get("lineup_k_pct_vs_hand")
+    k_edge_source = summary.get("lineup_k_vs_hand_source")
+    if k_for_edge is None:
+        k_for_edge = k_pct
+        k_edge_source = summary.get("offense_source")
+    if k_pct is None and k_for_edge is None:
         return expected_ks, None, {
             **empty,
             "lineup_bb_pct": summary.get("lineup_bb_pct"),
@@ -1587,10 +2308,18 @@ def apply_lineup_offense_overlay(
             "contact_grade": summary.get("contact_grade") or "",
             "discipline_grade": summary.get("discipline_grade"),
             "offense_source": summary.get("offense_source"),
+            "lineup_k_pct_vs_lhp": summary.get("lineup_k_pct_vs_lhp"),
+            "lineup_k_pct_vs_rhp": summary.get("lineup_k_pct_vs_rhp"),
+            "lineup_k_pct_vs_hand": summary.get("lineup_k_pct_vs_hand"),
+            "lineup_k_vs_hand_side": summary.get("lineup_k_vs_hand_side"),
+            "lineup_k_vs_hand_pa": summary.get("lineup_k_vs_hand_pa"),
+            "lineup_k_vs_hand_n": summary.get("lineup_k_vs_hand_n"),
+            "lineup_k_vs_hand_source": summary.get("lineup_k_vs_hand_source"),
+            **_quality_bits(summary),
         }
 
     # Whiff-prone lineups boost Ks; contact/BIP-heavy lineups trim them.
-    k_edge = (float(k_pct) - LEAGUE_K_PCT) / 100.0
+    k_edge = (float(k_for_edge) - LEAGUE_K_PCT) / 100.0
     bip_edge = 0.0
     if bip_pct is not None:
         bip_edge = -(float(bip_pct) - LEAGUE_BIP_PCT) / 100.0
@@ -1601,11 +2330,12 @@ def apply_lineup_offense_overlay(
     delta = max(-OFFENSE_FACTOR_MAX, min(OFFENSE_FACTOR_MAX, raw))
     factor = 1.0 + delta
     blended = float(expected_ks) * factor
+    contact_k = float(k_pct) if k_pct is not None else float(k_for_edge)
     contact = summary.get("contact_grade") or classify_contact_grade(
-        float(bip_pct) if bip_pct is not None else None, float(k_pct)
+        float(bip_pct) if bip_pct is not None else None, contact_k
     )
     meta = {
-        "lineup_k_pct": float(k_pct),
+        "lineup_k_pct": None if k_pct is None else float(k_pct),
         "lineup_avg": None if avg is None else float(avg),
         "lineup_bb_pct": summary.get("lineup_bb_pct"),
         "lineup_bip_pct": None if bip_pct is None else float(bip_pct),
@@ -1615,9 +2345,17 @@ def apply_lineup_offense_overlay(
         "offense_pa": summary.get("offense_pa"),
         "offense_n": summary.get("offense_n"),
         "discipline_grade": summary.get("discipline_grade"),
+        "lineup_k_pct_vs_lhp": summary.get("lineup_k_pct_vs_lhp"),
+        "lineup_k_pct_vs_rhp": summary.get("lineup_k_pct_vs_rhp"),
+        "lineup_k_pct_vs_hand": summary.get("lineup_k_pct_vs_hand"),
+        "lineup_k_vs_hand_side": summary.get("lineup_k_vs_hand_side"),
+        "lineup_k_vs_hand_pa": summary.get("lineup_k_vs_hand_pa"),
+        "lineup_k_vs_hand_n": summary.get("lineup_k_vs_hand_n"),
+        "lineup_k_vs_hand_source": summary.get("lineup_k_vs_hand_source"),
+        "offense_k_edge_source": k_edge_source,
+        **_quality_bits(summary),
     }
     return blended, factor, meta
-
 
 def apply_lineup_discipline_overlay(
     expected_ks: float,
@@ -1955,6 +2693,7 @@ def build_hits_board(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 FILLER_K9_MAX = 7.2
 FILLER_L3_SOFT = 4.5
 FILLER_XFIP_SOFT = 4.3
+# Soft% already fetched; elevated soft contact confirms FILLER / under lane.
 # Arsenal matchup (slate-relative): percentile of expected_k_pct among today's arms.
 # Useful for "who's best on the slate" — NOT the solo pitcher-vs-lineup read.
 MATCHUP_STRONG_PCT = 0.65  # >= 65th pct of slate expected_k_pct
@@ -1985,34 +2724,19 @@ def absolute_matchup_grade(expected_k_pct: float | None) -> str:
 def soft_contact_profile(row: dict[str, Any]) -> tuple[bool, str]:
     """True when pitcher looks like a soft-contact / low-K volume arm.
 
-    Flags: K9 ≲ 7, soft last-3 Ks, and/or elevated xFIP. Does not look at
-    the opposing lineup — pair with arsenal matchup rank for outlook.
+    Flags: K9 ≲ 7, soft last-3 Ks, elevated xFIP, and/or elevated Soft%.
+    Does not look at the opposing lineup — pair with arsenal matchup for outlook.
     """
-    try:
-        k9 = float(row["k9"]) if row.get("k9") is not None and pd.notna(row.get("k9")) else None
-    except (TypeError, ValueError):
-        k9 = None
-    try:
-        l3 = (
-            float(row["last3_ks"])
-            if row.get("last3_ks") is not None and pd.notna(row.get("last3_ks"))
-            else None
-        )
-    except (TypeError, ValueError):
-        l3 = None
-    try:
-        xfip = (
-            float(row["xfip"])
-            if row.get("xfip") is not None and pd.notna(row.get("xfip"))
-            else None
-        )
-    except (TypeError, ValueError):
-        xfip = None
+    k9 = _finite(row.get("k9"))
+    l3 = _finite(row.get("last3_ks"))
+    xfip = _finite(row.get("xfip"))
+    soft_pct = _finite(row.get("pitcher_soft_pct"))
     flags = str(row.get("risk_flags") or "")
     elev_xfip = ("elev_xfip" in flags) or (
         xfip is not None and xfip >= FILLER_XFIP_SOFT
     )
     soft_l3 = l3 is not None and l3 <= FILLER_L3_SOFT
+    elev_soft = soft_pct is not None and soft_pct >= FILLER_SOFT_PCT
     low_k9 = k9 is not None and k9 <= FILLER_K9_MAX
     if not low_k9:
         return False, ""
@@ -2021,8 +2745,10 @@ def soft_contact_profile(row: dict[str, Any]) -> tuple[bool, str]:
         bits.append(f"soft L3 {l3:.1f}")
     if elev_xfip and xfip is not None:
         bits.append(f"elev_xFIP {xfip:.2f}")
-    # Need soft recent Ks and/or elev xFIP — pure mid-K9 with hot L3 is not FILLER.
-    if soft_l3 or elev_xfip:
+    if elev_soft and soft_pct is not None:
+        bits.append(f"Soft% {soft_pct:.1f}")
+    # Soft Ks, elev xFIP, or elev Soft% — pure mid-K9 with hot L3 is not FILLER.
+    if soft_l3 or elev_xfip or elev_soft:
         return True, ", ".join(bits)
     if k9 <= 7.0 and (l3 is None or l3 <= 5.5):
         return True, ", ".join(bits + ["low-K volume"])
@@ -2034,12 +2760,15 @@ def _under_confirm_bits(row: dict[str, Any], exp_ks: float | None) -> tuple[int,
     bits: list[str] = []
     pstyle = str(row.get("pitcher_style") or "").strip().lower()
     contact = str(row.get("contact_grade") or "").strip().lower()
+    soft_pct = _finite(row.get("pitcher_soft_pct"))
     if pstyle in ("contact_gb", "fly_popup"):
         bits.append("GB/FLY style")
     if contact == "contact_heavy":
         bits.append("opp contact-heavy BIP")
     if exp_ks is not None and exp_ks <= UNDER_CONFIRM_EXP_KS:
         bits.append(f"Exp K ≤{UNDER_CONFIRM_EXP_KS:g}")
+    if soft_pct is not None and soft_pct >= FILLER_SOFT_PCT:
+        bits.append(f"Soft% {soft_pct:.1f}")
     return len(bits), bits
 
 
@@ -2112,13 +2841,27 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
         out.at[idx, "arsenal_abs_grade"] = abs_grade
         vs_league = kpct - LEAGUE_K_PCT
         out.at[idx, "arsenal_vs_league"] = vs_league
-        opp_k = row.get("lineup_k_pct")
+        # Prefer opp K% vs this pitcher's hand for arsenal_vs_opp confirmation.
+        opp_k_hand = row.get("lineup_k_pct_vs_hand")
+        opp_k_all = row.get("lineup_k_pct")
+        opp_side = str(row.get("lineup_k_vs_hand_side") or "").strip().upper()
         vs_opp: float | None = None
         opp_bit = ""
-        if opp_k is not None and not (isinstance(opp_k, float) and pd.isna(opp_k)):
-            vs_opp = kpct - float(opp_k)
+        opp_k_used = None
+        if opp_k_hand is not None and not (
+            isinstance(opp_k_hand, float) and pd.isna(opp_k_hand)
+        ):
+            opp_k_used = float(opp_k_hand)
+            side_lab = f" vs {opp_side}HP" if opp_side in ("L", "R") else " vs hand"
+            opp_bit = f", opp K%{side_lab} {opp_k_used:.1f}"
+        elif opp_k_all is not None and not (
+            isinstance(opp_k_all, float) and pd.isna(opp_k_all)
+        ):
+            opp_k_used = float(opp_k_all)
+            opp_bit = f", opp K% {opp_k_used:.1f}"
+        if opp_k_used is not None:
+            vs_opp = kpct - opp_k_used
             out.at[idx, "arsenal_vs_opp"] = vs_opp
-            opp_bit = f", opp K% {float(opp_k):.1f}"
         ark = int(row["arsenal_matchup_rank"]) if pd.notna(row["arsenal_matchup_rank"]) else "?"
         edge_bit = f", {vs_league:+.1f} vs lg"
         if vs_opp is not None:
@@ -2222,7 +2965,8 @@ def apply_ticket_outlook(df: pd.DataFrame) -> pd.DataFrame:
                 under_cue = (
                     f"; weak under — only {under_n}/{UNDER_CONFIRM_MIN} confirms "
                     f"({have}); need {need} more of GB/FLY · contact-heavy · "
-                    f"Exp K ≤{UNDER_CONFIRM_EXP_KS:g} (or take U6.5+ / pass)"
+                    f"Exp K ≤{UNDER_CONFIRM_EXP_KS:g} · Soft%≥{FILLER_SOFT_PCT:g} "
+                    f"(or take U6.5+ / pass)"
                 )
 
         role = str(row.get("outing_role") or "starter")

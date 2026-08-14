@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -18,6 +19,8 @@ from rankings_html import write_interactive_html  # noqa: E402
 from sharpen import (  # noqa: E402
     apply_lineup_discipline_overlay,
     apply_lineup_offense_overlay,
+    apply_attack_plate_stuff_bump,
+    apply_pitcher_advanced_metrics,
     apply_pitcher_stuff_overlay,
     apply_recent_form_overlay,
     apply_ticket_outlook,
@@ -31,14 +34,23 @@ from sharpen import (  # noqa: E402
     fetch_batter_hand_k_rates,
     fetch_batter_offense_profiles,
     fetch_batter_pitch_k_vs_hand,
+    fetch_fangraphs_batting,
     fetch_fangraphs_pitching,
     fetch_pitcher_hand_mixes,
     fetch_pitcher_rate_stats,
     fetch_pitcher_recent_form,
+    fetch_savant_pitcher_expected,
     merge_risk_metrics,
     platoon_adjust_k_pct,
     summarize_lineup_offense,
     usage_for_batter_side,
+)
+from k_dist import enrich_dataframe_k_distribution  # noqa: E402
+from odds import (  # noqa: E402
+    DEFAULT_MARKETS,
+    enrich_dataframe_odds,
+    format_american,
+    resolve_api_key,
 )
 from vs_team_history import (  # noqa: E402
     enrich_dataframe_vs_team_history,
@@ -1356,6 +1368,50 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Log data fetches to stderr",
     )
+    p.add_argument(
+        "--odds",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Join live book lines from The Odds API using ODDS_API_KEY / "
+            "THE_ODDS_API_KEY (default: on when key present; --no-odds skips)"
+        ),
+    )
+    p.add_argument(
+        "--odds-key",
+        metavar="KEY",
+        help="Odds API key (default: ODDS_API_KEY or THE_ODDS_API_KEY env)",
+    )
+    p.add_argument(
+        "--odds-markets",
+        metavar="LIST",
+        default=",".join(DEFAULT_MARKETS),
+        help=(
+            "Comma-separated Odds API markets. Default is credit-lite "
+            f"({','.join(DEFAULT_MARKETS)} = 3 credits/game). "
+            "Add pitcher_walks,pitcher_outs only when needed."
+        ),
+    )
+    p.add_argument(
+        "--odds-force",
+        action="store_true",
+        help="Bypass on-disk odds cache (normally reuses pulls for ~120 minutes)",
+    )
+    p.add_argument(
+        "--odds-include-finished",
+        action="store_true",
+        help="Also fetch props for games that started >4.5h ago (default: skip)",
+    )
+    p.add_argument(
+        "--odds-daily-budget",
+        type=int,
+        metavar="N",
+        help=(
+            "Max estimated odds credits per America/Chicago day "
+            "(default: ODDS_DAILY_BUDGET or 500; 0 = unlimited). "
+            "Over budget → reuse stale cache instead of fetching."
+        ),
+    )
     return p.parse_args(argv)
 
 
@@ -1482,6 +1538,8 @@ def main(argv: list[str] | None = None) -> int:
         pitcher_ids, year, args.verbose, log
     )
     fangraphs = fetch_fangraphs_pitching(year, args.verbose, log)
+    fangraphs_batting = fetch_fangraphs_batting(year, args.verbose, log)
+    savant_pitcher_expected = fetch_savant_pitcher_expected(year, args.verbose, log)
     api_rates = fetch_pitcher_rate_stats(pitcher_ids, year, args.verbose, log)
     batter_offense = fetch_batter_offense_profiles(
         batter_ids, year, args.verbose, log
@@ -1523,7 +1581,11 @@ def main(argv: list[str] | None = None) -> int:
         if risk["bf_risk_factor"] < 1.0 and args.ip is None and args.batters_faced is None:
             projected_ip = projected_ip * float(risk["bf_risk_factor"])
         offense_summary = summarize_lineup_offense(
-            item.get("lineup") or [], batter_offense
+            item.get("lineup") or [],
+            batter_offense,
+            hand_rates=batter_k_vs_hand,
+            pitcher_hand=pitcher_hand,
+            fangraphs_batting=fangraphs_batting,
         )
         # Patient / walk-heavy lineups trim BF/IP before walking the order.
         if args.ip is None and args.batters_faced is None:
@@ -1569,12 +1631,29 @@ def main(argv: list[str] | None = None) -> int:
             "hr9": risk_metrics.get("hr9"),
             "k9": risk_metrics.get("k9"),
             "xfip": risk_metrics.get("xfip"),
+            "fip": risk_metrics.get("fip"),
+            "siera": risk_metrics.get("siera"),
+            "xera": risk_metrics.get("xera"),
+            "stuff_plus": risk_metrics.get("stuff_plus"),
+            "location_plus": risk_metrics.get("location_plus"),
+            "pitching_plus": risk_metrics.get("pitching_plus"),
             "pitcher_k_pct": risk_metrics.get("pitcher_k_pct"),
             "pitcher_contact_pct": risk_metrics.get("pitcher_contact_pct"),
+            "z_contact_pct": risk_metrics.get("z_contact_pct"),
             "pitcher_gb_pct": risk_metrics.get("pitcher_gb_pct"),
             "pitcher_fb_pct": risk_metrics.get("pitcher_fb_pct"),
             "pitcher_iffb_pct": risk_metrics.get("pitcher_iffb_pct"),
             "pitcher_soft_pct": risk_metrics.get("pitcher_soft_pct"),
+            "swstr_pct": risk_metrics.get("swstr_pct"),
+            "csw_pct": risk_metrics.get("csw_pct"),
+            "o_swing_pct": risk_metrics.get("o_swing_pct"),
+            "strike_pct": risk_metrics.get("strike_pct"),
+            "f_strike_pct": risk_metrics.get("f_strike_pct"),
+            "zone_pct": risk_metrics.get("zone_pct"),
+            "pitches": risk_metrics.get("pitches"),
+            "strikes": risk_metrics.get("strikes"),
+            "stuff_ceiling_bump": 0.0,
+            "stuff_ceiling_note": "",
             "pitcher_style": risk_metrics.get("pitcher_style") or "",
             "pitcher_style_flags": risk_metrics.get("pitcher_style_flags") or "",
             "outing_risk": risk.get("outing_risk"),
@@ -1584,12 +1663,29 @@ def main(argv: list[str] | None = None) -> int:
             "last3_ks": None if not form else form.get("last3_ks"),
             "last3_k9": None if not form else form.get("last3_k9"),
             "last3_ip": None if not form else form.get("last3_ip"),
+            "last3_ks_adj": None if not form else form.get("last3_ks_adj"),
+            "last3_k9_adj": None if not form else form.get("last3_k9_adj"),
+            "last3_opp_k_pct": None if not form else form.get("last3_opp_k_pct"),
+            "form_opp_factor": None if not form else form.get("form_opp_factor"),
+            "form_opp_note": "" if not form else (form.get("form_opp_note") or ""),
             "form_ks": None,
             "form_weight": None,
             "lineup_k_pct": offense_summary.get("lineup_k_pct"),
+            "lineup_k_pct_vs_lhp": offense_summary.get("lineup_k_pct_vs_lhp"),
+            "lineup_k_pct_vs_rhp": offense_summary.get("lineup_k_pct_vs_rhp"),
+            "lineup_k_pct_vs_hand": offense_summary.get("lineup_k_pct_vs_hand"),
+            "lineup_k_vs_hand_side": offense_summary.get("lineup_k_vs_hand_side"),
+            "lineup_k_vs_hand_pa": offense_summary.get("lineup_k_vs_hand_pa"),
+            "lineup_k_vs_hand_n": offense_summary.get("lineup_k_vs_hand_n"),
+            "lineup_k_vs_hand_source": offense_summary.get("lineup_k_vs_hand_source"),
             "lineup_avg": offense_summary.get("lineup_avg"),
             "lineup_bb_pct": offense_summary.get("lineup_bb_pct"),
             "lineup_bip_pct": offense_summary.get("lineup_bip_pct"),
+            "lineup_woba": offense_summary.get("lineup_woba"),
+            "lineup_wrc_plus": offense_summary.get("lineup_wrc_plus"),
+            "lineup_iso": offense_summary.get("lineup_iso"),
+            "lineup_quality_n": offense_summary.get("lineup_quality_n"),
+            "lineup_quality_source": offense_summary.get("lineup_quality_source"),
             "contact_grade": offense_summary.get("contact_grade") or "",
             "offense_source": offense_summary.get("offense_source"),
             "offense_factor": None,
@@ -1680,9 +1776,27 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     row["offense_factor"] = offense_factor
                     row["lineup_k_pct"] = offense_meta.get("lineup_k_pct")
+                    row["lineup_k_pct_vs_lhp"] = offense_meta.get("lineup_k_pct_vs_lhp")
+                    row["lineup_k_pct_vs_rhp"] = offense_meta.get("lineup_k_pct_vs_rhp")
+                    row["lineup_k_pct_vs_hand"] = offense_meta.get("lineup_k_pct_vs_hand")
+                    row["lineup_k_vs_hand_side"] = offense_meta.get(
+                        "lineup_k_vs_hand_side"
+                    )
+                    row["lineup_k_vs_hand_pa"] = offense_meta.get("lineup_k_vs_hand_pa")
+                    row["lineup_k_vs_hand_n"] = offense_meta.get("lineup_k_vs_hand_n")
+                    row["lineup_k_vs_hand_source"] = offense_meta.get(
+                        "lineup_k_vs_hand_source"
+                    )
                     row["lineup_avg"] = offense_meta.get("lineup_avg")
                     row["lineup_bb_pct"] = offense_meta.get("lineup_bb_pct")
                     row["lineup_bip_pct"] = offense_meta.get("lineup_bip_pct")
+                    row["lineup_woba"] = offense_meta.get("lineup_woba")
+                    row["lineup_wrc_plus"] = offense_meta.get("lineup_wrc_plus")
+                    row["lineup_iso"] = offense_meta.get("lineup_iso")
+                    row["lineup_quality_n"] = offense_meta.get("lineup_quality_n")
+                    row["lineup_quality_source"] = offense_meta.get(
+                        "lineup_quality_source"
+                    )
                     row["contact_grade"] = offense_meta.get("contact_grade") or ""
                     row["offense_source"] = offense_meta.get("offense_source")
                     row["discipline_grade"] = (
@@ -1729,6 +1843,29 @@ def main(argv: list[str] | None = None) -> int:
 
     # Pitcher-own velo/whiff ceiling (SPIKE) — before ticket outlook notes.
     out = apply_pitcher_stuff_overlay(out, savant_pitcher_stuff, hand_mixes)
+    # FIP/SIERA/Stuff+/xStats + per-pitch run value — confirm-only display.
+    out = apply_pitcher_advanced_metrics(
+        out,
+        fangraphs=fangraphs,
+        savant_expected=savant_pitcher_expected,
+    )
+    # Tiny Exp K bump for full attack-plate stacks only; re-rank after.
+    out = apply_attack_plate_stuff_bump(out)
+    out = out.sort_values(
+        by=["expected_ks"],
+        ascending=False,
+        na_position="last",
+        kind="mergesort",
+    ).reset_index(drop=True)
+    ranks = []
+    rank_i = 1
+    for _, r in out.iterrows():
+        if r["status"] == "ok" and pd.notna(r["expected_ks"]):
+            ranks.append(rank_i)
+            rank_i += 1
+        else:
+            ranks.append(pd.NA)
+    out["rank"] = ranks
 
     # Soft-contact FILLER gated by opposing lineup arsenal rank on this slate.
     out = apply_ticket_outlook(out)
@@ -1739,7 +1876,86 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as exc:  # pragma: no cover - network / API soft-fail
         log(True, f"vs-team history skipped: {exc}")
 
+    # Live book lines (The Odds API) — display-only; never moves expected_ks.
+    if args.odds:
+        markets = tuple(
+            m.strip() for m in str(args.odds_markets or "").split(",") if m.strip()
+        ) or DEFAULT_MARKETS
+        key = resolve_api_key(args.odds_key)
+        if not key:
+            log(
+                True,
+                "Odds skipped: set ODDS_API_KEY_NEW / ODDS_API_KEY / "
+                "THE_ODDS_API_KEY (or pass --odds-key)",
+            )
+        else:
+            if args.odds_daily_budget is not None:
+                os.environ["ODDS_DAILY_BUDGET"] = str(int(args.odds_daily_budget))
+            try:
+                out = enrich_dataframe_odds(
+                    out,
+                    api_key=key,
+                    markets=markets,
+                    slate_date=str(args.date or game_date),
+                    skip_finished=not bool(args.odds_include_finished),
+                    force_refresh=bool(args.odds_force),
+                    verbose=args.verbose,
+                )
+            except Exception as exc:  # pragma: no cover
+                log(True, f"Odds enrich failed: {exc}")
+    else:
+        log(args.verbose, "Odds skipped (--no-odds)")
+
+    # PA-level K dist + rate/volume + book-vs-model read (after lines join).
+    try:
+        out = enrich_dataframe_k_distribution(out)
+    except Exception as exc:  # pragma: no cover
+        log(True, f"K distribution skipped: {exc}")
+
     print(format_table(out))
+    # Book vs model — question-first (books may be sharper; edge ≠ ticket).
+    if "k_line" in out.columns and out["k_line"].notna().any():
+        print(
+            "\nBook vs model (display only — public info ≠ edge; "
+            "ask why the pitcher can get X Ks)"
+        )
+        shown = out[out["k_line"].notna()].sort_values(
+            "k_edge", ascending=False, na_position="last"
+        )
+        for _, r in shown.iterrows():
+            edge = r.get("k_edge")
+            edge_s = (
+                f"{float(edge):+.2f}"
+                if edge is not None and not (isinstance(edge, float) and pd.isna(edge))
+                else "—"
+            )
+            p_over = r.get("k_p_over")
+            p_s = (
+                f" · P(over)≈{100 * float(p_over):.0f}%"
+                if p_over is not None
+                and not (isinstance(p_over, float) and pd.isna(p_over))
+                else ""
+            )
+            shape = (str(r.get("k_dist_shape") or "")).strip()
+            shape_s = f" · {shape}" if shape else ""
+            print(
+                f"  {r.get('pitcher')}: Exp {float(r['expected_ks']):.2f} vs "
+                f"O/U {float(r['k_line']):.1f} "
+                f"({format_american(r.get('k_over_price'))}/"
+                f"{format_american(r.get('k_under_price'))} "
+                f"{r.get('k_book') or '?'}) · edge {edge_s}{p_s}{shape_s}"
+            )
+            note = (str(r.get("book_model_note") or "")).strip()
+            if note:
+                print(f"    {note}")
+    elif "book_model_note" in out.columns:
+        top = out[out["status"].astype(str).eq("ok")].head(8)
+        if not top.empty:
+            print("\nWhy ~X Ks (lineup K env × volume — no book line yet)")
+            for _, r in top.iterrows():
+                note = (str(r.get("book_model_note") or "")).strip()
+                if note:
+                    print(f"  {r.get('pitcher')}: {note}")
     # Print ticket outlook for flagged arms (FILLER / MATCHUP_OK / SPIKE /
     # THIN_TOTAL / UNDER_OK).
     flagged = out[out["ticket_outlook"].astype(str).str.len() > 0]
@@ -1750,7 +1966,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"  {r.get('ticket_outlook'):<11} {r.get('pitcher')}: "
                 f"{r.get('ticket_note')}"
             )
-    # Stuff / SPIKE watch (ceiling layer — does not move expected_ks).
+    # Stuff / SPIKE watch + attack-plate bumps (tiny Exp K only on full stacks).
     if "spike_risk" in out.columns:
         spikes = out[out["status"].eq("ok") & out["spike_risk"].astype(bool)]
         if not spikes.empty:
@@ -1768,6 +1984,19 @@ def main(argv: list[str] | None = None) -> int:
                     f"  {r.get('pitcher')}: solo={r.get('arsenal_abs_grade')} "
                     f"stuff={r.get('stuff_grade') or '?'} whiff {wh_s} "
                     f"{velo_s} · {r.get('spike_flags')}"
+                )
+    if "stuff_ceiling_bump" in out.columns:
+        bumped = out[
+            out["status"].eq("ok")
+            & out["stuff_ceiling_bump"].fillna(0).astype(float).gt(0)
+        ]
+        if not bumped.empty:
+            print("\nAttack-plate stuff bump (capped Exp K add)")
+            for _, r in bumped.iterrows():
+                print(
+                    f"  {r.get('pitcher')}: +{float(r.get('stuff_ceiling_bump')):.2f} "
+                    f"→ Exp K {float(r.get('expected_ks')):.2f} · "
+                    f"{r.get('stuff_ceiling_note')}"
                 )
     # Discipline / pitch-count watch list.
     if "discipline_grade" in out.columns:

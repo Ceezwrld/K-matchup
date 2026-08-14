@@ -1,0 +1,3 @@
+date,game,status_at_lock,leg,player,market,line,side,book_line_snap,book_over_price,thesis,support_metrics,result,notes
+2026-08-13,PHI@MIN,In Progress,A,Aaron Nola,pitcher_hits_allowed,4.5,over,5.5,112,damage/hits floor under book 5.5,soft Arv-1.8; contact_heavy BIP69%; BA against .279; high_hr exit_hr; ExpK 4.26 fade K,HIT,5 H / 5.0 IP / 9 K / 1 ER — O4.5 H cashed; also smashed K 5.5 (process was hits lane not K)
+2026-08-13,PHI@MIN,In Progress,B,Byron Buxton,batter_hits,0.5,over,,,top hits board vs Nola,hits_score 59.2; Brl 17.6; HH 47.3; AVG vs RHP .265; xwOBA .348; slot 2,HIT,1-4 | 2B — O0.5 cashed; same-game correlated multi 2/2

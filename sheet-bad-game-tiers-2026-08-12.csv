@@ -1,0 +1,28 @@
+tier,rank,pitcher,opponent,game,status,damage_score,hits_score,er_score,damage_thesis,stuff_plus,arsenal_vs_opp,opp_wrc_plus,opp_iso,opp_bip_pct,contact_grade,outing_risk,soft_contact,risk_flags,platoon_adv,mean_avg_vs_hand,top_hitter
+T1,1,Adrian Houser,HOU,HOU@SF,Final,95,95,95,True,89.8,-3.42,118.1,0.18,68.7,neutral,medium,True,"elev_hr,elev_xfip,short_recent_ip",4/9,0.253,Yordan Alvarez (L) .avg0.345
+T1,2,Merrill Kelly,COL,COL@AZ,Final,95,95,95,True,88.9,-1.13,108.6,0.206,70.6,neutral,high,True,"elev_bb,high_hr,high_xfip,exit_hr,exit_xfip_bb",7/9,0.271,Zac Veen (L) .avg0.333
+T1,3,Jack Perkins,TB,TB@ATH,Final,92.5,94.2,94.3,True,98.5,0.14,115.2,0.169,73.5,contact_heavy,high,False,"elev_bb,high_hr,elev_xfip,short_recent_ip,exit_hr",6/9,0.261,Junior Caminero (R) .avg0.275
+T1,4,Ryan Feltner,AZ,COL@AZ,Final,90.8,91.7,93.0,True,92.2,1.81,106.5,0.168,69.6,contact_heavy,high,True,"elev_bb,high_hr,high_xfip,exit_hr,exit_xfip_bb",5/9,0.243,Gabriel Moreno (R) .avg0.313
+T1,5,Eric Lauer,KC,KC@LAD,Pre-Game,89.7,91.6,92.2,True,88.4,2.29,99.4,0.16,74.5,contact_heavy,high,True,"high_hr,high_xfip,exit_hr",6/9,0.242,Bobby Witt Jr. (R) .avg0.311
+T1,6,Cal Quantrill,LAA,TEX@LAA,Pre-Game,87.5,87.2,88.0,False,89.6,-5.6,99.3,0.151,63.7,whiff_prone,medium,True,"elev_hr,high_xfip",4/9,0.244,Mike Trout (R) .avg0.216
+T2,7,José Soriano,BOS,BOS@TOR,Warmup,78.8,79.3,78.9,True,97.5,-3.5,109.9,0.179,67.3,neutral,medium,False,high_bb,5/9,0.254,Willson Contreras (R) .avg0.281
+T2,8,Robbie Ray,MIL,MIL@SD,In Progress,75.0,74.2,75.5,True,94.6,0.9,114.7,0.164,61.0,whiff_prone,high,False,"high_bb,high_xfip,exit_xfip_bb",6/9,0.265,Andrew Vaughn (R) .avg0.380
+T3,9,Foster Griffin,DET,CLE@DET,In Progress,55.5,56.3,56.7,True,97.8,-1.14,121.6,0.174,68.9,neutral,low,False,elev_hr,6/8,0.263,Dillon Dingler (R) .avg0.248
+T3,10,Shane Baz,MIN,BAL@MIN,Final,55.5,56.5,55.0,True,98.6,-1.63,102.8,0.16,70.0,contact_heavy,clear,False,,6/9,0.249,Trevor Larnach (L) .avg0.287
+T3,11,David Peterson,WSH,CHC@WSH,In Progress,54.5,54.3,54.7,True,89.0,-2.16,101.7,0.171,63.8,whiff_prone,low,False,elev_bb,7/9,0.257,Brady House (R) .avg0.362
+T3,12,Janson Junk,PIT,PIT@MIA,In Progress,54.2,53.4,55.0,True,100.8,-0.66,111.8,0.163,60.8,whiff_prone,medium,True,"elev_hr,elev_xfip,short_recent_ip",6/9,0.27,Ronny Simon (S) .avg0.357
+T3,13,Luis Castillo,CIN,CIN@CWS,Pre-Game,53.3,52.6,54.9,True,97.1,-3.0,96.1,0.193,61.7,whiff_prone,medium,False,"elev_hr,elev_xfip",5/9,0.239,Michael Toglia (S) .avg0.500
+T3,14,Rhett Lowder,CWS,CIN@CWS,Pre-Game,52.9,52.1,53.5,True,86.1,0.37,107.0,0.175,61.1,whiff_prone,medium,False,"elev_bb,elev_xfip",7/9,0.235,Munetaka Murakami (L) .avg0.257
+T3,15,Kyle Leahy,PHI,PHI@STL,Final,52.7,53.6,52.9,True,91.9,0.57,105.7,0.167,69.3,contact_heavy,clear,False,,6/9,0.261,Bryce Harper (L) .avg0.285
+T3,16,Framber Valdez,CLE,CLE@DET,In Progress,52.3,52.5,51.9,False,102.5,-1.96,102.8,0.143,66.0,neutral,clear,False,,7/9,0.251,Chase DeLauter (L) .avg0.344
+T4,17,Jackson Kent,CHC,CHC@WSH,In Progress,46.4,47.4,46.7,False,100,0,114.3,0.169,70.0,contact_heavy,clear,False,,0/0,,
+T4,18,Dustin May,SD,MIL@SD,In Progress,45.3,47.1,44.6,True,101.6,-1.81,94.9,0.152,74.1,contact_heavy,clear,False,,4/9,0.227,Ty France (R) .avg0.299
+T4,19,Zac Thornton,ATL,NYM@ATL,Warmup,42.8,43.6,42.7,True,97.1,3.69,109.3,0.185,69.0,neutral,low,True,elev_xfip,6/9,0.226,Michael Harris II (L) .avg0.293
+T4,20,Zebby Matthews,BAL,BAL@MIN,Final,41.3,40.5,43.0,False,94.9,0.47,99.2,0.162,60.8,whiff_prone,medium,False,"high_hr,elev_xfip,exit_hr",4/9,0.208,Pete Alonso (R) .avg0.265
+T4,21,Drew Rasmussen,ATH,TB@ATH,Final,34.7,35.3,34.6,False,108.9,-5.16,102.3,0.16,67.8,neutral,clear,False,,4/9,0.234,Tyler Soderstrom (L) .avg0.261
+T4,22,Ranger Suarez,TOR,BOS@TOR,Warmup,34.7,36.0,33.5,True,94.4,0.29,94.0,0.136,71.3,contact_heavy,low,False,short_recent_ip,6/9,0.255,Brett Bateman (L) .avg0.500
+T4,23,Carmen Mlodzinski,MIA,PIT@MIA,In Progress,31.8,32.1,31.3,False,92.1,2.6,101.1,0.152,66.4,neutral,low,True,"elev_xfip,short_recent_ip",5/9,0.248,Griffin Conine (L) .avg0.282
+T4,24,Will Warren,SEA,SEA@NYY,Warmup,31.8,32.7,32.1,False,104.0,1.04,110.1,0.148,69.3,neutral,clear,False,,6/9,0.243,Dominic Canzone (L) .avg0.250
+T4,25,Tyler Mahle,NYM,NYM@ATL,Warmup,29.8,30.3,30.2,False,88.2,1.58,99.7,0.141,67.3,neutral,low,False,elev_hr,5/9,0.249,Francisco Alvarez (R) .avg0.263
+T4,26,Zack Wheeler,STL,PHI@STL,Final,24.3,25.0,24.5,False,104.5,-0.4,104.0,0.146,68.7,neutral,clear,False,short_recent_ip,5/9,0.222,Alec Burleson (L) .avg0.328
+T4,27,Bryce Miller,NYY,SEA@NYY,Warmup,5.8,5.1,7.5,False,107.9,3.18,106.5,0.201,61.4,whiff_prone,low,False,elev_hr,7/9,0.233,Luis García Jr. (L) .avg0.297

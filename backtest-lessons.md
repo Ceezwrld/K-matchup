@@ -14,22 +14,104 @@ When a locked leg loses or a lean is clearly wrong:
 
 Hits reinforce; misses rewrite the checklist. No silent losses.
 
+## 2026-08-13 full slate grade — projections vs book vs domination (n=18)
+
+Full detail in `backtest-2026-08-13.csv`. Includes west-coast finals that closed early **8/14 UTC** (TEX@LAA, MIL@LAD). **8/14 day slate has not started** (first tip ~1:20 PM CT) — grade that card separately after finals.
+
+**Model fit:** mean Exp **4.82 → 5.06** act · bias **+0.24** · MAE **2.10**.  
+**K over @ snap book:** **9/18 (50%)**. Blind chalk over remains coin-flip; **process lanes** separated winners from traps.
+
+### User tickets
+
+| Ticket | Legs | Result |
+|--------|------|--------|
+| Early | Messick **O5.5 K** · Gilbert **O4.5 K** | **2/2 HIT** |
+| Late | Nola **O4.5 H** · Buxton **O0.5 H** | **2/2 HIT** (Nola 5 H; Buxton 1-4 2B) |
+
+### Who projected / who got dominated
+
+#### Projected cleanly (Exp ≈ act, or process lane cashed)
+
+| Arm | Exp → Act | Book K | Metrics that stood | Book “why” |
+|-----|-----------|--------|--------------------|------------|
+| **Messick** | 5.63 → **6** | 5.5 **HIT** | AVG/WHIFF · Exp≈book · rate held | Aligned 5.5 — no fake edge |
+| **Gilbert** | 6.08 → **7** | 6.5 **HIT** | Stuff+109 · whiff_prone · SPIKE · length | Ace floor; line later cut to 5.5 |
+| **Ureña** | 4.57 → **5** | 4.5 **HIT** | OFF TEX · Exp≈book after cut from 5.5 · 6IP/2H/0ER | Market cut to 4.5 already priced volume |
+| **Phillips** | 5.29 → **6** | 3.5 **HIT** | MATCHUP_OK O3.5 floor · whiff_prone | Soft book 3.5; fat edge real on K (+damage) |
+| **Drohan** | 5.74 → **5** | 4.5 **HIT** | Volume 27 BF path · clear outing | Book soft at 4.5 (LAD brand); O4.5 cashed, not juice |
+| **Bradley** | 3.36 → **3** | 5.5 **MISS over** | Soft solo · SPIKE pass · short IP | Book **high** SPIKE premium — fade K-over **correct** |
+
+#### Domination / damage (got hit hard)
+
+| Arm | Box | Exp K | What printed | Lesson |
+|-----|-----|-------|--------------|--------|
+| **deGrom** | **2.0 IP / 3 K / 6 H / 2 ER** (53 pitches) | 6.37 | ELITE stack **died on length** — early hook | TRUST/ELITE ≠ IP guarantee; outing risk > matchup K% |
+| **Abbott** | 4.1 / 3 K / **7 H / 5 ER** | 4.05 | `high_bb`/`xFIP` damage **CONFIRM** | Hits/ER lane > K |
+| **Bradley** | 4.0 / 3 K / **7 H / 5 ER** / 2 HR | 3.36 | Soft vs PHI + elev_bb — damage, not K | Pass on K held; damage was the live side |
+| **Gausman** | 4.2 / **7 K** / **7 H / 6 ER** | 4.93 | Chaos K + blowup | K can cash with destruction — not “clean good game” |
+| **Martin** | **2.0 IP** / 3 K / 2 HR | 4.87 | Stuff+90 length veto **CONFIRM** | O3.5 max rule held |
+| **Sasaki** | 6.0 / **2 K** / 4 H / 2 ER / **5 BB** | 5.37 | Patient MIL leash + walks killed rate (2/25=8%) | ELITE+SPIKE can still go 2 K when BB spike; volume≠whiffs |
+
+#### Ceiling spikes the model missed (undershoot)
+
+| Arm | Exp → Act | Book | What stood / what broke |
+|-----|-----------|------|-------------------------|
+| **Ashcraft** | 4.71 → **10** | 5.5 **HIT** | SPIKE+Stuff+106+Arv+2.4 — **never soft-under CONFIRM**; Exp too low |
+| **Cavalli** | 4.49 → **10** | 5.5 **HIT** | Fade-over **WRONG** — whiff_prone+Stuff+102+8IP (Castillo-style) |
+| **Nola** | 4.26 → **9** | 5.5 **HIT** | Soft/contact_heavy fade-K **wrong on K**; **hits ticket still right** (5 H) |
+
+#### Soft / quiet / SPIKE process mixed
+
+| Arm | Exp → Act | Read |
+|-----|-----------|------|
+| **Montero** | 3.25 → **0** | UNDER_OK quiet **CONFIRM**; fat +0.75 K edge was trap |
+| **Tolle** | 5.39 → **4** (8 IP gem) | SPIKE blocked soft-under (process OK); K over MISS — rate died |
+| **Fried** | 5.32 → **4** | O5.5 MISS; O4.5 would HIT — sizing lesson |
+| **Scherzer** | ~3 → **4** | Fade K-over nearly right (miss 4.5 by 0.5); damage soft |
+
+### Where our edge was real
+
+1. **Process > raw Exp edge** — Messick/Gilbert tickets on WHIFF/Stuff stacks; Montero UNDER_OK; Abbott damage; Martin length; Bradley pass; SPIKE no-soft-under (Ashcraft).
+2. **Fat `k_edge` ≠ ticket** — Montero +0.75 → 0 K; Drohan +1.24 was the rare book-soft that cashed O4.5 but still not “free”; morning Gausman +1.66 was the danger signal before OFF cut.
+3. **Book aligned (±0.2)** — Messick, Ureña, (deGrom pre-hook), Sasaki: size with PA×volume. deGrom/Sasaki **aligned numbers still missed** on length/BB — alignment ≠ cash.
+4. **Book high on K** — Nola/Bradley SPIKE-name premium: fade K-over was right on Bradley; Nola K exploded anyway while **hits lane** (our ticket) cashed.
+5. **Hits multi thesis** — Nola soft+contact_heavy+`high_hr` + Buxton barrel/HH #1 → **2/2**.
+
+### What stood real (lock)
+
+| Rule | 8/13 exhibit |
+|------|----------------|
+| Never soft-under SPIKE | Ashcraft 10 · Tolle process held |
+| ELITE+whiff needs Stuff+≥100 **and** length | deGrom ELITE died in 2 IP; Gilbert length OK |
+| MATCHUP_OK = O3.5 + length | Phillips OK · Martin veto |
+| Fat edge = question | Montero trap · Drohan book-soft cashed floor only |
+| Castillo/Cavalli | Do not hard-fade K when whiff_prone+Stuff+≥100+5IP path |
+| Hits lane when soft+BIP+hr flags | Nola O4.5 H + Buxton |
+| Patient BB leash | Sasaki 5 BB / 2 K — elevate walk risk before juicing O5.5 |
+
+### Learn from the misses (rewrite checklist)
+
+1. **deGrom O6.5/TRUST miss** — Early hook (2 IP / 6 H). Add: even ELITE/TRUST needs **first-time-through stability**; if elev_hr + traffic early, do not assume Exp finishes.
+2. **Sasaki ELITE → 2 K** — Whiff_prone OFF was not enough vs **5 BB / patient MIL**. Spike stuff ≠ Ks when Zone/attacks fail. Size O4.5 max when pitch_count elevated + BB/9 ≥ ~3.4.
+3. **Cavalli fade** — Biggest process miss. Arv− underweighted opp whiff_prone + Stuff+102 + length.
+4. **Nola K undershoot** — Hits ticket correct; model Exp 4.26 vs **9 K** means soft arsenal can still punch out. Don’t treat soft matchup as “no Ks” — treat as **prefer hits/ER over juiced K-over**.
+5. **Tolle** — Soft under would have cashed on result; process correctly forbade it. Live with variance.
+
+### Process stance after full 8/13
+
+Tickets **4/4**. Model MAE still ~2.1 with ceiling spikes (Ashcraft/Cavalli/Nola) and length kills (deGrom/Martin). Edge that stood: **lane selection** (K vs hits vs under vs pass) and **SPIKE/length rules** — not chasing |edge| on the K line.
+
+
 ## 2026-08-13 locked ticket — Nola O4.5 H + Buxton O0.5 H
 
-**2-leg same-game hits multi** (PHI@MIN). Locked while game **In Progress**. Grade after final.
+**2-leg same-game hits multi** (PHI@MIN). **Result: 2/2 HIT.**
 
-| Leg | Market | Book context | Thesis |
-|-----|--------|--------------|--------|
-| **A. Aaron Nola O4.5 hits** | Pitcher hits allowed | Book H **5.5** (+112/−149 DK) — O4.5 is floor under chalk | Soft arsenal (Arv **−1.8**) · MIN **contact_heavy** BIP 69% · BA against **.279** · `high_hr`/`exit_hr` · Exp K only **4.26** (fade K-over; hits lane) |
-| **B. Byron Buxton O0.5 hits** | Batter hits | #1 hits board vs Nola (score **59.2**) | Barrel **17.6%** · HH **47.3%** · AVG vs RHP **.265** · xwOBA **.348** · slot **2** |
+| Leg | Market | Actual | Result |
+|-----|--------|--------|--------|
+| **A. Aaron Nola O4.5 hits** | Pitcher hits | **5 H** / 5.0 IP (also 9 K / 1 ER) | **HIT** |
+| **B. Byron Buxton O0.5 hits** | Batter hits | **1-4** (2B) | **HIT** |
 
-**Correlation:** Buxton single+ helps both legs; multi is not independent. Nola still needs ~4 other hits (or Buxton multi-hit) for O4.5 H if Buxton only goes 1-for-X.
-
-**Process checks held:** not a Nola K ticket (book K 5.5 / P(O) ~24%); Bradley SPIKE still passed; Buxton picked as top hits lean on board metrics.
-
-**Kill risks:** Nola early hook before 5 H · Buxton 0-fer with hard contact outs · soft contact distributed to lower slots only.
-
-Snap: late lite odds pull `00aa631` · OFF nines · day odds budget ~63/500.
+Thesis held: soft Arv / contact_heavy / `high_hr` for Nola hits floor; Buxton #1 hits board (Brl 17.6 / HH 47.3). Note: Nola also crushed book K 5.5 — hits lane was still the right *ticket* frame vs juiced K-over pregame.
 
 
 ## 2026-08-13 early/midday grade — process vs book (n=12 finals)

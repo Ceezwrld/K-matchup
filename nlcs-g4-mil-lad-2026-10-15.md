@@ -20,27 +20,28 @@ Galleries:
 
 ## Best spots (ranked)
 
+**Batter leans with overlap heatmaps + explanations:**  
+→ [`pregame-batter-leans-2026-10-15-nlcs.md`](pregame-batter-leans-2026-10-15-nlcs.md)  
+(Teoscar · Ohtani · Pages · Mitchell · Turang · Bauers — each with map + why)
+
 ### 1) Glasnow K over (process #1)
 WHIFF + elite stuff whiff 30% + whiff_prone MIL card + Exp 6.6. Same SPIKE lesson as Williams — don’t soft-under if the book hangs high. Size with volume (~5.6 IP / 22 BF).
 
 ### 2) LAD hits / H+R+RBI vs Drohan
 | Pri | Batter | Hits | HR/RBI | Zone | Why |
 |-----|--------|------|--------|------|-----|
-| **1** | **Ohtani** | **63.2** | **65.2** | HOT heart / lo-mid / up-away; **COLD** on Drohan’s main OUT-DN-3B dump (29%) | Board #1 + power; needs Drohan to miss middle (he does ~8% heart) |
-| **1b** | **Teoscar** | **58.6** | **56.6** | **Best heatmap fit** — **HOT on Drohan’s #1 RHB tunnel** OUT-DN-3B (.410) + heart / lo-mid | Location alignment > name |
-| **2** | **Pages** | 56.7 | 55.0 | HOT heart / lo-mid; COLD dump | Mid-order damage if FB/SI leaks |
-| **2b** | **Freeman** | 53.8 | 54.6 | HOT lo-mid / heart; COLD lo-in | Classic middle-miss |
-| Fade thin | Tucker | 49.2 | — | **COLD** on main LHB dump | Soft fade on this map |
-| Fade | E. Hernández | 40.8 | — | Weak board + cold | Pass |
+| **1** | **Teoscar** | **58.6** | **56.6** | **HOT on Drohan dump** OUT-DN-3B + heart/lo-mid | Best *location* matchup |
+| **1b** | **Ohtani** | **63.2** | **65.2** | HOT heart/lo-mid; COLD dump | Board ceiling — mistake-middle |
+| **2** | **Pages** | 56.7 | 55.0 | HOT heart/lo-mid; COLD dump | Secondary |
+| Fade | Tucker / E. Hernández | — | — | COLD tunnels / soft board | Pass |
 
 ### 3) MIL hits vs Glasnow (tougher — WHIFF arm)
 | Pri | Batter | Hits | HR/RBI | Zone | Why |
 |-----|--------|------|--------|------|-----|
-| **1** | **Mitchell** | **58.7** | **59.3** | **6 HOTs** incl. his main dump OUT-DN-1B (.421) + heart / lo-away | Best MIL heatmap vs Glasnow |
-| **1b** | **Bauers** | **59.4** | **60.7** | HOT up-away / hi-mid / heart (ceiling damage .764 up-away) | Board #1 MIL; mistake-middle/up |
-| **1c** | **Turang** | 55.8 | 54.0 | **HOT on dump** OUT-DN-1B (.517) + heart | Contact + location fit |
-| 2 | Chourio | 57.7 | 57.8 | HOT heart only; **COLD** main dump | Needs middle mistake |
-| Fade | Frelick | 42.3 | — | COLD on dump tunnels | Pass |
+| **1** | **Mitchell** | **58.7** | **59.3** | **6 HOTs** incl. KC dump | Best map on slate |
+| **1b** | **Turang** | 55.8 | 54.0 | HOT on KC dump + heart | Contact + location |
+| **1c** | **Bauers** | **59.4** | **60.7** | HOT FF up/heart | Mistake-heater damage |
+| Fade | Frelick | 42.3 | — | COLD on plan | Pass |
 
 ---
 
@@ -52,6 +53,13 @@ WHIFF + elite stuff whiff 30% + whiff_prone MIL card + Exp 6.6. Same SPIKE lesso
 4. **Mitchell or Bauers** — best MIL counters if you want action vs Glasnow.  
 5. Avoid chalk K over on Drohan; avoid Frelick / E. Hernández / soft Tucker on the maps.
 
-### Heatmap one-liners
-- **Drohan** lives **down-3B** (~22–29%). Teoscar is HOT there; Ohtani/Tucker are COLD there (they need mistakes).  
-- **Glasnow** lives **down-1B** (~27–34%). Mitchell/Turang/Bauers can punish; Chourio/Yelich/Frelick mostly need heart leaks.
+### Heatmap one-liners (+ which pitches)
+Galleries now open with **pitch-plan panels** (where FF/SL/SI/KC etc. land vs LHB and vs RHB). Overlap cells label `W% + primary pitch`.
+
+**Drohan**
+- vs **RHB:** SL/CU/CH dump **OUT-DN-3B** — Teoscar **HOT** on that tunnel (slider-led).  
+- vs **LHB:** same down-3B plan (SL heavy) — Ohtani/Tucker **COLD** there; their HOTs are heart / lo-mid (SI/FF mistakes).
+
+**Glasnow**
+- vs **LHB/RHB:** KC + SL live **OUT-DN-1B**; FF more up.  
+- Mitchell/Turang **HOT** on that KC/SL dump; Bauers ceiling is up-away/heart (FF/SI miss). Chourio HOT is heart only (needs the mistake, not the curve).

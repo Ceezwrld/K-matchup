@@ -640,6 +640,36 @@ Open a pitcher card and answer **four questions in order**. Do not start at Exp 
 
 Also check: **Official** vs Prior · projected IP · outing risk · vs-team history (confirm only).
 
+## Pre-game batter leans + heatmaps (USE before every game)
+
+**User-locked 10/15.** For each starting pitcher with an **OFF** lineup, publish a BEST / GOOD / FADE batter card **with overlap heatmaps** for every lean — not text-only.
+
+### What to deliver
+1. Refresh board (`k_matchups.py`) + run `zone_overlap.py` (images on) for each SP.
+2. Rank opposing batters with **hits board + HOT/WARM/COLD + pitch that builds the zone**.
+3. For each **BEST** and **GOOD** lean, include:
+   - Hits / H+R+RBI scores  
+   - Overlap PNG (and pitch-plan panel for that hand)  
+   - 2–4 sentence **why** (tunnel fit vs mistake-middle)  
+   - Prop lean (Hits vs H+R+RBI)
+4. Explicit **FADE** list (COLD on pitcher’s real dump + soft board).
+5. Keep pitcher K lane separate (SPIKE / WHIFF / Exp) — batter leans don’t replace it.
+
+### Tier rules
+| Tier | Rule |
+|------|------|
+| **BEST** | HOT on pitcher’s main dump **or** elite board + ≥3–4 HOTs (note if dump is COLD) |
+| **GOOD** | 2–3 HOTs / strong board; may need FB/SI mistake |
+| **FADE** | COLD on real tunnel + soft/mid board |
+
+### Reading reminder (for the card)
+Overlap: green = damage · `W% + pitch` = frequency + primary pitch · red outline = HOT · blue = COLD.  
+Pitch-plan panel first (vs that batter’s hand), then overlap.
+
+Exhibit: `pregame-batter-leans-2026-10-15-nlcs.md` (Teoscar/Ohtani/Mitchell/Turang/Bauers).
+
+---
+
 ## Ticket lock routine (USE THIS before every card)
 
 **User-locked 8/5–8/6.** Run this full path before recommending or firing any over/under. Exp K and slate `#` come last. Goal = find edge or pass.

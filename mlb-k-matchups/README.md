@@ -71,6 +71,22 @@ Mindset: sportsbooks are often sharper on public info — `k_edge` is a **questi
 
 Barrel%, hard-hit% (EV95%), xwOBA/xBA from Savant plus AVG vs pitcher hand feed `hits_score` / `hr_rbi_score` on each batter. Written to `hits-YYYY-MM-DD.csv` beside rankings and shown in the HTML Hits board / lineup panel for Hits and H+R+RBI tickets only.
 
+**Zone overlap / heat maps (optional companion — does not change scores)**
+
+Statcast pitch-level location (`zone` / `plate_x`/`plate_z`) for a starter vs each opposing batter’s swing% and BIP damage (xwOBA / EV / barrel). Flags **HOT** (he throws there + they crush it), **WARM**, and **COLD** (his tunnel, their weak pocket). Use after the hits board to confirm Hits / H+R+RBI leans.
+
+```bash
+# Full opposing lineup from today's hits CSV
+python3 mlb-k-matchups/zone_overlap.py \
+  --hits hits-YYYY-MM-DD.csv --pitcher "Griffin Jax"
+
+# Top N by hits_score only
+python3 mlb-k-matchups/zone_overlap.py \
+  --hits hits-YYYY-MM-DD.csv --pitcher "Gavin Williams" --top 3
+```
+
+Writes `zone-overlap-<pitcher>-<date>.md` + `.json`. Needs network to Baseball Savant (~1–2 min per pitcher+lineup).
+
 If a starter is missing from the Savant arsenal board (common for returning arms below the default `min` PA filter), the model falls back to **Statcast pitch-level usage** for that pitcher instead of leaving them unscored.
 
 ## Daily automation (GitHub Actions)

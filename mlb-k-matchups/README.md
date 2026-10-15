@@ -76,16 +76,24 @@ Barrel%, hard-hit% (EV95%), xwOBA/xBA from Savant plus AVG vs pitcher hand feed 
 Statcast pitch-level location (`zone` / `plate_x`/`plate_z`) for a starter vs each opposing batter’s swing% and BIP damage (xwOBA / EV / barrel). Flags **HOT** (he throws there + they crush it), **WARM**, and **COLD** (his tunnel, their weak pocket). Use after the hits board to confirm Hits / H+R+RBI leans.
 
 ```bash
-# Full opposing lineup from today's hits CSV
+# Full opposing lineup from today's hits CSV (+ PNG heatmaps by default)
 python3 mlb-k-matchups/zone_overlap.py \
   --hits hits-YYYY-MM-DD.csv --pitcher "Griffin Jax"
 
 # Top N by hits_score only
 python3 mlb-k-matchups/zone_overlap.py \
   --hits hits-YYYY-MM-DD.csv --pitcher "Gavin Williams" --top 3
+
+# Rebuild images from a prior JSON (no re-pull)
+python3 mlb-k-matchups/zone_overlap.py \
+  --from-json zone-overlap-griffin-jax-YYYY-MM-DD.json
 ```
 
-Writes `zone-overlap-<pitcher>-<date>.md` + `.json`. Needs network to Baseball Savant (~1–2 min per pitcher+lineup).
+Writes:
+- `zone-overlap-<pitcher>-<date>.md` + `.json` — HOT/WARM/COLD text
+- `zone-maps/<pitcher>-<date>/` — **PNG heatmaps** (pitcher throw %, batter damage xwOBA, overlap) + `index.html` gallery
+
+Catcher’s-view plates: blue = where the pitcher throws; green/red = batter BIP damage; red/blue outlines = HOT/COLD overlap. Display-only — does not change Exp K or hits scores. Needs network to Baseball Savant on first pull (~1–2 min per pitcher+lineup); `matplotlib` required for PNGs.
 
 If a starter is missing from the Savant arsenal board (common for returning arms below the default `min` PA filter), the model falls back to **Statcast pitch-level usage** for that pitcher instead of leaving them unscored.
 

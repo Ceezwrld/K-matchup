@@ -321,7 +321,10 @@ def overlap_rows(
 
 
 def slugify(name: str) -> str:
-    s = name.lower().strip()
+    import unicodedata
+
+    s = unicodedata.normalize("NFKD", name.lower().strip())
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
     s = re.sub(r"[^a-z0-9]+", "-", s)
     return s.strip("-") or "pitcher"
 
@@ -596,7 +599,7 @@ def parse_batter_arg(raw: str) -> list[dict[str, Any]]:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--year", type=int, default=2026)
-    p.add_argument("--pitcher", required=True, help="Pitcher display name")
+    p.add_argument("--pitcher", default=None, help="Pitcher display name")
     p.add_argument("--pitcher-id", type=int, default=None)
     p.add_argument(
         "--pitcher-hand",
@@ -628,6 +631,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Write PREFIX.md and PREFIX.json (default: zone-overlap-<slug>-<date>)",
     )
+    p.add_argument(
+        "--images",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Write PNG zone heatmaps + HTML gallery (default: on)",
+    )
+    p.add_argument(
+        "--images-dir",
+        type=Path,
+        default=None,
+        help="Directory for PNGs/gallery (default: zone-maps/<pitcher-slug>-<date>)",
+    )
+    p.add_argument(
+        "--from-json",
+        type=Path,
+        default=None,
+        help="Skip Statcast fetch — rebuild markdown/images from an existing overlap JSON",
+    )
     return p.parse_args(argv)
 
 
@@ -635,8 +656,52 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     game = None
     hits_rows: list[dict[str, Any]] | None = None
-    batter_specs: list[dict[str, Any]]
 
+    # Rebuild images / notes from a prior JSON (no Statcast re-pull)
+    if args.from_json:
+        payload = json.loads(Path(args.from_json).read_text())
+        pitcher = payload.get("pitcher") or {}
+        pid = int(pitcher.get("id") or 0)
+        hand = str(pitcher.get("hand") or "R")
+        game = pitcher.get("game")
+        args.pitcher = str(args.pitcher or pitcher.get("name") or "pitcher")
+        date_bit = ""
+        m = re.search(r"\d{4}-\d{2}-\d{2}", str(args.from_json))
+        if m:
+            date_bit = m.group(0)
+        prefix = args.output_prefix or Path(
+            f"zone-overlap-{slugify(args.pitcher)}"
+            + (f"-{date_bit}" if date_bit else "")
+        )
+        md_path = Path(str(prefix) + ".md")
+        json_path = Path(str(prefix) + ".json")
+        md = render_markdown(
+            pitcher_name=args.pitcher,
+            pitcher_id=pid,
+            pitcher_hand=hand,
+            year=int(pitcher.get("year") or args.year),
+            game=str(game) if game else None,
+            pitcher_sum=pitcher,
+            batters=payload.get("batters") or [],
+            overlaps=payload.get("overlaps") or {},
+            hits_rows=None,
+        )
+        md_path.write_text(md)
+        json_path.write_text(json.dumps(payload, indent=2, default=str))
+        print(f"Wrote {md_path}")
+        print(f"Wrote {json_path}")
+        if args.images:
+            from heatmap_viz import build_images_from_payload
+
+            img_dir = args.images_dir or Path(
+                f"zone-maps/{slugify(args.pitcher)}"
+                + (f"-{date_bit}" if date_bit else "")
+            )
+            info = build_images_from_payload(payload, out_dir=img_dir)
+            print(f"Wrote gallery {info['gallery']} ({len(info['cards'])} batters)")
+        return
+
+    batter_specs: list[dict[str, Any]]
     if args.batters:
         batter_specs = parse_batter_arg(args.batters)
     elif args.hits:
@@ -657,7 +722,10 @@ def main(argv: list[str] | None = None) -> None:
                 }
             )
     else:
-        raise SystemExit("Provide --hits or --batters")
+        raise SystemExit("Provide --hits, --batters, or --from-json")
+
+    if not args.pitcher:
+        raise SystemExit("--pitcher is required unless using --from-json")
 
     # Infer rankings path beside hits
     rankings = args.rankings
@@ -717,10 +785,19 @@ def main(argv: list[str] | None = None) -> None:
         json_path = Path(str(prefix) + ".json")
 
     md_path.write_text(md)
-    # JSON without huge all_zones optional — keep them for reuse
     json_path.write_text(json.dumps(payload, indent=2, default=str))
     print(f"Wrote {md_path}")
     print(f"Wrote {json_path}")
+
+    if args.images:
+        from heatmap_viz import build_images_from_payload
+
+        img_dir = args.images_dir or Path(
+            f"zone-maps/{slugify(args.pitcher)}"
+            + (f"-{date_bit}" if date_bit else "")
+        )
+        info = build_images_from_payload(payload, out_dir=img_dir)
+        print(f"Wrote gallery {info['gallery']} ({len(info['cards'])} batters)")
 
 
 if __name__ == "__main__":

@@ -13,20 +13,24 @@ Catcher’s view. Display-only — does not change Exp K or hits scores.
 ### vs LHB — in-zone 51% · heart 8% · mean px=-0.328 (neg=3B) pz=2.097
 
 - Top zones: OUT-DN-3B 29%, LO-IN 9%, LO-MID 9%, HEART 8%, OUT-UP-3B 7%, OUT-UP-1B 7%
-- **FC:** OUT-DN-3B 28%, OUT-UP-3B 12%, HEART 11%
-- **FF:** OUT-UP-3B 19%, OUT-DN-3B 16%, OUT-UP-1B 13%
-- **SI:** OUT-DN-3B 19%, HEART 13%, OUT-DN-1B 12%
-- **SL:** OUT-DN-3B 43%, LO-IN 14%, LO-MID 12%
+- **Usage vs this hand:** SL 38%, SI 26%, FF 24%, FC 11%, CU 1%, CH 0%
+- **FC lands:** OUT-DN-3B 28%, OUT-UP-3B 12%, HEART 11%
+- **FF lands:** OUT-UP-3B 19%, OUT-DN-3B 16%, OUT-UP-1B 13%
+- **SI lands:** OUT-DN-3B 19%, HEART 13%, OUT-DN-1B 12%
+- **SL lands:** OUT-DN-3B 43%, LO-IN 14%, LO-MID 12%
+- **Zone → pitch mix:** OUT-DN-3B (29% throws → SL 57%+SI 17%); LO-IN (9% throws → SL 56%+SI 23%); LO-MID (9% throws → SL 50%+SI 25%); HEART (8% throws → SI 39%+SL 30%)
 
 ### vs RHB — in-zone 47% · heart 7% · mean px=-0.041 (neg=3B) pz=2.187
 
 - Top zones: OUT-DN-3B 22%, OUT-UP-1B 13%, OUT-DN-1B 11%, HEART 7%, LO-MID 7%, OUT-UP-3B 7%
-- **CH:** OUT-DN-1B 27%, OUT-DN-3B 26%, OUT-UP-1B 22%
-- **CU:** OUT-DN-3B 36%, OUT-DN-1B 17%, LO-MID 9%
-- **FC:** OUT-DN-3B 25%, OUT-UP-3B 10%, MID-IN 10%
-- **FF:** OUT-UP-1B 20%, OUT-UP-3B 18%, HI-MID 11%
-- **SI:** OUT-DN-3B 16%, LO-MID 13%, MID-AWAY 12%
-- **SL:** OUT-DN-3B 32%, OUT-DN-1B 21%, LO-IN 8%
+- **Usage vs this hand:** FF 30%, CU 17%, SI 17%, SL 14%, FC 13%, CH 8%
+- **CH lands:** OUT-DN-1B 27%, OUT-DN-3B 26%, OUT-UP-1B 22%
+- **CU lands:** OUT-DN-3B 36%, OUT-DN-1B 17%, LO-MID 9%
+- **FC lands:** OUT-DN-3B 25%, OUT-UP-3B 10%, MID-IN 10%
+- **FF lands:** OUT-UP-1B 20%, OUT-UP-3B 18%, HI-MID 11%
+- **SI lands:** OUT-DN-3B 16%, LO-MID 13%, MID-AWAY 12%
+- **SL lands:** OUT-DN-3B 32%, OUT-DN-1B 21%, LO-IN 8%
+- **Zone → pitch mix:** OUT-DN-3B (22% throws → CU 29%+SL 21%); OUT-UP-1B (13% throws → FF 48%+CH 14%); OUT-DN-1B (11% throws → SL 27%+CU 26%); HEART (7% throws → FF 30%+SI 25%)
 
 ## Batter heat vs opposing hand → overlap
 

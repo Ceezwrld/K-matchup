@@ -9,22 +9,55 @@ h1{font-size:1.4rem;margin:0 0 4px} .sub{color:#9aa7b5;margin:0 0 20px}
 .imgs{display:flex;flex-wrap:wrap;gap:12px}
 .imgs figure{margin:0;text-align:center}
 .imgs img{max-width:220px;width:100%;border-radius:8px;background:#fff}
+.imgs.plan img{max-width:100%;width:min(900px,100%)}
 .imgs figcaption{font-size:0.75rem;color:#9aa7b5;margin-top:4px}
 .note{font-size:0.85rem;color:#c5d0da;margin-top:10px}
+.pitch{font-size:0.82rem;color:#9ed0ff;margin-top:6px}
 .legend span{display:inline-block;margin-right:12px;font-size:0.8rem}
 .hot{color:#ef5350}.warm{color:#ffa726}.cold{color:#42a5f5}
+ul.plan{margin:8px 0 0;padding-left:18px;color:#c5d0da;font-size:0.85rem}
 </style></head><body>
 <h1>Zone heatmaps — Tyler Glasnow</h1>
-<p class='sub'>MIL@LAD · catcher view · red outline=HOT · blue=COLD</p>
+<p class='sub'>MIL@LAD · catcher view · red outline=HOT · blue=COLD · overlap labels show W% + primary pitch in that zone</p>
 <p class='legend'><span class='hot'>HOT</span><span class='warm'>WARM</span><span class='cold'>COLD</span> · color on batter/overlap = xwOBA damage</p>
+<div class='card'>
+<h2>Pitch plan by batter hand</h2>
+<p class='note'>Where each pitch type lands vs LHB / RHB (darker = more often). Read this first, then batter overlaps.</p>
+<div class='imgs plan'>
+<figure><img src='pitch-plan-vsL.png' alt='vs LHB — pitch locations'/><figcaption>vs LHB — pitch locations</figcaption></figure>
+<figure><img src='pitch-plan-vsR.png' alt='vs RHB — pitch locations'/><figcaption>vs RHB — pitch locations</figcaption></figure>
+</div>
+<p class='pitch'><strong>vs LHB</strong></p><ul class='plan'>
+<li>Usage: FF 39%, KC 25%, SI 18%, SL 12%, CU 5%</li>
+<li>CU lands: OUT-DN-1B 65%, OUT-DN-3B 7%, OUT-UP-1B 5%</li>
+<li>FF lands: OUT-UP-3B 17%, OUT-UP-1B 15%, OUT-DN-1B 12%</li>
+<li>KC lands: OUT-DN-1B 38%, OUT-DN-3B 16%, OUT-UP-3B 13%</li>
+<li>SI lands: OUT-DN-1B 23%, OUT-UP-1B 14%, MID-AWAY 10%</li>
+<li>SL lands: OUT-DN-1B 40%, HEART 11%, MID-AWAY 10%</li>
+<li>OUT-DN-1B (27% of throws) built by KC 36% + SL 18%</li>
+<li>OUT-UP-3B (12% of throws) built by FF 56% + KC 27%</li>
+<li>OUT-UP-1B (9% of throws) built by FF 61% + SI 27%</li>
+</ul>
+<p class='pitch'><strong>vs RHB</strong></p><ul class='plan'>
+<li>Usage: FF 32%, SL 25%, SI 20%, KC 19%, CU 4%</li>
+<li>FF lands: OUT-UP-1B 15%, OUT-UP-3B 15%, OUT-DN-1B 13%</li>
+<li>KC lands: OUT-DN-1B 60%, LO-AWAY 7%, OUT-DN-3B 6%</li>
+<li>SI lands: OUT-DN-1B 16%, OUT-UP-3B 13%, MID-IN 10%</li>
+<li>SL lands: OUT-DN-1B 52%, OUT-UP-1B 12%, MID-AWAY 6%</li>
+<li>OUT-DN-1B (34% of throws) built by SL 37% + KC 34%</li>
+<li>OUT-UP-1B (10% of throws) built by FF 49% + SL 31%</li>
+<li>OUT-UP-3B (9% of throws) built by FF 51% + SI 30%</li>
+</ul>
+</div>
 <div class='grid'>
 <div class='card'>
 <h2>Jake Bauers</h2>
 <div class='imgs'>
 <figure><img src='jake-bauers-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
 <figure><img src='jake-bauers-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
-<figure><img src='jake-bauers-overlap.png' alt='Overlap'/><figcaption>Overlap</figcaption></figure>
+<figure><img src='jake-bauers-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
 </div>
+<p class='pitch'>HOT OUT-UP-1B ← mainly FF (W 9.3%) · HOT HI-MID ← mainly FF (W 6.4%) · HOT LO-AWAY ← mainly FF (W 7.0%) · HOT HEART ← mainly FF (W 7.3%)</p>
 <p class='note'>HOT OUT-UP-1B · HOT HI-MID · HOT LO-AWAY · HOT HEART</p>
 </div>
 <div class='card'>
@@ -32,8 +65,9 @@ h1{font-size:1.4rem;margin:0 0 4px} .sub{color:#9aa7b5;margin:0 0 20px}
 <div class='imgs'>
 <figure><img src='garrett-mitchell-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
 <figure><img src='garrett-mitchell-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
-<figure><img src='garrett-mitchell-overlap.png' alt='Overlap'/><figcaption>Overlap</figcaption></figure>
+<figure><img src='garrett-mitchell-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
 </div>
+<p class='pitch'>HOT OUT-DN-1B ← mainly KC (W 27.0%) · HOT OUT-UP-1B ← mainly FF (W 9.3%) · HOT LO-AWAY ← mainly FF (W 7.0%) · HOT HEART ← mainly FF (W 7.3%)</p>
 <p class='note'>HOT OUT-DN-1B · HOT OUT-UP-1B · HOT LO-AWAY · HOT HEART</p>
 </div>
 <div class='card'>
@@ -41,8 +75,9 @@ h1{font-size:1.4rem;margin:0 0 4px} .sub{color:#9aa7b5;margin:0 0 20px}
 <div class='imgs'>
 <figure><img src='jackson-chourio-pitcher-vsR.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
 <figure><img src='jackson-chourio-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
-<figure><img src='jackson-chourio-overlap.png' alt='Overlap'/><figcaption>Overlap</figcaption></figure>
+<figure><img src='jackson-chourio-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
 </div>
+<p class='pitch'>COLD OUT-DN-1B ← mainly SL (W 34.4%) · HOT HEART ← mainly FF (W 6.3%) · COLD OUT-UP-1B ← mainly FF (W 9.6%)</p>
 <p class='note'>COLD OUT-DN-1B · HOT HEART · COLD OUT-UP-1B</p>
 </div>
 <div class='card'>
@@ -50,8 +85,9 @@ h1{font-size:1.4rem;margin:0 0 4px} .sub{color:#9aa7b5;margin:0 0 20px}
 <div class='imgs'>
 <figure><img src='brice-turang-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
 <figure><img src='brice-turang-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
-<figure><img src='brice-turang-overlap.png' alt='Overlap'/><figcaption>Overlap</figcaption></figure>
+<figure><img src='brice-turang-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
 </div>
+<p class='pitch'>HOT OUT-DN-1B ← mainly KC (W 27.0%) · HOT HEART ← mainly FF (W 7.3%) · HOT LO-AWAY ← mainly FF (W 7.0%) · COLD OUT-UP-3B ← mainly FF (W 12.0%)</p>
 <p class='note'>HOT OUT-DN-1B · HOT HEART · HOT LO-AWAY · COLD OUT-UP-3B</p>
 </div>
 <div class='card'>
@@ -59,8 +95,9 @@ h1{font-size:1.4rem;margin:0 0 4px} .sub{color:#9aa7b5;margin:0 0 20px}
 <div class='imgs'>
 <figure><img src='william-contreras-pitcher-vsR.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
 <figure><img src='william-contreras-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
-<figure><img src='william-contreras-overlap.png' alt='Overlap'/><figcaption>Overlap</figcaption></figure>
+<figure><img src='william-contreras-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
 </div>
+<p class='pitch'>COLD OUT-DN-1B ← mainly SL (W 34.4%) · HOT OUT-UP-1B ← mainly FF (W 9.6%) · HOT LO-AWAY ← mainly FF (W 6.1%) · COLD OUT-UP-3B ← mainly FF (W 9.0%)</p>
 <p class='note'>COLD OUT-DN-1B · HOT OUT-UP-1B · HOT LO-AWAY · COLD OUT-UP-3B</p>
 </div>
 <div class='card'>
@@ -68,8 +105,9 @@ h1{font-size:1.4rem;margin:0 0 4px} .sub{color:#9aa7b5;margin:0 0 20px}
 <div class='imgs'>
 <figure><img src='cooper-pratt-pitcher-vsR.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
 <figure><img src='cooper-pratt-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
-<figure><img src='cooper-pratt-overlap.png' alt='Overlap'/><figcaption>Overlap</figcaption></figure>
+<figure><img src='cooper-pratt-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
 </div>
+<p class='pitch'>HOT OUT-UP-3B ← mainly FF (W 9.0%)</p>
 <p class='note'>HOT OUT-UP-3B</p>
 </div>
 <div class='card'>
@@ -77,8 +115,9 @@ h1{font-size:1.4rem;margin:0 0 4px} .sub{color:#9aa7b5;margin:0 0 20px}
 <div class='imgs'>
 <figure><img src='christian-yelich-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
 <figure><img src='christian-yelich-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
-<figure><img src='christian-yelich-overlap.png' alt='Overlap'/><figcaption>Overlap</figcaption></figure>
+<figure><img src='christian-yelich-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
 </div>
+<p class='pitch'>COLD OUT-DN-1B ← mainly KC (W 27.0%) · HOT HEART ← mainly FF (W 7.3%) · HOT HI-MID ← mainly FF (W 6.4%)</p>
 <p class='note'>COLD OUT-DN-1B · HOT HEART · HOT HI-MID</p>
 </div>
 <div class='card'>
@@ -86,8 +125,9 @@ h1{font-size:1.4rem;margin:0 0 4px} .sub{color:#9aa7b5;margin:0 0 20px}
 <div class='imgs'>
 <figure><img src='david-hamilton-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
 <figure><img src='david-hamilton-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
-<figure><img src='david-hamilton-overlap.png' alt='Overlap'/><figcaption>Overlap</figcaption></figure>
+<figure><img src='david-hamilton-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
 </div>
+<p class='pitch'>COLD OUT-DN-1B ← mainly KC (W 27.0%) · HOT LO-AWAY ← mainly FF (W 7.0%) · HOT HEART ← mainly FF (W 7.3%) · COLD OUT-UP-3B ← mainly FF (W 12.0%)</p>
 <p class='note'>COLD OUT-DN-1B · HOT LO-AWAY · HOT HEART · COLD OUT-UP-3B</p>
 </div>
 <div class='card'>
@@ -95,8 +135,9 @@ h1{font-size:1.4rem;margin:0 0 4px} .sub{color:#9aa7b5;margin:0 0 20px}
 <div class='imgs'>
 <figure><img src='sal-frelick-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
 <figure><img src='sal-frelick-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
-<figure><img src='sal-frelick-overlap.png' alt='Overlap'/><figcaption>Overlap</figcaption></figure>
+<figure><img src='sal-frelick-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
 </div>
+<p class='pitch'>COLD OUT-DN-1B ← mainly KC (W 27.0%) · COLD OUT-UP-1B ← mainly FF (W 9.3%) · COLD LO-AWAY ← mainly FF (W 7.0%)</p>
 <p class='note'>COLD OUT-DN-1B · COLD OUT-UP-1B · COLD LO-AWAY</p>
 </div>
 </div></body></html>

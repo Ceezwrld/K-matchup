@@ -35,6 +35,13 @@
           "LO-AWAY": 0.07,
           "HI-MID": 0.064
         },
+        "pitch_usage": {
+          "FF": 0.388,
+          "KC": 0.252,
+          "SI": 0.182,
+          "SL": 0.125,
+          "CU": 0.053
+        },
         "pitch_loc": {
           "CU": {
             "OUT-DN-1B": 0.651,
@@ -61,6 +68,300 @@
             "HEART": 0.109,
             "MID-AWAY": 0.099
           }
+        },
+        "pitch_loc_zones": {
+          "CU": {
+            "14": 0.6512,
+            "13": 0.0698,
+            "12": 0.0465,
+            "11": 0.0465,
+            "5": 0.0465,
+            "4": 0.0465,
+            "9": 0.0465,
+            "7": 0.0233,
+            "2": 0.0233
+          },
+          "FF": {
+            "11": 0.172,
+            "12": 0.1465,
+            "14": 0.121,
+            "5": 0.0924,
+            "2": 0.0892,
+            "9": 0.0892,
+            "6": 0.0701,
+            "8": 0.0605,
+            "3": 0.051,
+            "4": 0.0382,
+            "1": 0.035,
+            "7": 0.0255,
+            "13": 0.0096
+          },
+          "KC": {
+            "14": 0.3824,
+            "13": 0.1569,
+            "11": 0.1275,
+            "8": 0.0686,
+            "4": 0.049,
+            "5": 0.049,
+            "7": 0.049,
+            "9": 0.0392,
+            "2": 0.0294,
+            "6": 0.0196,
+            "1": 0.0196,
+            "12": 0.0098
+          },
+          "SI": {
+            "14": 0.2313,
+            "12": 0.1361,
+            "6": 0.102,
+            "2": 0.0952,
+            "9": 0.0816,
+            "11": 0.0748,
+            "3": 0.0544,
+            "13": 0.0476,
+            "1": 0.0476,
+            "5": 0.0476,
+            "8": 0.0408,
+            "4": 0.034,
+            "7": 0.0068
+          },
+          "SL": {
+            "14": 0.396,
+            "5": 0.1089,
+            "6": 0.099,
+            "9": 0.0693,
+            "8": 0.0693,
+            "12": 0.0495,
+            "3": 0.0495,
+            "11": 0.0396,
+            "1": 0.0297,
+            "13": 0.0297,
+            "2": 0.0297,
+            "7": 0.0297
+          }
+        },
+        "zone_pitch_mix": {
+          "1": [
+            {
+              "pitch": "FF",
+              "share": 0.44,
+              "label": "HI-IN (3B)"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.28,
+              "label": "HI-IN (3B)"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.16,
+              "label": "HI-IN (3B)"
+            }
+          ],
+          "2": [
+            {
+              "pitch": "FF",
+              "share": 0.538,
+              "label": "HI-MID"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.269,
+              "label": "HI-MID"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.115,
+              "label": "HI-MID"
+            }
+          ],
+          "3": [
+            {
+              "pitch": "FF",
+              "share": 0.552,
+              "label": "HI-AWAY (1B)"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.276,
+              "label": "HI-AWAY (1B)"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.172,
+              "label": "HI-AWAY (1B)"
+            }
+          ],
+          "4": [
+            {
+              "pitch": "FF",
+              "share": 0.414,
+              "label": "MID-IN"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.345,
+              "label": "MID-IN"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.172,
+              "label": "MID-IN"
+            }
+          ],
+          "5": [
+            {
+              "pitch": "FF",
+              "share": 0.492,
+              "label": "HEART"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.186,
+              "label": "HEART"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.169,
+              "label": "HEART"
+            }
+          ],
+          "6": [
+            {
+              "pitch": "FF",
+              "share": 0.431,
+              "label": "MID-AWAY"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.294,
+              "label": "MID-AWAY"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.196,
+              "label": "MID-AWAY"
+            }
+          ],
+          "7": [
+            {
+              "pitch": "KC",
+              "share": 0.435,
+              "label": "LO-IN"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.348,
+              "label": "LO-IN"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.13,
+              "label": "LO-IN"
+            }
+          ],
+          "8": [
+            {
+              "pitch": "FF",
+              "share": 0.413,
+              "label": "LO-MID"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.304,
+              "label": "LO-MID"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.152,
+              "label": "LO-MID"
+            }
+          ],
+          "9": [
+            {
+              "pitch": "FF",
+              "share": 0.491,
+              "label": "LO-AWAY"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.211,
+              "label": "LO-AWAY"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.14,
+              "label": "LO-AWAY"
+            }
+          ],
+          "11": [
+            {
+              "pitch": "FF",
+              "share": 0.557,
+              "label": "OUT-UP-3B"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.268,
+              "label": "OUT-UP-3B"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.113,
+              "label": "OUT-UP-3B"
+            }
+          ],
+          "12": [
+            {
+              "pitch": "FF",
+              "share": 0.613,
+              "label": "OUT-UP-1B"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.267,
+              "label": "OUT-UP-1B"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.067,
+              "label": "OUT-UP-1B"
+            }
+          ],
+          "13": [
+            {
+              "pitch": "KC",
+              "share": 0.667,
+              "label": "OUT-DN-3B"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.146,
+              "label": "OUT-DN-3B"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.062,
+              "label": "OUT-DN-3B"
+            }
+          ],
+          "14": [
+            {
+              "pitch": "KC",
+              "share": 0.358,
+              "label": "OUT-DN-1B"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.183,
+              "label": "OUT-DN-1B"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.174,
+              "label": "OUT-DN-1B"
+            }
+          ]
         },
         "zone_share": {
           "1": 0.0309,
@@ -92,6 +393,13 @@
           "HEART": 0.064,
           "LO-AWAY": 0.061
         },
+        "pitch_usage": {
+          "FF": 0.315,
+          "SL": 0.25,
+          "SI": 0.205,
+          "KC": 0.194,
+          "CU": 0.037
+        },
         "pitch_loc": {
           "FF": {
             "OUT-UP-1B": 0.15,
@@ -113,6 +421,290 @@
             "OUT-UP-1B": 0.118,
             "MID-AWAY": 0.065
           }
+        },
+        "pitch_loc_zones": {
+          "FF": {
+            "12": 0.1502,
+            "11": 0.1455,
+            "14": 0.1268,
+            "5": 0.0939,
+            "6": 0.0845,
+            "9": 0.0704,
+            "2": 0.0657,
+            "3": 0.061,
+            "8": 0.0563,
+            "4": 0.0516,
+            "1": 0.0516,
+            "13": 0.0282,
+            "7": 0.0141
+          },
+          "KC": {
+            "14": 0.5954,
+            "9": 0.0687,
+            "13": 0.0611,
+            "6": 0.0458,
+            "5": 0.0382,
+            "8": 0.0382,
+            "4": 0.0305,
+            "3": 0.0305,
+            "2": 0.0229,
+            "12": 0.0229,
+            "1": 0.0153,
+            "11": 0.0153,
+            "7": 0.0153
+          },
+          "SI": {
+            "14": 0.1583,
+            "11": 0.1295,
+            "4": 0.1007,
+            "5": 0.1007,
+            "8": 0.0863,
+            "2": 0.0719,
+            "13": 0.0719,
+            "7": 0.0576,
+            "12": 0.0576,
+            "1": 0.0432,
+            "6": 0.0432,
+            "9": 0.0432,
+            "3": 0.036
+          },
+          "SL": {
+            "14": 0.5148,
+            "12": 0.1183,
+            "6": 0.0651,
+            "11": 0.0592,
+            "9": 0.0592,
+            "8": 0.0473,
+            "3": 0.0414,
+            "2": 0.0355,
+            "5": 0.0237,
+            "7": 0.0178,
+            "1": 0.0118,
+            "4": 0.0059
+          }
+        },
+        "zone_pitch_mix": {
+          "1": [
+            {
+              "pitch": "FF",
+              "share": 0.524,
+              "label": "HI-IN (3B)"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.286,
+              "label": "HI-IN (3B)"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.095,
+              "label": "HI-IN (3B)"
+            }
+          ],
+          "2": [
+            {
+              "pitch": "FF",
+              "share": 0.424,
+              "label": "HI-MID"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.303,
+              "label": "HI-MID"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.182,
+              "label": "HI-MID"
+            }
+          ],
+          "3": [
+            {
+              "pitch": "FF",
+              "share": 0.448,
+              "label": "HI-AWAY (1B)"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.241,
+              "label": "HI-AWAY (1B)"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.172,
+              "label": "HI-AWAY (1B)"
+            }
+          ],
+          "4": [
+            {
+              "pitch": "SI",
+              "share": 0.467,
+              "label": "MID-IN"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.367,
+              "label": "MID-IN"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.133,
+              "label": "MID-IN"
+            }
+          ],
+          "5": [
+            {
+              "pitch": "FF",
+              "share": 0.465,
+              "label": "HEART"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.326,
+              "label": "HEART"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.116,
+              "label": "HEART"
+            }
+          ],
+          "6": [
+            {
+              "pitch": "FF",
+              "share": 0.419,
+              "label": "MID-AWAY"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.256,
+              "label": "MID-AWAY"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.14,
+              "label": "MID-AWAY"
+            }
+          ],
+          "7": [
+            {
+              "pitch": "SI",
+              "share": 0.5,
+              "label": "LO-IN"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.188,
+              "label": "LO-IN"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.188,
+              "label": "LO-IN"
+            }
+          ],
+          "8": [
+            {
+              "pitch": "SI",
+              "share": 0.316,
+              "label": "LO-MID"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.316,
+              "label": "LO-MID"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.211,
+              "label": "LO-MID"
+            }
+          ],
+          "9": [
+            {
+              "pitch": "FF",
+              "share": 0.366,
+              "label": "LO-AWAY"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.244,
+              "label": "LO-AWAY"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.22,
+              "label": "LO-AWAY"
+            }
+          ],
+          "11": [
+            {
+              "pitch": "FF",
+              "share": 0.508,
+              "label": "OUT-UP-3B"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.295,
+              "label": "OUT-UP-3B"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.164,
+              "label": "OUT-UP-3B"
+            }
+          ],
+          "12": [
+            {
+              "pitch": "FF",
+              "share": 0.492,
+              "label": "OUT-UP-1B"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.308,
+              "label": "OUT-UP-1B"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.123,
+              "label": "OUT-UP-1B"
+            }
+          ],
+          "13": [
+            {
+              "pitch": "SI",
+              "share": 0.417,
+              "label": "OUT-DN-3B"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.333,
+              "label": "OUT-DN-3B"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.25,
+              "label": "OUT-DN-3B"
+            }
+          ],
+          "14": [
+            {
+              "pitch": "SL",
+              "share": 0.373,
+              "label": "OUT-DN-1B"
+            },
+            {
+              "pitch": "KC",
+              "share": 0.335,
+              "label": "OUT-DN-1B"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.116,
+              "label": "OUT-DN-1B"
+            }
+          ]
         },
         "zone_share": {
           "1": 0.031,

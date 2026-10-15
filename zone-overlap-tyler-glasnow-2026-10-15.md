@@ -13,19 +13,23 @@ Catcher’s view. Display-only — does not change Exp K or hits scores.
 ### vs LHB — in-zone 46% · heart 7% · mean px=0.199 (neg=3B) pz=2.163
 
 - Top zones: OUT-DN-1B 27%, OUT-UP-3B 12%, OUT-UP-1B 9%, HEART 7%, LO-AWAY 7%, HI-MID 6%
-- **CU:** OUT-DN-1B 65%, OUT-DN-3B 7%, OUT-UP-1B 5%
-- **FF:** OUT-UP-3B 17%, OUT-UP-1B 15%, OUT-DN-1B 12%
-- **KC:** OUT-DN-1B 38%, OUT-DN-3B 16%, OUT-UP-3B 13%
-- **SI:** OUT-DN-1B 23%, OUT-UP-1B 14%, MID-AWAY 10%
-- **SL:** OUT-DN-1B 40%, HEART 11%, MID-AWAY 10%
+- **Usage vs this hand:** FF 39%, KC 25%, SI 18%, SL 12%, CU 5%
+- **CU lands:** OUT-DN-1B 65%, OUT-DN-3B 7%, OUT-UP-1B 5%
+- **FF lands:** OUT-UP-3B 17%, OUT-UP-1B 15%, OUT-DN-1B 12%
+- **KC lands:** OUT-DN-1B 38%, OUT-DN-3B 16%, OUT-UP-3B 13%
+- **SI lands:** OUT-DN-1B 23%, OUT-UP-1B 14%, MID-AWAY 10%
+- **SL lands:** OUT-DN-1B 40%, HEART 11%, MID-AWAY 10%
+- **Zone → pitch mix:** OUT-DN-1B (27% throws → KC 36%+SL 18%); OUT-UP-3B (12% throws → FF 56%+KC 27%); OUT-UP-1B (9% throws → FF 61%+SI 27%); HEART (7% throws → FF 49%+SL 19%)
 
 ### vs RHB — in-zone 43% · heart 6% · mean px=0.394 (neg=3B) pz=2.097
 
 - Top zones: OUT-DN-1B 34%, OUT-UP-1B 10%, OUT-UP-3B 9%, MID-AWAY 6%, HEART 6%, LO-AWAY 6%
-- **FF:** OUT-UP-1B 15%, OUT-UP-3B 15%, OUT-DN-1B 13%
-- **KC:** OUT-DN-1B 60%, LO-AWAY 7%, OUT-DN-3B 6%
-- **SI:** OUT-DN-1B 16%, OUT-UP-3B 13%, MID-IN 10%
-- **SL:** OUT-DN-1B 52%, OUT-UP-1B 12%, MID-AWAY 6%
+- **Usage vs this hand:** FF 32%, SL 25%, SI 20%, KC 19%, CU 4%
+- **FF lands:** OUT-UP-1B 15%, OUT-UP-3B 15%, OUT-DN-1B 13%
+- **KC lands:** OUT-DN-1B 60%, LO-AWAY 7%, OUT-DN-3B 6%
+- **SI lands:** OUT-DN-1B 16%, OUT-UP-3B 13%, MID-IN 10%
+- **SL lands:** OUT-DN-1B 52%, OUT-UP-1B 12%, MID-AWAY 6%
+- **Zone → pitch mix:** OUT-DN-1B (34% throws → SL 37%+KC 34%); OUT-UP-1B (10% throws → FF 49%+SL 31%); OUT-UP-3B (9% throws → FF 51%+SI 30%); HEART (6% throws → FF 46%+SI 33%)
 
 ## Batter heat vs opposing hand → overlap
 

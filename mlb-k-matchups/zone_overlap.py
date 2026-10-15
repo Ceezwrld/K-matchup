@@ -139,16 +139,44 @@ def analyze_pitcher(df: pd.DataFrame) -> dict[str, Any]:
         )
         top = loc.sort_values(ascending=False).head(6)
         pitch_loc: dict[str, dict[str, float]] = {}
+        # Full zone-id shares per pitch (for heatmaps) + usage vs this hand
+        pitch_loc_zones: dict[str, dict[int, float]] = {}
+        pitch_usage: dict[str, float] = {}
+        zone_pitch_mix: dict[int, list[dict[str, Any]]] = {}
         if "pitch_type" in g.columns:
+            pitch_usage = {
+                str(pt): round(float(v), 3)
+                for pt, v in g["pitch_type"].value_counts(normalize=True).items()
+            }
             for pt, gg in g.groupby("pitch_type"):
-                if len(gg) < 40:
+                if len(gg) < 30:
                     continue
-                zc = gg["zone"].value_counts(normalize=True).head(3)
+                zc_all = gg["zone"].value_counts(normalize=True)
+                pitch_loc_zones[str(pt)] = {
+                    int(i): round(float(v), 4)
+                    for i, v in zc_all.items()
+                    if pd.notna(i) and float(v) > 0
+                }
+                zc = zc_all.head(3)
                 pitch_loc[str(pt)] = {
                     ZONE_LABEL.get(int(i), str(i)): round(float(v), 3)
                     for i, v in zc.items()
                     if pd.notna(i)
                 }
+            # For each zone: which pitches are thrown there (share of pitches in zone)
+            for z, zg in g.dropna(subset=["zone"]).groupby("zone"):
+                z = int(z)
+                if len(zg) < 12:
+                    continue
+                mix = zg["pitch_type"].value_counts(normalize=True).head(3)
+                zone_pitch_mix[z] = [
+                    {
+                        "pitch": str(pt),
+                        "share": round(float(share), 3),
+                        "label": ZONE_LABEL.get(z, str(z)),
+                    }
+                    for pt, share in mix.items()
+                ]
         out["by_stand"][str(stand)] = {
             "n": int(len(g)),
             "inzone": round(float(g["zone"].isin(range(1, 10)).mean()), 3),
@@ -160,7 +188,12 @@ def analyze_pitcher(df: pd.DataFrame) -> dict[str, Any]:
                 for i, v in top.items()
                 if pd.notna(i)
             },
+            "pitch_usage": pitch_usage,
             "pitch_loc": pitch_loc,
+            "pitch_loc_zones": pitch_loc_zones,
+            "zone_pitch_mix": {
+                int(z): mix for z, mix in zone_pitch_mix.items()
+            },
             "zone_share": {
                 int(i): round(float(v), 4)
                 for i, v in loc.items()
@@ -379,12 +412,40 @@ def render_markdown(
                 "- Top zones: "
                 + ", ".join(f"{k} {100 * v:.0f}%" for k, v in top.items())
             )
+        usage = block.get("pitch_usage") or {}
+        if usage:
+            lines.append(
+                "- **Usage vs this hand:** "
+                + ", ".join(
+                    f"{pt} {100 * share:.0f}%"
+                    for pt, share in sorted(usage.items(), key=lambda x: -x[1])
+                )
+            )
         pl = block.get("pitch_loc") or {}
         for pt, locs in pl.items():
             lines.append(
-                f"- **{pt}:** "
+                f"- **{pt} lands:** "
                 + ", ".join(f"{k} {100 * v:.0f}%" for k, v in locs.items())
             )
+        # Top zones → which pitches build them
+        zmix = block.get("zone_pitch_mix") or {}
+        share = block.get("zone_share") or {}
+        top_z = sorted(share.items(), key=lambda x: -float(x[1]))[:4]
+        if top_z and zmix:
+            bits = []
+            for z, sh in top_z:
+                z = int(z)
+                mix = zmix.get(z) or zmix.get(str(z)) or []
+                if not mix:
+                    continue
+                pitches = "+".join(
+                    f"{m['pitch']} {100 * m['share']:.0f}%" for m in mix[:2]
+                )
+                bits.append(
+                    f"{ZONE_LABEL.get(z, z)} ({100 * float(sh):.0f}% throws → {pitches})"
+                )
+            if bits:
+                lines.append("- **Zone → pitch mix:** " + "; ".join(bits))
         lines.append("")
 
     lines.append("## Batter heat vs opposing hand → overlap")

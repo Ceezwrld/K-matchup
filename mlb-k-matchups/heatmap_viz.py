@@ -232,28 +232,89 @@ def render_overlap_png(
     title: str,
     path: Path,
     risk_by_zone: dict[int, str] | None = None,
+    zone_pitch_mix: dict[int, list[dict[str, Any]]] | None = None,
 ) -> Path:
-    """Combined view: cell color = batter xwOBA; label includes pitcher %."""
+    """Combined view: cell color = batter xwOBA; label includes pitcher % + pitch."""
     dmg = {int(k): float(v) for k, v in zone_xwoba.items()}
     share = {int(k): float(v) * 100 for k, v in zone_share.items()}
     grid = _values_to_grid(dmg)
-    ann = {
-        z: f"W {share[z]:.0f}%"
-        for z in set(dmg) | set(share)
-        if z in share
-    }
-    fig, ax = plt.subplots(figsize=(4.4, 6.4), dpi=140)
+    ann: dict[int, str] = {}
+    for z in set(dmg) | set(share):
+        if z not in share:
+            continue
+        label = f"W {share[z]:.0f}%"
+        mix = (zone_pitch_mix or {}).get(z) or (zone_pitch_mix or {}).get(str(z))  # type: ignore[arg-type]
+        if mix:
+            top_pt = mix[0].get("pitch")
+            if top_pt:
+                label = f"W {share[z]:.0f}% {top_pt}"
+        ann[int(z)] = label
+    fig, ax = plt.subplots(figsize=(4.6, 6.6), dpi=140)
     _draw_plate_grid(
         ax,
         grid,
         cmap="RdYlGn",
         vmin=0.20,
         vmax=0.55,
-        title=f"{title}\noverlap (color=damage, W%=throws)",
+        title=f"{title}\noverlap (color=damage · W%+pitch)",
         fmt="{:.3f}",
         annotations=ann,
         risk_outline=risk_by_zone,
     )
+    fig.tight_layout()
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    return path
+
+
+def render_pitch_plan_png(
+    pitch_loc_zones: dict[str, dict[int, float]],
+    *,
+    title: str,
+    path: Path,
+    pitch_usage: dict[str, float] | None = None,
+    max_pitches: int = 6,
+) -> Path | None:
+    """Small-multiples: where each pitch type lands vs one batter hand."""
+    if not pitch_loc_zones:
+        return None
+    usage = pitch_usage or {}
+    pitches = sorted(
+        pitch_loc_zones.keys(),
+        key=lambda pt: -(usage.get(pt) or sum(pitch_loc_zones[pt].values())),
+    )[:max_pitches]
+    if not pitches:
+        return None
+    n = len(pitches)
+    cols = min(3, n)
+    rows = int(np.ceil(n / cols))
+    fig, axes = plt.subplots(rows, cols, figsize=(4.0 * cols, 5.2 * rows), dpi=130)
+    if n == 1:
+        axes_list = [axes]
+    else:
+        axes_list = list(np.array(axes).ravel())
+    for i, ax in enumerate(axes_list):
+        if i >= n:
+            ax.axis("off")
+            continue
+        pt = pitches[i]
+        share = {int(k): float(v) for k, v in pitch_loc_zones[pt].items()}
+        vals = {z: s * 100 for z, s in share.items()}
+        grid = _values_to_grid(vals)
+        u = usage.get(pt)
+        u_lab = f" · {100 * u:.0f}% usage" if u is not None else ""
+        _draw_plate_grid(
+            ax,
+            grid,
+            cmap="Blues",
+            vmin=0,
+            vmax=max(40.0, float(np.nanmax(grid)) if np.isfinite(grid).any() else 25),
+            title=f"{pt}{u_lab}",
+            fmt="{:.0f}%",
+        )
+    fig.suptitle(title, fontsize=13, fontweight="bold", y=1.01)
     fig.tight_layout()
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -268,8 +329,9 @@ def write_gallery_html(
     pitcher_name: str,
     game: str | None,
     cards: list[dict[str, str]],
+    pitch_plan: dict[str, Any] | None = None,
 ) -> Path:
-    """cards: {batter, pitcher_img, batter_img, overlap_img, note}."""
+    """cards: {batter, pitcher_img, batter_img, overlap_img, note, pitch_note}."""
     parts = [
         "<!DOCTYPE html><html><head><meta charset='utf-8'/>",
         f"<title>Zone maps — {html.escape(pitcher_name)}</title>",
@@ -282,17 +344,46 @@ def write_gallery_html(
         ".imgs{display:flex;flex-wrap:wrap;gap:12px}",
         ".imgs figure{margin:0;text-align:center}",
         ".imgs img{max-width:220px;width:100%;border-radius:8px;background:#fff}",
+        ".imgs.plan img{max-width:100%;width:min(900px,100%)}",
         ".imgs figcaption{font-size:0.75rem;color:#9aa7b5;margin-top:4px}",
         ".note{font-size:0.85rem;color:#c5d0da;margin-top:10px}",
+        ".pitch{font-size:0.82rem;color:#9ed0ff;margin-top:6px}",
         ".legend span{display:inline-block;margin-right:12px;font-size:0.8rem}",
         ".hot{color:#ef5350}.warm{color:#ffa726}.cold{color:#42a5f5}",
+        "ul.plan{margin:8px 0 0;padding-left:18px;color:#c5d0da;font-size:0.85rem}",
         "</style></head><body>",
         f"<h1>Zone heatmaps — {html.escape(pitcher_name)}</h1>",
-        f"<p class='sub'>{html.escape(game or '')} · catcher view · red outline=HOT · blue=COLD</p>",
+        f"<p class='sub'>{html.escape(game or '')} · catcher view · red outline=HOT · blue=COLD"
+        " · overlap labels show W% + primary pitch in that zone</p>",
         "<p class='legend'><span class='hot'>HOT</span><span class='warm'>WARM</span>"
         "<span class='cold'>COLD</span> · color on batter/overlap = xwOBA damage</p>",
-        "<div class='grid'>",
     ]
+    if pitch_plan:
+        parts.append("<div class='card'>")
+        parts.append("<h2>Pitch plan by batter hand</h2>")
+        parts.append("<p class='note'>Where each pitch type lands vs LHB / RHB "
+                     "(darker = more often). Read this first, then batter overlaps.</p>")
+        parts.append("<div class='imgs plan'>")
+        for key, cap in (
+            ("plan_L", "vs LHB — pitch locations"),
+            ("plan_R", "vs RHB — pitch locations"),
+        ):
+            if pitch_plan.get(key):
+                parts.append(
+                    f"<figure><img src='{html.escape(pitch_plan[key])}' alt='{cap}'/>"
+                    f"<figcaption>{cap}</figcaption></figure>"
+                )
+        parts.append("</div>")
+        for stand in ("L", "R"):
+            bullets = pitch_plan.get(f"bullets_{stand}") or []
+            if bullets:
+                parts.append(f"<p class='pitch'><strong>vs {stand}HB</strong></p><ul class='plan'>")
+                for b in bullets:
+                    parts.append(f"<li>{html.escape(b)}</li>")
+                parts.append("</ul>")
+        parts.append("</div>")
+
+    parts.append("<div class='grid'>")
     for c in cards:
         parts.append("<div class='card'>")
         parts.append(f"<h2>{html.escape(c['batter'])}</h2>")
@@ -300,7 +391,7 @@ def write_gallery_html(
         for key, cap in (
             ("pitcher_img", "Pitcher throws %"),
             ("batter_img", "Batter damage"),
-            ("overlap_img", "Overlap"),
+            ("overlap_img", "Overlap (+ pitch)"),
         ):
             if c.get(key):
                 parts.append(
@@ -308,6 +399,8 @@ def write_gallery_html(
                     f"<figcaption>{cap}</figcaption></figure>"
                 )
         parts.append("</div>")
+        if c.get("pitch_note"):
+            parts.append(f"<p class='pitch'>{html.escape(c['pitch_note'])}</p>")
         if c.get("note"):
             parts.append(f"<p class='note'>{html.escape(c['note'])}</p>")
         parts.append("</div>")
@@ -316,6 +409,39 @@ def write_gallery_html(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(parts))
     return out_path
+
+
+def _pitch_plan_bullets(block: dict[str, Any]) -> list[str]:
+    """Human lines: usage + where each pitch lands + zone→pitch."""
+    bullets: list[str] = []
+    usage = block.get("pitch_usage") or {}
+    if usage:
+        bullets.append(
+            "Usage: "
+            + ", ".join(
+                f"{pt} {100 * float(share):.0f}%"
+                for pt, share in sorted(usage.items(), key=lambda x: -float(x[1]))
+            )
+        )
+    for pt, locs in (block.get("pitch_loc") or {}).items():
+        bullets.append(
+            f"{pt} lands: "
+            + ", ".join(f"{lab} {100 * float(v):.0f}%" for lab, v in locs.items())
+        )
+    share = block.get("zone_share") or {}
+    zmix = block.get("zone_pitch_mix") or {}
+    top_z = sorted(share.items(), key=lambda x: -float(x[1]))[:3]
+    for z, sh in top_z:
+        z = int(z)
+        mix = zmix.get(z) or zmix.get(str(z)) or []
+        if not mix:
+            continue
+        pitches = " + ".join(
+            f"{m['pitch']} {100 * float(m['share']):.0f}%" for m in mix[:2]
+        )
+        lab = mix[0].get("label") or str(z)
+        bullets.append(f"{lab} ({100 * float(sh):.0f}% of throws) built by {pitches}")
+    return bullets
 
 
 def build_images_from_payload(
@@ -334,11 +460,43 @@ def build_images_from_payload(
     cards: list[dict[str, str]] = []
     manifest: list[dict[str, Any]] = []
 
+    # Pitch-plan panels vs L / R (where each pitch type goes)
+    pitch_plan: dict[str, Any] = {}
+    for stand in ("L", "R"):
+        block = by_stand.get(stand) or {}
+        loc_z = {
+            str(pt): {int(z): float(s) for z, s in zones.items()}
+            for pt, zones in (block.get("pitch_loc_zones") or {}).items()
+        }
+        # Back-compat: synthesize from pitch_loc labels if needed
+        if not loc_z and block.get("pitch_loc"):
+            rev = {v: k for k, v in ZONE_LABEL.items()}
+            for pt, locs in (block.get("pitch_loc") or {}).items():
+                loc_z[pt] = {
+                    int(rev[lab]): float(share)
+                    for lab, share in locs.items()
+                    if lab in rev
+                }
+        if loc_z:
+            plan_path = out_dir / f"pitch-plan-vs{stand}.png"
+            render_pitch_plan_png(
+                loc_z,
+                title=f"{pname} — where each pitch lands vs {stand}HB",
+                path=plan_path,
+                pitch_usage={
+                    str(k): float(v) for k, v in (block.get("pitch_usage") or {}).items()
+                },
+            )
+            pitch_plan[f"plan_{stand}"] = plan_path.name
+            pitch_plan[f"bullets_{stand}"] = _pitch_plan_bullets(block)
+
     for b in payload.get("batters") or []:
         name = str(b.get("name"))
         stand = str(b.get("stand") or "R")
         block = by_stand.get(stand) or {}
         share = {int(k): float(v) for k, v in (block.get("zone_share") or {}).items()}
+        zmix_raw = block.get("zone_pitch_mix") or {}
+        zmix = {int(k): v for k, v in zmix_raw.items()}
         zone_xw: dict[int, float] = {}
         swing: dict[int, float] = {}
         for row in b.get("all_zones") or []:
@@ -349,13 +507,20 @@ def build_images_from_payload(
                 swing[z] = float(row["swing_pct"])
         risk_map: dict[int, str] = {}
         notes = []
+        pitch_bits = []
         for ov in overlaps.get(name) or []:
+            z = int(ov["zone"])
             if ov.get("risk") in ("HOT", "WARM", "COLD"):
-                risk_map[int(ov["zone"])] = ov["risk"]
+                risk_map[z] = ov["risk"]
+                mix = zmix.get(z) or []
+                top_pt = mix[0]["pitch"] if mix else "?"
                 if ov["risk"] in ("HOT", "COLD"):
                     notes.append(f"{ov['risk']} {ov['label']}")
+                    pitch_bits.append(
+                        f"{ov['risk']} {ov['label']} ← mainly {top_pt} "
+                        f"(W {ov['pitcher_pct']}%)"
+                    )
 
-        # ASCII-fold so accents (Díaz, José) don't break paths / previews
         import unicodedata
 
         folded = unicodedata.normalize("NFKD", name.lower())
@@ -385,8 +550,10 @@ def build_images_from_payload(
             title=f"{name} vs {pname}",
             path=o_img,
             risk_by_zone=risk_map,
+            zone_pitch_mix=zmix,
         )
         note = " · ".join(notes[:4]) if notes else ""
+        pitch_note = " · ".join(pitch_bits[:4]) if pitch_bits else ""
         cards.append(
             {
                 "batter": name,
@@ -394,6 +561,7 @@ def build_images_from_payload(
                 "batter_img": b_img.name,
                 "overlap_img": o_img.name,
                 "note": note,
+                "pitch_note": pitch_note,
             }
         )
         manifest.append(
@@ -404,6 +572,7 @@ def build_images_from_payload(
                 "batter_img": str(b_img),
                 "overlap_img": str(o_img),
                 "note": note,
+                "pitch_note": pitch_note,
             }
         )
 
@@ -412,5 +581,11 @@ def build_images_from_payload(
         pitcher_name=pname,
         game=str(game) if game else None,
         cards=cards,
+        pitch_plan=pitch_plan or None,
     )
-    return {"gallery": str(gallery), "cards": manifest, "dir": str(out_dir)}
+    return {
+        "gallery": str(gallery),
+        "cards": manifest,
+        "dir": str(out_dir),
+        "pitch_plan": pitch_plan,
+    }

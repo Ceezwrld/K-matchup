@@ -5,25 +5,28 @@
 
 ---
 
-## Probable pitchers (fluid)
+## Probable pitchers — **AM update (confirmed)**
 
 | Side | Arm | Status | Model Exp K | Outlook |
 |------|-----|--------|-------------|--------|
-| **TB** | **Nick Martinez (R)** | Probable if game is Friday | **3.2** | **UNDER_OK** — soft solo · FLY style · CLE contact-heavy · patient BB% |
-| **CLE** | **TBD** | Not named; rain contingency | — | Likely **bullpen game** Fri |
+| **TB** | **Nick Martinez (R)** | Confirmed starter | **3.2** | **UNDER_OK** — soft solo · FLY style · CLE contact-heavy · patient BB% |
+| **CLE** | **Shawn Armstrong (R)** | Confirmed **opener** | **0.8** / ~1.3 IP | Bullpen game · fade full-outing K · opener_likely |
 
-### CLE options if Friday (bullpen game)
+**AM news (Fri):** Armstrong opens; Martinez starts. Game still **Scheduled 8:00 PM ET** — rain/wind still in the forecast, **no postponement posted** as of late morning. OFF lineups not up yet (expect G3-shaped nines).
+
+### CLE after Armstrong (still fluid)
+Bulk likely from **Cantillo / Bibee / Cecconi** (or mix). Re-anchor TB heatmap leans once the long arm is named:
 | Arm | Hand | Exp K | Notes |
 |-----|------|-------|-------|
-| **Joey Cantillo** | L | 3.7 | Best arsenal vs TB (WHIFF · strong stuff) — short IP / bulk piece |
-| Tanner Bibee | R | 4.0 | FILLER on Ks · soft solo vs TB |
+| Joey Cantillo | L | 3.7 | Best arsenal vs TB — if he gets length, use LHP leans (Caminero/Yandy) |
+| Tanner Bibee | R | 4.0 | FILLER on Ks · RHP leans (Aranda/Mesa on dump) |
 | Slade Cecconi | R | 4.0 | Soft solo · length option |
 
 ### If rain → Saturday G4
 - **CLE:** **Foster Griffin (L)** available on rest — Exp **4.3** · **SPIKE** (no soft U6)  
 - **TB:** could pivot to **Drew Rasmussen** on rest instead of Martinez
 
-**Early process:** Prefer **hits vs Martinez** over K overs either side until CLE names an arm. If Cantillo gets the ball (or early length), TB bats vs LHP are the live heatmap lane.
+**Process:** Prefer **hits vs Martinez** over K overs. Treat Armstrong as **1 IP opener** — TB hits vs him only for the first turn; wait on CLE bulk for TB full-game heatmap locks.
 
 ---
 

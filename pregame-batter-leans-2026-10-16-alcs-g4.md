@@ -146,3 +146,47 @@ Stay with **Aranda / Mesa / Hicks** (HOT on OUT-DN-1B). Caminero/Yandy = mistake
 | FADE | Kwan · Ramírez · Rocchio · Simpson · Walls · Palacios | COLD on plans | — |
 
 **Bottom line:** CLE side is cleaner — **Halpin, Lowe, Adell** vs Martinez. TB side is two-act: **Aranda** (and Mesa/Hicks) vs the RHP opener, then flip to **Caminero + Yandy** when Cantillo takes over.
+
+---
+
+## 2-man tickets (by path)
+
+Props default to **Hits** unless noted. Fire CLE anytime; fire TB tickets **after** you see who follows Armstrong (or use the “both windows” bridge if you must lock pregame).
+
+### Cleveland (vs Martinez — one path)
+| Ticket | Legs | Why |
+|--------|------|-----|
+| **CLE A (primary)** | **Halpin Hits + Lowe Hits** | Dump HOT + heart HOT · both map/board aligned |
+| **CLE B** | **Halpin Hits + Adell Hits** | Both HOT on Martinez CH dumps (LHB + RHB) |
+| **CLE C (ceiling)** | **Lowe H+R+RBI + Halpin Hits** | Lowe board/heart for production · Halpin tunnel |
+
+Pass stacking Kwan / Ramírez / Rocchio.
+
+### Rays — Path 1: Armstrong opener + RHP bulk (Bibee/Cecconi)
+| Ticket | Legs | Why |
+|--------|------|-----|
+| **TB-RHP A (primary)** | **Aranda Hits + Mesa Hits** | Both HOT on OUT-DN-1B dump vs Armstrong & RHP |
+| **TB-RHP B** | **Aranda Hits + Hicks Hits** | Same dump HOTs · Hicks earlier in order (#5) |
+
+Do **not** 2-man Caminero+Yandy on this path (COLD on ST/RHP dump).
+
+### Rays — Path 2: Armstrong opener → **Cantillo** bulk (expected)
+| Ticket | Legs | Why |
+|--------|------|-----|
+| **TB-LHP A (primary)** | **Caminero Hits + Yandy Hits** | Both HOT on Cantillo CU dump once he enters |
+| **TB-LHP B (bridge)** | **Aranda Hits + Caminero Hits** | Aranda covers opener/RHP look · Caminero cashes vs Cantillo |
+| **TB-LHP C (ceiling)** | **Caminero H+R+RBI + Yandy Hits** | Cleanup power vs LHP bulk |
+
+### Mixed CLE + TB (same-game 2-mans)
+| Ticket | When | Legs |
+|--------|------|------|
+| **MIX A** | Any (safest) | **Halpin Hits + Aranda Hits** |
+| **MIX B** | Cantillo bulk confirmed | **Lowe Hits + Caminero Hits** |
+| **MIX C** | Cantillo bulk confirmed | **Halpin Hits + Yandy Hits** |
+| **MIX D** | RHP bulk instead | **Lowe Hits + Mesa Hits** |
+
+### How to use live
+1. Pre-lock **CLE A** (Halpin+Lowe) — doesn’t depend on CLE bullpen.  
+2. Watch first pitching change: if **Cantillo** → fire **TB-LHP A** or **MIX B/C**.  
+3. If **Bibee/Cecconi** → fire **TB-RHP A** or **MIX D**.  
+4. Avoid Simpson on any 2-man.

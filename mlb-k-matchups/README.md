@@ -93,7 +93,11 @@ Writes:
 - `zone-overlap-<pitcher>-<date>.md` + `.json` — HOT/WARM/COLD text
 - `zone-maps/<pitcher>-<date>/` — **PNG heatmaps** (pitcher throw %, batter damage xwOBA, overlap) + `index.html` gallery
 
-Catcher’s-view plates: blue = where the pitcher throws; green/red = batter BIP damage; red/blue outlines = HOT/COLD overlap. Display-only — does not change Exp K or hits scores. Needs network to Baseball Savant on first pull (~1–2 min per pitcher+lineup); `matplotlib` required for PNGs.
+Catcher’s-view plates:
+- **Pitch plan panels** — where each pitch type (FF/SL/KC/…) lands vs **LHB and RHB** separately  
+- Blue overall throw % · green/red batter BIP damage · overlap cells show **`W% + primary pitch`** · red/blue outlines = HOT/COLD  
+
+Display-only — does not change Exp K or hits scores. Needs network to Baseball Savant on first pull (~1–2 min per pitcher+lineup); `matplotlib` required for PNGs.
 
 If a starter is missing from the Savant arsenal board (common for returning arms below the default `min` PA filter), the model falls back to **Statcast pitch-level usage** for that pitcher instead of leaving them unscored.
 

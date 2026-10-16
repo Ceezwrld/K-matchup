@@ -668,6 +668,23 @@ Pitch-plan panel first (vs that batter’s hand), then overlap.
 
 Exhibit: `pregame-batter-leans-2026-10-15-nlcs.md` (Teoscar/Ohtani/Mitchell/Turang/Bauers).
 
+### Grade rules after heatmaps (locked 10/15 NLCS G4)
+Full grade: `backtest-2026-10-15-nlcs-g4.md` · MIL 6, LAD 4 · Glasnow 6 K / 4.1 IP · Drohan **1.0 IP**.
+
+| Result | Lesson |
+|--------|--------|
+| Bauers GOOD (FF-miss HOTs) → 2B 2 RBI vs Glasnow | GOOD+ with elite board can cash when dump-HOT BEST sleeps |
+| Mitchell BEST map → 0-for-2 vs Glasnow, HR vs bullpen | HOT ≠ every PA; grade **vs-SP** separate from full-game box |
+| Frelick FADE → 0 H | Fade on COLD dump held |
+| Ohtani H+R+RBI → HR 3 RBI vs **May** | Ceiling lean can print vs replacement after early hook |
+| Drohan 1 IP voids Teoscar/Ohtani vs-SP grade | Early exit = incomplete heatmap sample |
+| Glasnow 6 K in 4.1 | WHIFF/K rate OK; length capped juiced total |
+
+**Process locks**
+1. **Early SP exit (<~2 IP)** → mark batter leans vs that arm **incomplete**; don’t force-grade heatmap on 1–2 PAs; optionally re-run leans vs the long reliever.
+2. Keep **BEST = HOT on dump** as primary, but require **board score** backup when playoff hooks make PA count tiny.
+3. Separate **vs-SP results** from **full-game box** when grading heatmaps.
+
 ---
 
 ## Ticket lock routine (USE THIS before every card)

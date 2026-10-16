@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>K-Matchup — lineup strikeout projections</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<meta name="color-scheme" content="light dark" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script>
+  (function () {
+    try {
+      var key = "k-matchup-theme";
+      var stored = localStorage.getItem(key);
+      var theme =
+        stored === "light" || stored === "dark"
+          ? stored
+          : window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  })();
+</script>
+<style>
+  :root, html[data-theme="light"] {
+    --bg0: #e8f0e4;
+    --bg1: #f7f3ea;
+    --bg-end: #eef4ea;
+    --ink: #14201a;
+    --muted: #5c6b62;
+    --line: rgba(20, 32, 26, 0.12);
+    --accent: #0f6a4d;
+    --warn: #9a5b12;
+    --ok: #0f6a4d;
+    --panel: rgba(255, 252, 246, 0.92);
+    --panel-soft: rgba(255, 255, 255, 0.55);
+    --panel-solid: rgba(255, 255, 255, 0.72);
+    --controls-bg: rgba(247, 243, 234, 0.94);
+    --detail-bg: rgba(20, 32, 26, 0.03);
+    --meta-cell: rgba(255, 255, 255, 0.7);
+    --hand-bg: rgba(255, 255, 255, 0.7);
+    --glow-ok: rgba(15, 106, 77, 0.18);
+    --glow-warn: rgba(154, 91, 18, 0.12);
+    --shadow: 0 18px 50px rgba(20, 32, 26, 0.08);
+    --radius: 18px;
+    --mono: "Manrope", system-ui, sans-serif;
+    --display: "Archivo Black", "Arial Black", sans-serif;
+    --grade-elite: #064832;
+    --grade-high: #0f6a4d;
+    --grade-mid: #8a4b0f;
+    --grade-low: #8c2828;
+    --grade-elite-soft: rgba(6, 72, 50, 0.72);
+    --chip-fill-elite: #c8ebd9;
+    --chip-fill-high: #d9f0e4;
+    --chip-fill-mid: #f3e0c4;
+    --chip-fill-low: #f0d0d0;
+    --chip-fill-na: #e8ebe9;
+    --chip-ink-na: #4a554e;
+    --chip-border-elite: #2f8a5f;
+    --chip-border-high: #4a9a72;
+    --chip-border-mid: #c47a1a;
+    --chip-border-low: #c45a5a;
+    --chip-border-na: #b7c0bb;
+    --row-rule: rgba(0, 0, 0, 0.05);
+    --noscript-ink: #6b3f0c;
+  }
+  html[data-theme="dark"] {
+    /* Black chrome only — grade / status chip colors stay identical to light */
+    --bg0: #050505;
+    --bg1: #0a0a0a;
+    --bg-end: #000000;
+    --ink: #f2f2f2;
+    --muted: #a0a0a0;
+    --line: rgba(255, 255, 255, 0.12);
+    --accent: #f5f5f5;
+    --warn: #9a5b12;
+    --ok: #0f6a4d;
+    --panel: rgba(18, 18, 18, 0.96);
+    --panel-soft: rgba(255, 255, 255, 0.05);
+    --panel-solid: rgba(22, 22, 22, 0.96);
+    --controls-bg: rgba(10, 10, 10, 0.96);
+    --detail-bg: rgba(0, 0, 0, 0.45);
+    --meta-cell: rgba(255, 255, 255, 0.04);
+    --hand-bg: rgba(255, 255, 255, 0.06);
+    --glow-ok: rgba(255, 255, 255, 0.04);
+    --glow-warn: rgba(255, 255, 255, 0.03);
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    --grade-elite: #064832;
+    --grade-high: #0f6a4d;
+    --grade-mid: #8a4b0f;
+    --grade-low: #8c2828;
+    --grade-elite-soft: rgba(6, 72, 50, 0.72);
+    --chip-fill-elite: #c8ebd9;
+    --chip-fill-high: #d9f0e4;
+    --chip-fill-mid: #f3e0c4;
+    --chip-fill-low: #f0d0d0;
+    --chip-fill-na: #e8ebe9;
+    --chip-ink-na: #4a554e;
+    --chip-border-elite: #2f8a5f;
+    --chip-border-high: #4a9a72;
+    --chip-border-mid: #c47a1a;
+    --chip-border-low: #c45a5a;
+    --chip-border-na: #b7c0bb;
+    --row-rule: rgba(255, 255, 255, 0.07);
+    --noscript-ink: #e0b06a;
+  }
+  * { box-sizing: border-box; }
+  html {
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    color-scheme: light;
+  }
+  html[data-theme="dark"] { color-scheme: dark; }
+  body {
+    margin: 0;
+    min-height: 100%;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: visible;
+    color: var(--ink);
+    font-family: var(--mono);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, var(--glow-ok), transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, var(--glow-warn), transparent 50%),
+      linear-gradient(165deg, var(--bg0), var(--bg1) 55%, var(--bg-end));
+  }
+  .wrap {
+    width: min(1120px, calc(100% - 2rem));
+    margin: 0 auto;
+    padding: 2.25rem 0 6rem;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .board,
+  details.matchup,
+  .detail,
+  .tabs,
+  .tab-panel {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .hero { display: grid; gap: 0.85rem; margin-bottom: 1.5rem; }
+  .hero-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+  }
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel-soft);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  }
+  .theme-toggle:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .theme-toggle svg {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+  }
+  html[data-theme="light"] .theme-toggle .icon-sun { display: none; }
+  html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+  .brand {
+    font-family: var(--display);
+    font-size: clamp(2.6rem, 7vw, 4.4rem);
+    letter-spacing: -0.03em;
+    line-height: 0.92;
+    margin: 0;
+  }
+  .brand span { color: var(--accent); }
+  .lede { max-width: 40rem; margin: 0; color: var(--muted); font-size: 1.05rem; line-height: 1.45; }
+  .meta { display: flex; flex-wrap: wrap; gap: 0.55rem 0.75rem; }
+  .chip {
+    display: inline-flex; gap: 0.35rem; align-items: center;
+    padding: 0.35rem 0.7rem; border: 1px solid var(--line);
+    background: var(--panel-soft); border-radius: 999px;
+    font-size: 0.82rem; color: var(--muted);
+  }
+  .chip strong { color: var(--ink); }
+  .freshness {
+    margin: 0;
+    padding: 0.7rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 106, 77, 0.28);
+    background: rgba(15, 106, 77, 0.08);
+    color: var(--ink);
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+  html[data-theme="dark"] .freshness {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .freshness a { color: var(--accent); font-weight: 700; word-break: break-all; }
+  .controls {
+    display: grid;
+    grid-template-columns: 1.4fr repeat(3, auto);
+    gap: 0.75rem;
+    align-items: end;
+    margin-bottom: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--controls-bg);
+    backdrop-filter: blur(8px);
+  }
+  @media (max-width: 820px) { .controls { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 540px) { .controls { grid-template-columns: 1fr; } }
+  label {
+    display: grid; gap: 0.35rem; font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted);
+  }
+  input[type="search"], select {
+    width: 100%; appearance: none; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); border-radius: 12px;
+    padding: 0.7rem 0.85rem; font: inherit; font-size: 0.95rem; outline: none;
+  }
+  .board {
+    display: grid;
+    gap: 0.65rem;
+    overflow: visible;
+  }
+  .colhead, .summary-grid {
+    display: grid;
+    grid-template-columns: 3rem minmax(9rem, 1.35fr) minmax(5.5rem, 0.85fr) repeat(7, minmax(3.4rem, 0.7fr)) minmax(5.5rem, 0.9fr);
+    gap: 0.75rem 0.9rem;
+    align-items: center;
+  }
+  .colhead {
+    padding: 0 0.95rem;
+    font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted);
+  }
+  /* Desktop: children flow into the parent 8-col grid. Mobile: own equal row. */
+  .stat-row { display: contents; }
+  @media (max-width: 900px) {
+    .colhead { display: none; }
+    .summary-grid {
+      grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+      column-gap: 0.75rem;
+      row-gap: 0.8rem;
+      grid-template-areas:
+        "rank who badges"
+        "rank game game"
+        "stats stats stats";
+    }
+    .summary-grid .rank { grid-area: rank; }
+    .summary-grid .who { grid-area: who; }
+    .summary-grid .badges { grid-area: badges; justify-self: end; }
+    .summary-grid .game { grid-area: game; }
+    .summary-grid .stat-row {
+      display: grid;
+      grid-area: stats;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.7rem 1rem;
+      width: 100%;
+      min-width: 0;
+      align-items: start;
+    }
+    .summary-grid .stat-row .num {
+      min-width: 0;
+      width: 100%;
+      padding-right: 0.15rem;
+      box-sizing: border-box;
+    }
+  }
+  details.matchup {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: visible;
+  }
+  details.matchup[hidden] { display: none !important; }
+  summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 0.9rem 0.95rem;
+    border-radius: var(--radius);
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { background: rgba(15, 106, 77, 0.05); }
+  .muted { color: var(--muted); font-size: 0.85em; }
+  .pitcher { font-weight: 700; }
+  .hand {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--hand-bg);
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+  }
+  /* Arsenal / lineup hand separation — L amber · R green · S muted */
+  .hand.hand-l {
+    background: rgba(154, 91, 18, 0.14);
+    border-color: rgba(154, 91, 18, 0.35);
+    color: var(--grade-mid);
+  }
+  .hand.hand-r {
+    background: rgba(15, 106, 77, 0.14);
+    border-color: rgba(15, 106, 77, 0.32);
+    color: var(--grade-high);
+  }
+  .hand.hand-s {
+    background: rgba(20, 32, 26, 0.08);
+    border-color: rgba(20, 32, 26, 0.18);
+    color: var(--muted);
+  }
+  html[data-theme="dark"] summary:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .pitch-stack .pmeta-lines {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+    flex: 1;
+  }
+  .pitch-stack .pmeta-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.28rem 0.35rem;
+    min-width: 0;
+  }
+  .pitch-stack .pmeta-line .pname {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--ink);
+    margin-right: 0.1rem;
+  }
+  .pitch-stack .pmeta-line .rate-chip {
+    margin: 0;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.55rem;
+  }
+  /* Stronger fills in Arsenal headers so good/bad reads on htmlpreview */
+  .pitch-stack .pmeta-line .rate-chip.grade-elite {
+    background: var(--chip-fill-elite);
+    color: var(--grade-elite);
+    border-color: var(--chip-border-elite);
+  }
+  .pitch-stack .pmeta-line .rate-chip.grade-high {
+    background: var(--chip-fill-high);
+    color: var(--grade-high);
+    border-color: var(--chip-border-high);
+  }
+  .pitch-stack .pmeta-line .rate-chip.grade-mid {
+    background: var(--chip-fill-mid);
+    color: var(--grade-mid);
+    border-color: var(--chip-border-mid);
+  }
+  .pitch-stack .pmeta-line .rate-chip.grade-low {
+    background: var(--chip-fill-low);
+    color: var(--grade-low);
+    border-color: var(--chip-border-low);
+  }
+  .pitch-stack .pmeta-line .rate-chip.rate-na,
+  .pitch-stack .pmeta-line .rate-chip:not([class*="grade-"]) {
+    background: var(--chip-fill-na);
+    color: var(--chip-ink-na);
+    border-color: var(--chip-border-na);
+  }
+  /* No L/R edge tint — chips stay a single good/bad fill color */
+  .pitch-stack .pmeta-line .rate-chip.hand-l,
+  .pitch-stack .pmeta-line .rate-chip.hand-r {
+    box-shadow: none;
+  }
+  .sub { color: var(--muted); font-size: 0.8rem; margin-top: 0.12rem; }
+  .game {
+    font-weight: 650;
+    line-height: 1.25;
+  }
+  .gametime {
+    display: block;
+    margin-top: 0.15rem;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .num {
+    display: grid;
+    justify-items: start;
+    gap: 0.18rem;
+    min-width: 3.75rem;
+    padding-right: 0.25rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .nval {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+  .nlab {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .ks .nval { font-size: 1.05rem; }
+  .grade-low { color: var(--grade-low); }
+  .grade-mid { color: var(--grade-mid); }
+  .grade-high { color: var(--grade-high); }
+  .grade-elite {
+    color: var(--grade-elite);
+    background: rgba(15, 106, 77, 0.14);
+    border-radius: 8px;
+    padding: 0.22rem 0.55rem 0.28rem;
+    justify-self: start;
+  }
+  .grade-elite .nlab { color: var(--grade-elite-soft); }
+  .grade-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.7rem;
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .grade-legend .swatch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .grade-legend .swatch::before {
+    content: "";
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .model-keys {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 0.35rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel-soft);
+  }
+  .model-keys .keys-title {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .model-keys .key-row {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 0.55rem 0.75rem;
+    align-items: start;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+  @media (max-width: 640px) {
+    .model-keys .key-row { grid-template-columns: 1fr; gap: 0.15rem; }
+  }
+  .model-keys .key-lab {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 0.12rem;
+  }
+  .model-keys .key-val {
+    display: grid;
+    gap: 0.3rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .model-keys .key-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .model-keys .key-notes {
+    display: grid;
+    gap: 0.35rem;
+  }
+  .model-keys .key-note {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+  .model-keys .key-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .model-keys .key-chip.ark {
+    border-radius: 6px;
+    letter-spacing: 0.03em;
+  }
+  .model-keys .key-bip-whiff {
+    background: rgba(15, 106, 77, 0.16);
+    color: var(--grade-elite);
+    border-color: rgba(15, 106, 77, 0.28);
+  }
+  .model-keys .key-bip-league {
+    background: rgba(20, 32, 26, 0.08);
+    color: var(--muted);
+    border-color: rgba(20, 32, 26, 0.16);
+  }
+  .model-keys .key-bip-contact {
+    background: rgba(30, 90, 160, 0.14);
+    color: #1a4a7a;
+    border-color: rgba(30, 90, 160, 0.28);
+  }
+  .outlook-trust {
+    background: rgba(15, 106, 77, 0.18);
+    color: var(--grade-elite);
+  }
+  .badge {
+    display: inline-flex; padding: 0.22rem 0.55rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700;
+  }
+  .badge.official { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
+  .badge.prior { background: rgba(154, 91, 18, 0.14); color: var(--warn); }
+  .badge.miss { background: rgba(20, 32, 26, 0.08); color: var(--muted); }
+  .badges {
+    display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end;
+    align-items: center;
+  }
+  .kpct {
+    min-width: 5.5rem;
+  }
+  .rank-chips {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    margin-bottom: 0.12rem;
+  }
+  .ark-opp {
+    background: rgba(20, 32, 26, 0.10);
+    color: var(--ink);
+  }
+  .kpct-val { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .ark {
+    display: inline-flex; align-items: center;
+    padding: 0.1rem 0.4rem; border-radius: 6px;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em;
+    background: rgba(20, 32, 26, 0.08); color: var(--muted);
+  }
+  .ark-elite { background: rgba(15, 106, 77, 0.16); color: var(--grade-elite); }
+  .ark-strong { background: rgba(15, 106, 77, 0.10); color: var(--ok); }
+  .ark-avg { background: rgba(154, 91, 18, 0.12); color: var(--warn); }
+  .ark-soft { background: rgba(140, 40, 40, 0.12); color: var(--grade-low); }
+  .ark-spike {
+    background: rgba(154, 40, 18, 0.16);
+    color: var(--grade-low);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .style-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    margin-left: 0.4rem;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .style-chip-lab {
+    opacity: 0.7;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+  }
+  .ark-pstyle-whiff, .style-chip.ark-pstyle-whiff {
+    background: rgba(15, 106, 77, 0.16);
+    color: var(--grade-elite);
+    border-color: rgba(15, 106, 77, 0.28);
+  }
+  .ark-pstyle-contact_gb, .style-chip.ark-pstyle-contact_gb {
+    background: rgba(40, 72, 120, 0.14);
+    color: #1e3a5f;
+    border-color: rgba(40, 72, 120, 0.28);
+  }
+  .ark-pstyle-fly_popup, .style-chip.ark-pstyle-fly_popup {
+    background: rgba(120, 72, 40, 0.14);
+    color: #5c3418;
+    border-color: rgba(120, 72, 40, 0.28);
+  }
+  .ark-pstyle-balanced, .style-chip.ark-pstyle-balanced {
+    background: rgba(20, 32, 26, 0.10);
+    color: var(--ink);
+    border-color: rgba(20, 32, 26, 0.18);
+  }
+  .meta-pstyle {
+    border-color: rgba(40, 72, 120, 0.30);
+    background: rgba(40, 72, 120, 0.07);
+    grid-column: 1 / -1;
+  }
+  .ark-abs {
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    min-width: 3.4rem;
+    justify-content: center;
+  }
+  .ark-slate { opacity: 0.85; }
+  .risk {
+    display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+  }
+  .risk-clear { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
+  .risk-low { background: rgba(154, 91, 18, 0.12); color: var(--warn); }
+  .risk-medium { background: rgba(154, 91, 18, 0.18); color: var(--grade-mid); }
+  .risk-high { background: rgba(140, 40, 40, 0.14); color: var(--grade-low); }
+  .role {
+    display: inline-flex; margin-left: 0.35rem; padding: 0.15rem 0.45rem;
+    border-radius: 999px; font-size: 0.72rem; font-weight: 700;
+  }
+  .role-opener_likely { background: rgba(140, 40, 40, 0.14); color: var(--grade-low); }
+  .role-swingman { background: rgba(154, 91, 18, 0.16); color: var(--grade-mid); }
+  .outlook {
+    display: inline-flex; padding: 0.15rem 0.45rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+  }
+  .outlook-filler { background: rgba(140, 40, 40, 0.14); color: var(--grade-low); }
+  .outlook-spike { background: rgba(154, 40, 18, 0.16); color: var(--grade-low); }
+  .outlook-matchup_ok { background: rgba(15, 106, 77, 0.12); color: var(--ok); }
+  .outlook-thin_total { background: rgba(154, 91, 18, 0.16); color: var(--grade-mid); }
+  .outlook-under_ok { background: rgba(30, 90, 160, 0.14); color: #1a4a7a; }
+  .detail {
+    padding: 0 1rem 1.15rem;
+    border-top: 1px solid var(--line);
+    background: var(--detail-bg);
+    overflow: visible;
+    animation: detailIn 0.22s ease-out;
+  }
+  @keyframes detailIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+  .meta-strip {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+    margin: 0.85rem 0 0.75rem;
+  }
+  .meta-cell {
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--meta-cell);
+    min-width: 0;
+  }
+  .meta-matchup {
+    border-color: rgba(15, 106, 77, 0.28);
+    background: rgba(15, 106, 77, 0.06);
+  }
+  .meta-history {
+    border-color: rgba(30, 90, 160, 0.28);
+    background: rgba(30, 90, 160, 0.06);
+    grid-column: 1 / -1;
+  }
+  .meta-history .vs-recent {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--ink);
+    font-size: 0.84rem;
+    font-weight: 600;
+  }
+  .meta-label {
+    display: block;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 0.25rem;
+  }
+  .meta-value {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem;
+    font-size: 0.84rem; line-height: 1.4; color: var(--ink); font-weight: 600;
+  }
+  .meta-value.meta-rates {
+    gap: 0.35rem;
+  }
+  .rate-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.22rem;
+    padding: 0.16rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--panel-soft);
+    color: var(--ink);
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    line-height: 1.25;
+  }
+  .rate-chip .rate-lab {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    opacity: 0.78;
+  }
+  .rate-chip .rate-val {
+    font-weight: 800;
+  }
+  .rate-chip.grade-elite {
+    background: rgba(15, 106, 77, 0.18);
+    color: var(--grade-elite);
+    border-color: rgba(15, 106, 77, 0.32);
+  }
+  .rate-chip.grade-high {
+    background: rgba(15, 106, 77, 0.11);
+    color: var(--grade-high);
+    border-color: rgba(15, 106, 77, 0.24);
+  }
+  .rate-chip.grade-mid {
+    background: rgba(154, 91, 18, 0.12);
+    color: var(--grade-mid);
+    border-color: rgba(154, 91, 18, 0.26);
+  }
+  .rate-chip.grade-low {
+    background: rgba(140, 40, 40, 0.12);
+    color: var(--grade-low);
+    border-color: rgba(140, 40, 40, 0.26);
+  }
+  .rate-chip.rate-na {
+    background: rgba(20, 32, 26, 0.05);
+    color: var(--muted);
+    border-color: rgba(20, 32, 26, 0.12);
+    font-weight: 600;
+  }
+  .rate-chip.rate-spike {
+    background: rgba(154, 40, 18, 0.14);
+    color: var(--grade-low);
+    border-color: rgba(154, 40, 18, 0.28);
+  }
+  .model-keys .key-chip.rate-chip {
+    border-radius: 999px;
+  }
+  .outlook-banner {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.55rem 0.75rem;
+    align-items: start;
+    margin: 0 0 0.85rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    font-size: 0.84rem; line-height: 1.4;
+  }
+  .outlook-banner strong {
+    font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .outlook-banner.outlook-filler {
+    background: rgba(140, 40, 40, 0.08); border-color: rgba(140, 40, 40, 0.22);
+    color: var(--grade-low);
+  }
+  .outlook-banner.outlook-spike {
+    background: rgba(154, 40, 18, 0.10); border-color: rgba(154, 40, 18, 0.28);
+    color: var(--grade-low);
+  }
+  .outlook-banner.outlook-matchup_ok {
+    background: rgba(15, 106, 77, 0.08); border-color: rgba(15, 106, 77, 0.22);
+    color: var(--grade-elite);
+  }
+  .outlook-banner.outlook-thin_total {
+    background: rgba(154, 91, 18, 0.10); border-color: rgba(154, 91, 18, 0.28);
+    color: var(--grade-mid);
+  }
+  .outlook-banner.outlook-book {
+    background: rgba(30, 90, 120, 0.10);
+    border-color: rgba(30, 90, 120, 0.28);
+  }
+  .outlook-banner.outlook-under_ok {
+    background: rgba(30, 90, 160, 0.08); border-color: rgba(30, 90, 160, 0.24);
+    color: #163a5c;
+  }
+  @media (max-width: 560px) {
+    .outlook-banner { grid-template-columns: 1fr; gap: 0.25rem; }
+  }
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 0.15rem;
+    padding: 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel-soft);
+  }
+  .tabs > input {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0; border: 0;
+    clip: rect(0 0 0 0);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .tab {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; background: transparent;
+    color: var(--muted); border-radius: 10px; padding: 0.55rem 0.75rem;
+    font-size: 0.86rem; font-weight: 700; cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab-short { display: none; }
+  .tabs > input:checked + .tab {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 6px 16px rgba(15, 106, 77, 0.22);
+  }
+  html[data-theme="dark"] .tabs > input:checked + .tab {
+    background: #f2f2f2;
+    color: #0a0a0a;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  }
+  .tab-panel {
+    display: none;
+    grid-column: 1 / -1;
+    margin-top: 0.55rem;
+    padding: 0.15rem 0.2rem 0.35rem;
+    animation: panelIn 0.18s ease-out;
+  }
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: none; }
+  }
+  .tabs > input[id$="-pitches"]:checked ~ .panel-pitches { display: block; }
+  .tabs > input[id$="-lineup"]:checked ~ .panel-lineup { display: block; }
+  .tabs > input[id$="-history"]:checked ~ .panel-history { display: block; }
+  .vs-summary {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0 0 0.85rem;
+    padding: 0.75rem 0.85rem;
+    background: rgba(15, 106, 77, 0.06);
+    border-radius: 10px;
+  }
+  .vs-summary .meta-label {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.15rem;
+  }
+  .vs-summary .meta-value {
+    font-size: 0.92rem;
+    line-height: 1.35;
+  }
+  .vs-table {
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.86rem;
+  }
+  .vs-head, .vs-row {
+    display: grid;
+    grid-template-columns: 6.2rem 3.6rem repeat(7, minmax(2rem, 1fr));
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .vs-head {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    padding: 0.2rem 0;
+  }
+  .vs-row {
+    padding: 0.35rem 0;
+    border-top: 1px solid rgba(20, 30, 25, 0.08);
+  }
+  .site {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+  }
+  .site-home { background: rgba(15, 106, 77, 0.14); color: var(--ok); }
+  .site-away { background: rgba(154, 91, 18, 0.16); color: var(--warn); }
+  @media (max-width: 640px) {
+    .vs-head, .vs-row {
+      grid-template-columns: 5.4rem 3.2rem repeat(4, minmax(1.6rem, 1fr));
+    }
+    .vs-head div:nth-child(n+6),
+    .vs-row div:nth-child(n+6) { display: none; }
+  }
+
+  .batter-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.45rem 0.75rem;
+  }
+  .batter {
+    display: flex; justify-content: space-between; gap: 0.5rem;
+    padding: 0.45rem 0.55rem; border-radius: 10px;
+    background: var(--panel-solid); border: 1px solid var(--line); font-size: 0.86rem;
+  }
+  .batter.missing { opacity: 0.55; }
+  .batter .slot { color: var(--muted); min-width: 1.2rem; }
+  .batter .k {
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.86rem;
+    padding: 0.14rem 0.42rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .batter .k.grade-elite,
+  .kval.grade-elite,
+  .kchip.grade-elite {
+    background: rgba(15, 106, 77, 0.18);
+    color: var(--grade-elite);
+    border-color: rgba(15, 106, 77, 0.32);
+  }
+  .batter .k.grade-high,
+  .kval.grade-high,
+  .kchip.grade-high {
+    background: rgba(15, 106, 77, 0.11);
+    color: var(--grade-high);
+    border-color: rgba(15, 106, 77, 0.24);
+  }
+  .batter .k.grade-mid,
+  .kval.grade-mid,
+  .kchip.grade-mid {
+    background: rgba(154, 91, 18, 0.12);
+    color: var(--grade-mid);
+    border-color: rgba(154, 91, 18, 0.26);
+  }
+  .batter .k.grade-low,
+  .kval.grade-low,
+  .kchip.grade-low {
+    background: rgba(140, 40, 40, 0.12);
+    color: var(--grade-low);
+    border-color: rgba(140, 40, 40, 0.26);
+  }
+  .kchip {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    padding: 0.08rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .kchip.rate-na {
+    background: rgba(20, 32, 26, 0.05);
+    color: var(--muted);
+    border-color: rgba(20, 32, 26, 0.12);
+    font-weight: 600;
+  }
+  .hint-amber { color: var(--grade-mid); }
+  .hint-red { color: var(--grade-low); }
+  .pitch-stack {
+    display: grid;
+    gap: 0.45rem;
+    width: 100%;
+    min-width: 0;
+  }
+  .pitch-block {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel-solid);
+    overflow: hidden;
+  }
+  .pitch-block > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.65rem;
+    padding: 0.65rem 0.8rem;
+    line-height: 1.35;
+  }
+  .pitch-block > summary::-webkit-details-marker { display: none; }
+  .pitch-block > summary::before {
+    content: "▸";
+    color: var(--muted);
+    font-size: 0.75rem;
+    margin-right: 0.15rem;
+  }
+  .pitch-block[open] > summary::before { content: "▾"; color: var(--accent); }
+  .pitch-block > summary .pname {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--ink);
+  }
+  .pitch-block[open] > summary {
+    border-bottom: 1px solid var(--line);
+    background: rgba(15, 106, 77, 0.06);
+  }
+  .pitch-list {
+    display: grid;
+    gap: 0;
+    padding: 0.15rem 0.8rem 0.55rem;
+  }
+  .pitch-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 36%) 4.4rem;
+    gap: 0.55rem;
+    align-items: center;
+    padding: 0.5rem 0.15rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .pitch-row:last-child { border-bottom: 0; }
+  .pitch-row.avg {
+    margin-top: 0.2rem;
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+    font-weight: 700;
+  }
+  .pitch-row .who {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem 0.45rem;
+    min-width: 0;
+  }
+  .pitch-row .slot { color: var(--muted); font-weight: 500; font-size: 0.8rem; }
+  .pitch-row .name { font-size: 0.9rem; font-weight: 650; }
+  .meter {
+    height: 0.55rem;
+    border-radius: 999px;
+    background: var(--panel-soft);
+    overflow: hidden;
+  }
+  .bar {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    min-width: 0;
+    transition: width 0.25s ease;
+  }
+  .kval {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    font-size: 0.82rem;
+    padding: 0.12rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    justify-self: end;
+  }
+  @media (max-width: 560px) {
+    .tab {
+      padding: 0.48rem 0.5rem;
+      font-size: 0.78rem;
+    }
+    .tab-full { display: none; }
+    .tab-short { display: inline; }
+    .pitch-row {
+      grid-template-columns: minmax(0, 1fr) 3rem;
+      grid-template-rows: auto auto;
+    }
+    .meter { grid-column: 1 / -1; grid-row: 2; }
+    .kval { grid-column: 2; grid-row: 1; }
+    .pitch-block > summary {
+      padding: 0.55rem 0.65rem;
+      gap: 0.15rem 0.45rem;
+    }
+    .pitch-block > summary .pname { font-size: 0.84rem; }
+    .pitch-stack .pmeta-line .rate-chip { font-size: 0.72rem; }
+    .pitch-list { padding: 0.1rem 0.65rem 0.45rem; }
+  }
+  .hint { margin: 0.65rem 0 0; color: var(--muted); font-size: 0.78rem; }
+  .hits-meta {
+    display: inline-block; margin-left: 0.45rem; color: var(--muted);
+    font-size: 0.72rem; font-weight: 500;
+  }
+  .view-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin: 0 0 1.15rem;
+    padding: 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel-soft);
+  }
+  .view-tabs > input {
+    position: absolute;
+    width: 1px; height: 1px;
+    margin: -1px; padding: 0; border: 0;
+    clip: rect(0 0 0 0);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .view-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .view-tab:hover { color: var(--ink); }
+  .view-tabs > input:checked + .view-tab {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(15, 106, 77, 0.22);
+  }
+  html[data-theme="dark"] .view-tabs > input:checked + .view-tab {
+    background: #f2f2f2;
+    color: #0a0a0a;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  }
+  .view-tab .tab-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    opacity: 0.8;
+  }
+  .view-panel {
+    display: none;
+    grid-column: 1 / -1;
+    margin-top: 0.65rem;
+    padding: 0.15rem 0.1rem 0.2rem;
+    animation: panelIn 0.18s ease-out;
+  }
+  .view-tabs > input#view-pitchers:checked ~ .panel-pitchers { display: block; }
+  .view-tabs > input#view-hits:checked ~ .panel-hits { display: block; }
+  .hits-board {
+    margin: 0; padding: 0.85rem 0.95rem 1rem;
+    border: 1px solid var(--line); border-radius: 14px;
+    background: var(--panel-soft);
+  }
+  .hits-board h2 {
+    margin: 0 0 0.25rem; font-family: "Archivo Black", sans-serif;
+    font-size: 1.15rem; letter-spacing: -0.02em;
+  }
+  .hits-board h2 span { color: var(--muted); font-family: Manrope, sans-serif; font-size: 0.75rem; font-weight: 600; }
+  .hits-lede { margin: 0 0 0.75rem; color: var(--muted); font-size: 0.8rem; }
+  .hits-colhead, .hits-row {
+    display: grid;
+    grid-template-columns: 2rem minmax(7rem,1.2fr) minmax(9rem,1.4fr) repeat(5, 3.2rem);
+    gap: 0.4rem; align-items: center;
+  }
+  .hits-colhead {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted); padding: 0 0 0.35rem; border-bottom: 1px solid var(--line);
+  }
+  .hits-row { padding: 0.35rem 0; border-bottom: 1px solid var(--row-rule); font-size: 0.82rem; }
+  .hits-row .rk { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hits-row .name { font-weight: 650; }
+  .hits-row .vs { color: var(--muted); font-size: 0.75rem; }
+  .hits-row .num { font-variant-numeric: tabular-nums; text-align: right; }
+  @media (max-width: 720px) {
+    .hits-colhead, .hits-row {
+      grid-template-columns: 1.6rem minmax(5rem,1fr) repeat(3, 2.6rem);
+    }
+    .hits-colhead div:nth-child(3), .hits-row .vs,
+    .hits-colhead div:nth-child(7), .hits-colhead div:nth-child(8),
+    .hits-row .num:nth-child(7), .hits-row .num:nth-child(8) { display: none; }
+  }
+  .empty { padding: 1.2rem; text-align: center; color: var(--muted); }
+  .footnote { margin-top: 1rem; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
+  .noscript {
+    margin: 0 0 1rem; padding: 0.75rem 0.9rem; border-radius: 12px;
+    background: rgba(154, 91, 18, 0.12); color: var(--noscript-ink); font-size: 0.9rem;
+  }
+  /* Dark chrome surfaces only */
+  html[data-theme="dark"] .pitch-block[open] > summary,
+  html[data-theme="dark"] .vs-summary {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  /*
+   * Keep graded / status chips identical to light mode (solid fills + ink).
+   * Black theme is chrome-only; do not desaturate these.
+   */
+  html[data-theme="dark"] .ark-elite,
+  html[data-theme="dark"] .model-keys .key-bip-whiff,
+  html[data-theme="dark"] .outlook-trust,
+  html[data-theme="dark"] .ark-pstyle-whiff,
+  html[data-theme="dark"] .style-chip.ark-pstyle-whiff {
+    background: #c8ebd9;
+    color: #064832;
+    border-color: #2f8a5f;
+  }
+  html[data-theme="dark"] .ark-strong,
+  html[data-theme="dark"] .badge.official,
+  html[data-theme="dark"] .risk-clear,
+  html[data-theme="dark"] .outlook-matchup_ok,
+  html[data-theme="dark"] .site-home {
+    background: #d9f0e4;
+    color: #0f6a4d;
+    border-color: #4a9a72;
+  }
+  html[data-theme="dark"] .ark-avg,
+  html[data-theme="dark"] .badge.prior,
+  html[data-theme="dark"] .risk-low,
+  html[data-theme="dark"] .risk-medium,
+  html[data-theme="dark"] .outlook-thin_total,
+  html[data-theme="dark"] .role-swingman,
+  html[data-theme="dark"] .site-away,
+  html[data-theme="dark"] .ark-pstyle-fly_popup,
+  html[data-theme="dark"] .style-chip.ark-pstyle-fly_popup {
+    background: #f3e0c4;
+    color: #8a4b0f;
+    border-color: #c47a1a;
+  }
+  html[data-theme="dark"] .ark-soft,
+  html[data-theme="dark"] .ark-spike,
+  html[data-theme="dark"] .outlook-filler,
+  html[data-theme="dark"] .outlook-spike,
+  html[data-theme="dark"] .risk-high,
+  html[data-theme="dark"] .role-opener_likely {
+    background: #f0d0d0;
+    color: #8c2828;
+    border-color: #c45a5a;
+  }
+  html[data-theme="dark"] .outlook-under_ok,
+  html[data-theme="dark"] .model-keys .key-bip-contact,
+  html[data-theme="dark"] .ark-pstyle-contact_gb,
+  html[data-theme="dark"] .style-chip.ark-pstyle-contact_gb {
+    background: rgba(30, 90, 160, 0.14);
+    color: #1a4a7a;
+    border-color: rgba(30, 90, 160, 0.28);
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-filler {
+    background: #f0d0d0; border-color: #c45a5a; color: #8c2828;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-spike {
+    background: #f0d0d0; border-color: #c45a5a; color: #8c2828;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-matchup_ok {
+    background: #d9f0e4; border-color: #4a9a72; color: #0f6a4d;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-thin_total {
+    background: #f3e0c4; border-color: #c47a1a; color: #8a4b0f;
+  }
+  html[data-theme="dark"] .outlook-banner.outlook-under_ok {
+    background: rgba(30, 90, 160, 0.14); border-color: rgba(30, 90, 160, 0.28); color: #163a5c;
+  }
+  html[data-theme="dark"] .rate-chip.grade-elite,
+  html[data-theme="dark"] .batter .k.grade-elite,
+  html[data-theme="dark"] .kval.grade-elite,
+  html[data-theme="dark"] .kchip.grade-elite {
+    background: #c8ebd9;
+    color: #064832;
+    border-color: #2f8a5f;
+  }
+  html[data-theme="dark"] .rate-chip.grade-high,
+  html[data-theme="dark"] .batter .k.grade-high,
+  html[data-theme="dark"] .kval.grade-high,
+  html[data-theme="dark"] .kchip.grade-high {
+    background: #d9f0e4;
+    color: #0f6a4d;
+    border-color: #4a9a72;
+  }
+  html[data-theme="dark"] .rate-chip.grade-mid,
+  html[data-theme="dark"] .batter .k.grade-mid,
+  html[data-theme="dark"] .kval.grade-mid,
+  html[data-theme="dark"] .kchip.grade-mid {
+    background: #f3e0c4;
+    color: #8a4b0f;
+    border-color: #c47a1a;
+  }
+  html[data-theme="dark"] .rate-chip.grade-low,
+  html[data-theme="dark"] .rate-chip.rate-spike,
+  html[data-theme="dark"] .batter .k.grade-low,
+  html[data-theme="dark"] .kval.grade-low,
+  html[data-theme="dark"] .kchip.grade-low {
+    background: #f0d0d0;
+    color: #8c2828;
+    border-color: #c45a5a;
+  }
+  /* Summary Exp K / IP numbers need brighter ink on black (not chips) */
+  html[data-theme="dark"] .num.grade-elite {
+    color: #9ee0c0;
+    background: rgba(15, 106, 77, 0.28);
+  }
+  html[data-theme="dark"] .num.grade-elite .nlab { color: rgba(158, 224, 192, 0.75); }
+  html[data-theme="dark"] .num.grade-high,
+  html[data-theme="dark"] .grade-legend .grade-high { color: #6fcf9f; }
+  html[data-theme="dark"] .num.grade-mid,
+  html[data-theme="dark"] .grade-legend .grade-mid { color: #e0b06a; }
+  html[data-theme="dark"] .num.grade-low,
+  html[data-theme="dark"] .grade-legend .grade-low { color: #e08888; }
+  html[data-theme="dark"] .grade-legend .grade-elite { color: #9ee0c0; }
+  html[data-theme="dark"] .hand.hand-l {
+    background: #f3e0c4;
+    border-color: #c47a1a;
+    color: #8a4b0f;
+  }
+  html[data-theme="dark"] .hand.hand-r {
+    background: #d9f0e4;
+    border-color: #4a9a72;
+    color: #0f6a4d;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <div class="hero-top">
+        <h1 class="brand">K-<span>Matchup</span></h1>
+        <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to dark theme" title="Toggle light / dark theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5z"></path>
+          </svg>
+          <span class="theme-toggle-text">Dark</span>
+        </button>
+      </div>
+      <p class="lede">
+        Full-outing K projections from each starter’s arsenal against the opposing
+        order. <strong>Arsenal K%</strong> is this pitcher’s mix vs <em>this</em> nine.
+        The word chip (<strong>ELITE / STRONG / AVG / SOFT</strong>) is the solo grade
+        from absolute K% bands — it does not depend on other pitchers today.
+        The numeric <strong>#</strong> is only today’s slate rank (relative).
+      </p>
+      <div class="meta"><span class='chip'>Date: <strong>2026-10-16</strong></span><span class='chip'>Generated: <strong>2026-10-16 20:45 UTC</strong></span><span class='chip'>Avg proj IP: <strong>3.4</strong></span><span class='chip'>Avg TTO: <strong>1.56×</strong></span><span class='chip'>Avg Strike%: <strong>65.6%</strong></span><span class='chip'>Scored: <strong>2</strong></span><span class='chip'>Official lineups: <strong>1/2</strong></span></div>
+      <div class='freshness' role='status'><strong>Bookmark:</strong> <a href='https://htmlpreview.github.io/?https://raw.githubusercontent.com/Ceezwrld/K-matchup/main/index.html'>https://htmlpreview.github.io/?https://raw.githubusercontent.com/Ceezwrld/K-matchup/main/index.html</a> — same link every day; tracks <code>main</code> and updates in place. Optional Pages URL after one Settings enable: <a href='https://ceezwrld.github.io/K-matchup/'>https://ceezwrld.github.io/K-matchup/</a>. Slate <strong>2026-10-16</strong> · built <strong>2026-10-16 20:45 UTC</strong> · official lineups <strong>1/2</strong>. Hard-refresh before tickets; never use old commit / htmlpreview links.</div>
+      <div class="grade-legend" aria-label="Number color scale">
+        Scale
+        <span class="swatch grade-low">low / batter-friendly</span>
+        <span class="swatch grade-mid">mid</span>
+        <span class="swatch grade-high">high / pitcher-friendly</span>
+        <span class="swatch grade-elite">elite</span>
+        <span>Exp K · IP · Arsenal %s</span>
+      </div>
+      <div class='model-keys' aria-label='Model keys'><div class='keys-title'>Keys — what to aim for</div><div class='key-row'><span class='key-lab'>Opp BIP</span><span class='key-val'><span class='key-chips'><span class='key-chip key-bip-whiff' title='Low BIP / high-K nines — helps overs'>whiff_prone ≤64%</span><span class='key-chip key-bip-league' title='Neutral contact environment'>league ~68%</span><span class='key-chip key-bip-contact' title='High BIP nines — helps unders (also ≥69% with K% ≤19.5)'>contact_heavy ≥71%</span></span><span class='key-notes'><span class='key-note'>Low BIP helps overs · high BIP helps unders.</span><span class='key-note'>contact_heavy also if BIP ≥69% with K% ≤19.5.</span></span></span></div><div class='key-row'><span class='key-lab'>Opp offense</span><span class='key-val'><span class='key-chips'><span class='key-chip rate-chip grade-elite' title='Soft offense — longer leash / K comfort'>wRC+ ≤90</span><span class='key-chip rate-chip grade-mid' title='League-average offense quality'>~100 lg</span><span class='key-chip rate-chip grade-low' title='Good offense — shorter leash risk'>wRC+ ≥110</span><span class='key-chip rate-chip grade-high' title='Softer damage / less power'>low wOBA/ISO</span><span class='key-chip rate-chip grade-low' title='Damage + power — caution clear-IP'>high wOBA/ISO</span></span><span class='key-notes'><span class='key-note'>Lineup PA-weighted FanGraphs wOBA / wRC+ / ISO (season).</span><span class='key-note'>Lower = softer offense → longer leash OK with WHIFF scripts.</span><span class='key-note'>Higher = good offense → size down overs / don’t trust clear IP alone.</span><span class='key-note'>Confirm only — does not flip solo grade. Pitch-type Ks stay on Arsenal.</span></span></span></div><div class='key-row'><span class='key-lab'>Strike%</span><span class='key-val'><span class='key-chips'><span class='key-chip rate-chip grade-elite' title='Elite command — sizes up WHIFF overs'>Strike% ≥66</span><span class='key-chip rate-chip grade-high' title='Attack-plate confirm (≥~65 Strike% / ≥~43 Zone%)'>≥65</span><span class='key-chip rate-chip grade-mid' title='Average strike rate'>~63–65</span><span class='key-chip rate-chip grade-low' title='Soft for overs — does not auto-under SPIKE/WHIFF'>&lt;63</span><span class='key-chip rate-chip grade-high' title='In-zone attack — pair with high Strike%'>Zone% ≥43</span><span class='key-chip rate-chip grade-low' title='Off-plate / nibble profile'>Zone% &lt;40</span><span class='key-chip rate-chip grade-mid' title='Average Strike% across today&#x27;s scored starters'>slate avg 65.6%</span></span><span class='key-notes'><span class='key-note'>Green = good for K scripts · amber = average · red = soft for overs.</span><span class='key-note'>Rates chips: Strike%/Zone%/Z-Contact%/SwStr%/O-Swing%/CSW% (miss+chase+command) · Soft% (elevated helps FILLER/under).</span><span class='key-note'>L3 K/9 adj = form scaled for opponent K% faced. Command/chase confirms the script — they do not flip the side. Attack-plate + WHIFF + strong stuff can add a tiny Exp K bump.</span></span></span></div><div class='key-row'><span class='key-lab'>Solo grade</span><span class='key-val'><span class='key-chips'><span class='key-chip ark ark-elite'>ELITE ≥24%</span><span class='key-chip ark ark-strong'>STRONG ≥22.5%</span><span class='key-chip ark ark-avg'>AVG ≥20%</span><span class='key-chip ark ark-soft'>SOFT &lt;20%</span></span><span class='key-notes'><span class='key-note'>Arsenal K% vs this nine (league ~22.5%).</span><span class='key-note'>Side first — Exp K sizes the line.</span></span></span></div><div class='key-row'><span class='key-lab'>Style</span><span class='key-val'><span class='key-chips'><span class='key-chip ark-pstyle-whiff' title='Trust K totals'>WHIFF</span><span class='key-chip ark-pstyle-contact_gb' title='Ground-ball / BIP outs'>GB</span><span class='key-chip ark-pstyle-fly_popup' title='Fly / popup BIP outs'>FLY</span><span class='key-chip ark-pstyle-balanced' title='Mixed profile — caution on juiced totals'>BAL</span></span><span class='key-notes'><span class='key-note'>WHIFF = trust K totals.</span><span class='key-note'>GB/FLY = BIP outs (thin juiced totals).</span><span class='key-note'>BAL = caution.</span></span></span></div><div class='key-row'><span class='key-lab'>Outlook</span><span class='key-val'><span class='key-chips'><span class='key-chip outlook outlook-trust' title='ELITE/STRONG + WHIFF + Exp K ≥5.5'>TRUST</span><span class='key-chip outlook outlook-thin_total' title='High Exp K but GB/FLY — O3.5 / thin O4.5 only'>THIN TOTAL</span><span class='key-chip outlook outlook-under_ok' title='SOFT + ≥2 of GB/FLY · contact_heavy · Exp K ≤4.2 · Soft%≥20'>UNDER OK</span><span class='key-chip outlook outlook-spike' title='No soft U6'>SPIKE</span><span class='key-chip outlook outlook-matchup_ok' title='Thin O3.5 only'>MATCHUP OK</span><span class='key-chip outlook outlook-filler' title='Pass K overs'>FILLER</span></span><span class='key-notes'><span class='key-note'>TRUST needs Exp K ≥5.5.</span><span class='key-note'>UNDER_OK needs ≥2 confirms (incl Soft%).</span><span class='key-note'>SPIKE blocks soft U6.</span></span></span></div></div>
+    </header>
+
+    <noscript>
+      <p class="noscript">
+        JavaScript is off or blocked — rankings still work.
+        Expand any pitcher, open <strong>Arsenal vs lineup</strong>, then open a pitch.
+        Use the <strong>Pitchers / Hits</strong> tabs above the boards.
+      </p>
+    </noscript>
+
+    <section class="view-tabs" aria-label="Board view">
+      <input type="radio" name="board-view" id="view-pitchers" checked />
+      <label class="view-tab" for="view-pitchers">
+        Pitchers <span class="tab-count">K slate</span>
+      </label>
+      <input type="radio" name="board-view" id="view-hits" />
+      <label class="view-tab" for="view-hits">
+        Hits <span class="tab-count">props</span>
+      </label>
+
+      <div class="view-panel panel-pitchers">
+        <section class="controls" id="controls" autocomplete="off">
+          <label>Search
+            <input id="q" type="search" placeholder="Pitcher, team, game…" autocomplete="off" />
+          </label>
+          <label>Lineup
+            <select id="lineupFilter" autocomplete="off">
+              <option value="all" selected>All sources</option>
+              <option value="official">Official only</option>
+              <option value="prior">Prior only</option>
+            </select>
+          </label>
+          <label>Status
+            <select id="statusFilter" autocomplete="off">
+              <option value="scored" selected>Scored</option>
+              <option value="all">All rows</option>
+              <option value="missing">Missing / unresolved</option>
+            </select>
+          </label>
+          <label>Sort
+            <select id="sort" autocomplete="off">
+              <option value="expected_ks:desc" selected>Expected Ks ↓</option>
+              <option value="expected_ks:asc">Expected Ks ↑</option>
+              <option value="k_edge:desc">K edge ↓</option>
+              <option value="k_line:asc">Book line ↑</option>
+              <option value="projected_ip:desc">Proj IP ↓</option>
+              <option value="tto:desc">TTO ↓</option>
+              <option value="kpct:desc">Arsenal K% ↓</option>
+              <option value="rank:asc">Rank</option>
+              <option value="pitcher:asc">Pitcher A–Z</option>
+            </select>
+          </label>
+        </section>
+
+        <div class="colhead">
+          <div>#</div><div>Pitcher</div><div>Game</div><div>Exp K</div>
+          <div>Line</div><div>Edge</div><div>P(O)</div><div>IP</div><div>TTO</div><div>K%</div><div>Flags</div>
+        </div>
+
+        <div class="board" id="board">
+<details class='matchup' data-search='nick martinez rhp tb cle tb@cle 7:00 pm ct official ok under_ok avg' data-lineup='official' data-status='scored' data-expected-ks='3.1862949930067757' data-k-line='None' data-k-edge='None' data-projected-ip='5.430247085839256' data-tto='2.4444444444444446' data-kpct='14.152373434907165' data-rank='1' data-pitcher='Nick Martinez'><summary><div class='summary-grid'><div class='rank'>1</div><div class='who'><div class='pitcher'>Nick Martinez <span class='hand hand-r' title='Right-handed pitcher'>RHP</span><span class='style-chip ark-pstyle-fly_popup' title='Pitcher out-getting style: fly-ball + popup (IFFB) outs — FB% 43.3, IFFB% 11.2. Season FanGraphs K%/Contact%/GB%/FB%/IFFB — confirmation only; does not change Exp K.'><span class='style-chip-lab'>STYLE</span> FLY</span></div><div class='sub'>TB vs CLE</div></div><div class='game'>TB@CLE<span class='gametime'>7:00 PM CT</span></div><div class='stat-row'><div class='num ks grade-low' title='Expected strikeouts from PA matchups × volume (not pitcher season K% alone)'><span class='nval'>3.19</span><span class='nlab'>Exp K</span></div><div class='num kline' title='Book K O/U (The Odds API) — not used in Exp K'><span class='nval'>—</span><span class='nlab'>Line</span></div><div class='num kedge' title='Exp K − book line (positive = model above the number). Question-first — books may be sharper; edge ≠ ticket.'><span class='nval'>—</span><span class='nlab'>Edge</span></div><div class='num kpover' title='Model P(K &gt; book line) from PA-level K probs × projected BF. Shape cue for props — not a bet recommendation.'><span class='nval'>—</span><span class='nlab'>P(O)</span></div><div class='num ip grade-mid' title='Projected innings pitched'><span class='nval'>5.4</span><span class='nlab'>IP</span></div><div class='num tto grade-mid' title='Times through the order'><span class='nval'>2.44×</span><span class='nlab'>TTO</span></div><div class='num kpct grade-low' title='Arsenal K% vs opposing lineup (PA interaction environment)'><span class='rank-chips'><span class='ark ark-abs ark-soft' title='Solo arsenal vs this batting team (absolute expected K% bands: elite≥24, strong≥22.5, avg≥20, soft&lt;20). Does not depend on other pitchers today.'>SOFT</span><span class='ark ark-opp' title='Opposing batting-team K% rank on slate (#1 = highest opp lineup K%) — relative only'>#2</span><span class='ark ark-slate ark-avg' title='Slate rank of arsenal K% vs lineup (#1 = best matchup among today\'s starters) — relative only'>#2</span></span><span class='nval'><span class='kpct-val'>14.15</span></span><span class='nlab'>K%</span></div></div><div class='badges'><span class='badge official'>official</span><span class='outlook outlook-under_ok'>UNDER OK</span></div></div></summary><div class='detail'><div class='meta-strip'><div class='meta-cell meta-matchup'><span class='meta-label'>Arsenal matchup</span><span class='meta-value meta-rates'><span class='rate-chip grade-low' title='Solo arsenal vs this nine — picks the side (ELITE/STRONG over · SOFT under · AVG usually pass)'><span class='rate-lab'>solo</span> <span class='rate-val'>SOFT vs CLE</span></span><span class='rate-chip grade-low' title='Arsenal-weighted K% vs lineup · ELITE≥24 STRONG≥22.5 AVG≥20 SOFT&lt;20'><span class='rate-lab'>arsenal K%</span> <span class='rate-val'>14.2</span></span><span class='rate-chip grade-low' title='Arsenal K% minus league ~22.5% — positive helps overs'><span class='rate-lab'>vs league</span> <span class='rate-val'>-8.3</span></span><span class='rate-chip grade-low' title='Mix vs lineup raw K% — positive = mix beats the nine&#x27;s tendency'><span class='rate-lab'>vs opp K%</span> <span class='rate-val'>-3.3</span></span><span class='rate-chip grade-mid' title='Slate-relative arsenal rank only — secondary to solo grade'><span class='rate-lab'>slate</span> <span class='rate-val'>#2 avg</span></span><span class='rate-chip grade-low' title='Lineup season K% vs RHP — primary opp-K confirm (higher helps overs)'><span class='rate-lab'>opp K% vs RHP</span> <span class='rate-val'>17.5</span></span><span class='rate-chip grade-low' title='Overall lineup K% (recent) — secondary to vs-hand'><span class='rate-lab'>opp K% all</span> <span class='rate-val'>15.3</span></span><span class='rate-chip grade-low' title='Lineup balls-in-play % — whiff_prone helps overs · contact_heavy helps unders'><span class='rate-lab'>opp BIP</span> <span class='rate-val'>72.0% contact heavy</span></span><span class='rate-chip grade-mid' title='Opposing lineup BB% — high = patient / pitch-count risk'><span class='rate-lab'>opp BB%</span> <span class='rate-val'>10.5</span></span><span class='rate-chip grade-mid' title='Lineup PA-weighted FanGraphs wOBA — lower = softer offense (helps length / K comfort); leash confirm only'><span class='rate-lab'>opp wOBA</span> <span class='rate-val'>0.317</span></span><span class='rate-chip grade-mid' title='Lineup PA-weighted FanGraphs wRC+ (100=lg) — lower = softer offense / longer leash OK; does not flip solo grade'><span class='rate-lab'>opp wRC+</span> <span class='rate-val'>102</span></span><span class='rate-chip grade-high' title='Lineup PA-weighted FanGraphs ISO — lower = less power / crooked-number risk; leash confirm only'><span class='rate-lab'>opp ISO</span> <span class='rate-val'>0.140</span></span><span class='rate-chip grade-low' title='Plate-discipline grade for the opposing nine'><span class='rate-lab'>disc</span> <span class='rate-val'>patient</span></span><span class='rate-chip grade-low' title='Pitch-count risk from patient / walk-heavy nines'><span class='rate-lab'>pitch-count</span> <span class='rate-val'>elevated</span></span></span></div><div class='meta-cell meta-pstyle'><span class='meta-label'>Pitcher style (Ks vs BIP outs)</span><span class='meta-value meta-rates'><span class='rate-chip rate-na'><span class='rate-val'>Fly / popup</span></span><span class='rate-chip grade-low' title='Season pitcher K% — higher confirms WHIFF'><span class='rate-lab'>K%</span> <span class='rate-val'>15.1</span></span><span class='rate-chip grade-low' title='Season contact% — lower = more swing-and-miss'><span class='rate-lab'>Con%</span> <span class='rate-val'>83.9</span></span><span class='rate-chip rate-na' title='Ground-ball rate'><span class='rate-lab'>GB%</span> <span class='rate-val'>35.5</span></span><span class='rate-chip rate-na' title='Fly-ball rate'><span class='rate-lab'>FB%</span> <span class='rate-val'>43.3</span></span><span class='rate-chip rate-na' title='Infield-fly rate'><span class='rate-lab'>IFFB%</span> <span class='rate-val'>11.2</span></span></span></div><div class='meta-cell meta-stuff'><span class='meta-label'>Stuff ceiling (velo / whiff)</span><span class='meta-value meta-rates'><span class='rate-chip grade-mid' title='FanGraphs Stuff+ — pitch quality vs average (100). Confirm only; does not change Exp K.'><span class='rate-lab'>Stuff+</span> <span class='rate-val'>98</span></span><span class='rate-chip grade-high' title='FanGraphs Location+ — command / location quality (100 = avg). Confirm only.'><span class='rate-lab'>Loc+</span> <span class='rate-val'>107</span></span><span class='rate-chip grade-mid' title='FanGraphs Pitching+ — Stuff+ and Location+ combined (100 = avg). Confirm only.'><span class='rate-lab'>Pit+</span> <span class='rate-val'>104</span></span><span class='rate-chip grade-low' title='Usage-weighted pitcher whiff% (soft)'><span class='rate-lab'>stuff whiff</span> <span class='rate-val'>17.2% (soft)</span></span><span class='rate-chip rate-na' title='Primary fastball velocity'><span class='rate-lab'>SI</span> <span class='rate-val'>92.4 mph</span></span></span></div><div class='meta-cell meta-rates-cell'><span class='meta-label'>Rates / form</span><span class='meta-value meta-rates'><span class='rate-chip grade-elite' title='Walk rate — lower is better for command / length'><span class='rate-lab'>BB/9</span> <span class='rate-val'>1.30</span></span><span class='rate-chip grade-high' title='Home-run rate — lower is better'><span class='rate-lab'>HR/9</span> <span class='rate-val'>1.10</span></span><span class='rate-chip grade-mid' title='FIP — fielding-independent ERA estimator; lower is better (confirm only)'><span class='rate-lab'>FIP</span> <span class='rate-val'>3.96</span></span><span class='rate-chip grade-mid' title='Expected FIP — HR/FB normalized; lower is better (confirm only)'><span class='rate-lab'>xFIP</span> <span class='rate-val'>4.47</span></span><span class='rate-chip grade-low' title='SIERA — skill-interactive ERA; credits GB/popup weak contact (confirm only)'><span class='rate-lab'>SIERA</span> <span class='rate-val'>4.63</span></span><span class='rate-chip grade-mid' title='Expected ERA (Savant/FG) — quality of contact allowed (confirm only)'><span class='rate-lab'>xERA</span> <span class='rate-val'>3.98</span></span><span class='rate-chip grade-low' title='Season K/9 — higher helps K scripts'><span class='rate-lab'>K9</span> <span class='rate-val'>5.5</span></span><span class='rate-chip grade-high' title='Expected wOBA allowed (Savant) — lower = better contact suppression'><span class='rate-lab'>xwOBA</span> <span class='rate-val'>0.307</span></span><span class='rate-chip grade-mid' title='Expected BA allowed (Savant) — lower is better'><span class='rate-lab'>xBA</span> <span class='rate-val'>0.263</span></span><span class='rate-chip grade-mid' title='Expected SLG allowed (Savant) — lower is better'><span class='rate-lab'>xSLG</span> <span class='rate-val'>0.412</span></span><span class='rate-chip grade-elite' title='Strikes ÷ pitches · ≥~65 confirms attack-plate overs'><span class='rate-lab'>Strike%</span> <span class='rate-val'>68.2</span></span><span class='rate-chip grade-elite' title='First-pitch strike rate — higher = more ahead counts'><span class='rate-lab'>F-Strike%</span> <span class='rate-val'>65.4</span></span><span class='rate-chip grade-elite' title='In-zone rate · ≥~43 with high Strike% = attacks the plate'><span class='rate-lab'>Zone%</span> <span class='rate-val'>45.5</span></span><span class='rate-chip grade-low' title='In-zone contact allowed (FanGraphs Z-Contact%) — lower = zone whiff / K confirm; Rates confirm only'><span class='rate-lab'>Z-Contact%</span> <span class='rate-val'>91.4</span></span><span class='rate-chip grade-low' title='Swinging-strike rate — miss confirm (does not flip arsenal side)'><span class='rate-lab'>SwStr%</span> <span class='rate-val'>8.2</span></span><span class='rate-chip grade-high' title='Chase rate induced (FanGraphs O-Swing%) — higher = more chase; Rates confirm only'><span class='rate-lab'>O-Swing%</span> <span class='rate-val'>34.5</span></span><span class='rate-chip grade-low' title='Called + swinging strike (FanGraphs C+SwStr%) — command/miss pack'><span class='rate-lab'>CSW%</span> <span class='rate-val'>25.5</span></span><span class='rate-chip grade-elite' title='Soft-contact rate · ≥~20 helps FILLER / UNDER_OK confirms'><span class='rate-lab'>Soft%</span> <span class='rate-val'>16.6</span></span><span class='rate-chip grade-mid' title='Avg strikeouts over last 3 starts (raw)'><span class='rate-lab'>L3 K</span> <span class='rate-val'>3.7</span></span><span class='rate-chip grade-mid' title='K/9 over last 3 starts (raw)'><span class='rate-lab'>L3 K/9</span> <span class='rate-val'>7.2</span></span><span class='rate-chip grade-mid' title='L3 K/9 scaled by league K% ÷ mean opponent-team K% faced · L3 opp K% 22.9'><span class='rate-lab'>L3 K/9 adj</span> <span class='rate-val'>7.1</span></span><span class='rate-chip grade-mid' title='L3 opp K% 22.9'><span class='rate-lab'>L3 opp K%</span> <span class='rate-val'>22.9</span></span> <span class='risk risk-low'>risk low · elev_xfip,short_recent_ip</span></span></div><div class='meta-cell meta-odds'><span class='meta-label'>Book lines (Odds API)</span><span class='meta-value meta-rates'><span class='muted'>no key / skipped</span></span></div><div class='meta-cell'><span class='meta-label'>Outing / form</span><span class='meta-value'>5.4 IP · 2.44× · BF 22 · cover 100%</span></div><div class='meta-cell meta-history'><span class='meta-label'>vs CLE history (HOME/AWAY)</span><span class='meta-value'>8 G · K% 17.9 · OPS .730 · HOME 4G/9K · AWAY 1G/4K<br><span class='vs-recent'>2026-07-25 HOME 5K · 2026-04-28 AWAY 4K · 2024-06-11 HOME 2K</span></span></div></div><div class='outlook-banner outlook-under_ok'><strong>UNDER OK</strong><span>soft-contact (K9 5.5, soft L3 3.7, elev_xFIP 4.47) + arsenal K% 14.2 (soft solo, -8.3 vs lg, -3.3 vs opp K%, opp K% vs RHP 17.5; slate #2/2 avg); stuff whiff 17.2% (soft), SI 92.4 mph; pitcher style FLY/popup (FB% 43.3, IFFB% 11.2); UNDER_OK — 3/2+ confirms (GB/FLY style, opp contact-heavy BIP, Exp K ≤4.2) — FILLER on K overs (pass/O3.5); under lane preferred when confirms hold; pitcher outs also live if clear/low risk and projected IP holds; fly/popup out-getter — BIP outs over Ks; same under cue as GB style</span></div><div class='outlook-banner outlook-book'><strong>Book vs model</strong><span>No book K line — ask why the pitcher can reach the model total (3.2 Exp) via PA matchups + volume, not season K% alone.</span></div><div class='tabs' role='tablist'><input type='radio' name='tab-m0' id='tab-m0-pitches' checked /><label class='tab' for='tab-m0-pitches'><span class='tab-full'>Arsenal vs lineup</span><span class='tab-short'>Arsenal</span></label><input type='radio' name='tab-m0' id='tab-m0-lineup' /><label class='tab' for='tab-m0-lineup'><span class='tab-full'>Batting order</span><span class='tab-short'>Order</span></label><input type='radio' name='tab-m0' id='tab-m0-history' /><label class='tab' for='tab-m0-history'><span class='tab-full'>vs Team history</span><span class='tab-short'>History</span></label><div class='tab-panel panel-pitches'><div class='pitch-stack'><details class='pitch-block' open><summary><span class='pmeta-lines'><span class='pmeta-line pmeta-line1'><span class='pname' title='Sinker'>Sinker</span><span class='rate-chip grade-elite' title='Pitch usage overall — green = featured pitch, red = sparse'><span class='rate-lab'>overall</span> <span class='rate-val'>31.7%</span></span><span class='rate-chip grade-low' title='Lineup-average K% vs this pitch — green helps the pitcher, red helps the batters'><span class='rate-lab'>lineup avg</span> <span class='rate-val'>11.1%</span></span><span class='rate-chip grade-low' title='Pitcher&#x27;s whiff% on this pitch — green = miss / K helper, red = soft'><span class='rate-lab'>whiff</span> <span class='rate-val'>9.3%</span></span><span class='rate-chip grade-mid' title='FanGraphs Stuff+ for this pitch type (100 = avg). Confirm only.'><span class='rate-lab'>Stuff+</span> <span class='rate-val'>101</span></span><span class='rate-chip grade-mid' title='FanGraphs run value per 100 pitches — positive prevents runs (count/base-state aware linear weights). Confirm only.'><span class='rate-lab'>RV/100</span> <span class='rate-val'>+0.47</span></span></span><span class='pmeta-line pmeta-line2'><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs LHB (informational)'><span class='rate-lab'>use vs LHB</span> <span class='rate-val'>26%</span></span><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs RHB (informational)'><span class='rate-lab'>use vs RHB</span> <span class='rate-val'>39%</span></span><span class='rate-chip grade-low hand-l' title='This opposing lineup&#x27;s LHB only — mean batter K% vs this pitch (n=5). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs L</span> <span class='rate-val'>10.4%</span></span><span class='rate-chip grade-low hand-r' title='This opposing lineup&#x27;s RHB only — mean batter K% vs this pitch (n=1). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs R</span> <span class='rate-val'>11.5%</span></span><span class='rate-chip grade-mid' title='Fastball velo — green = plus heat'><span class='rate-lab'>velo</span> <span class='rate-val'>92.4 mph</span></span></span></span></summary><div class='pitch-list'><div class='pitch-row'><div class='who'><span class='slot'>1.</span><span class='name'>Steven Kwan <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 51 — green helps pitcher · amber medium · red helps batters'>3.9%</div></div><div class='pitch-row'><div class='who'><span class='slot'>2.</span><span class='name'>José Ramírez <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:10%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 29 — green helps pitcher · amber medium · red helps batters'>10.3%</div></div><div class='pitch-row'><div class='who'><span class='slot'>3.</span><span class='name'>Chase DeLauter <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 47 — green helps pitcher · amber medium · red helps batters'>4.3%</div></div><div class='pitch-row'><div class='who'><span class='slot'>4.</span><span class='name'>Jo Adell <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:11%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 122 — green helps pitcher · amber medium · red helps batters'>11.5%</div></div><div class='pitch-row'><div class='who'><span class='slot'>5.</span><span class='name'>Nathaniel Lowe <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:21%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 42 — green helps pitcher · amber medium · red helps batters'>21.4%</div></div><div class='pitch-row'><div class='who'><span class='slot'>6.</span><span class='name'>Travis Bazzana <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 48 — green helps pitcher · amber medium · red helps batters'>4.2%</div></div><div class='pitch-row'><div class='who'><span class='slot'>7.</span><span class='name'>Patrick Bailey <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:20%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 40 — green helps pitcher · amber medium · red helps batters'>20.0%</div></div><div class='pitch-row'><div class='who'><span class='slot'>8.</span><span class='name'>Petey Halpin <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:18%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='source pitch_vs_rhp · PA 22 — green helps pitcher · amber medium · red helps batters'>18.2%</div></div><div class='pitch-row'><div class='who'><span class='slot'>9.</span><span class='name'>Brayan Rocchio <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:6%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 67 — green helps pitcher · amber medium · red helps batters'>6.0%</div></div><div class='pitch-row avg'><div class='who'><span class='name'>Lineup avg</span></div><div class='meter'><span class='bar' style='width:11%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='Lineup avg — green helps pitcher · amber medium · red helps batters'>11.1%</div></div></div></details><details class='pitch-block'><summary><span class='pmeta-lines'><span class='pmeta-line pmeta-line1'><span class='pname' title='Changeup'>Changeup</span><span class='rate-chip grade-high' title='Pitch usage overall — green = featured pitch, red = sparse'><span class='rate-lab'>overall</span> <span class='rate-val'>25.8%</span></span><span class='rate-chip grade-mid' title='Lineup-average K% vs this pitch — green helps the pitcher, red helps the batters'><span class='rate-lab'>lineup avg</span> <span class='rate-val'>16.8%</span></span><span class='rate-chip grade-high' title='Pitcher&#x27;s whiff% on this pitch — green = miss / K helper, red = soft'><span class='rate-lab'>whiff</span> <span class='rate-val'>30.7%</span></span><span class='rate-chip grade-high' title='FanGraphs Stuff+ for this pitch type (100 = avg). Confirm only.'><span class='rate-lab'>Stuff+</span> <span class='rate-val'>109</span></span><span class='rate-chip grade-high' title='FanGraphs run value per 100 pitches — positive prevents runs (count/base-state aware linear weights). Confirm only.'><span class='rate-lab'>RV/100</span> <span class='rate-val'>+0.99</span></span></span><span class='pmeta-line pmeta-line2'><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs LHB (informational)'><span class='rate-lab'>use vs LHB</span> <span class='rate-val'>29%</span></span><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs RHB (informational)'><span class='rate-lab'>use vs RHB</span> <span class='rate-val'>21%</span></span><span class='rate-chip grade-low hand-l' title='This opposing lineup&#x27;s LHB only — mean batter K% vs this pitch (n=5). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs L</span> <span class='rate-val'>12.7%</span></span><span class='rate-chip grade-elite hand-r' title='This opposing lineup&#x27;s RHB only — mean batter K% vs this pitch (n=1). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs R</span> <span class='rate-val'>39.3%</span></span><span class='rate-chip' title='Offspeed/breaking velo (informational — not a good/bad K grade)'><span class='rate-lab'>velo</span> <span class='rate-val'>78.3 mph</span></span></span></span></summary><div class='pitch-list'><div class='pitch-row'><div class='who'><span class='slot'>1.</span><span class='name'>Steven Kwan <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 52 — green helps pitcher · amber medium · red helps batters'>3.8%</div></div><div class='pitch-row'><div class='who'><span class='slot'>2.</span><span class='name'>José Ramírez <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:19%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='source pitch_vs_rhp · PA 72 — green helps pitcher · amber medium · red helps batters'>19.4%</div></div><div class='pitch-row'><div class='who'><span class='slot'>3.</span><span class='name'>Chase DeLauter <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:10%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 50 — green helps pitcher · amber medium · red helps batters'>10.0%</div></div><div class='pitch-row'><div class='who'><span class='slot'>4.</span><span class='name'>Jo Adell <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:39%;background:rgba(15,106,77,0.82)'></span></div><div class='kval grade-elite' title='source pitch_vs_rhp · PA 28 — green helps pitcher · amber medium · red helps batters'>39.3%</div></div><div class='pitch-row'><div class='who'><span class='slot'>5.</span><span class='name'>Nathaniel Lowe <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:15%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='source pitch_vs_rhp · PA 46 — green helps pitcher · amber medium · red helps batters'>15.2%</div></div><div class='pitch-row'><div class='who'><span class='slot'>6.</span><span class='name'>Travis Bazzana <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:22%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 46 — green helps pitcher · amber medium · red helps batters'>21.7%</div></div><div class='pitch-row'><div class='who'><span class='slot'>7.</span><span class='name'>Patrick Bailey <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:14%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 51 — green helps pitcher · amber medium · red helps batters'>13.7%</div></div><div class='pitch-row'><div class='who'><span class='slot'>8.</span><span class='name'>Petey Halpin <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:12%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 24 — green helps pitcher · amber medium · red helps batters'>12.5%</div></div><div class='pitch-row'><div class='who'><span class='slot'>9.</span><span class='name'>Brayan Rocchio <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:15%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='source pitch_vs_rhp · PA 73 — green helps pitcher · amber medium · red helps batters'>15.1%</div></div><div class='pitch-row avg'><div class='who'><span class='name'>Lineup avg</span></div><div class='meter'><span class='bar' style='width:17%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='Lineup avg — green helps pitcher · amber medium · red helps batters'>16.8%</div></div></div></details><details class='pitch-block'><summary><span class='pmeta-lines'><span class='pmeta-line pmeta-line1'><span class='pname' title='Cutter'>Cutter</span><span class='rate-chip grade-high' title='Pitch usage overall — green = featured pitch, red = sparse'><span class='rate-lab'>overall</span> <span class='rate-val'>22.0%</span></span><span class='rate-chip grade-low' title='Lineup-average K% vs this pitch — green helps the pitcher, red helps the batters'><span class='rate-lab'>lineup avg</span> <span class='rate-val'>13.7%</span></span><span class='rate-chip grade-low' title='Pitcher&#x27;s whiff% on this pitch — green = miss / K helper, red = soft'><span class='rate-lab'>whiff</span> <span class='rate-val'>13.0%</span></span><span class='rate-chip grade-low' title='FanGraphs Stuff+ for this pitch type (100 = avg). Confirm only.'><span class='rate-lab'>Stuff+</span> <span class='rate-val'>87</span></span><span class='rate-chip grade-elite' title='FanGraphs run value per 100 pitches — positive prevents runs (count/base-state aware linear weights). Confirm only.'><span class='rate-lab'>RV/100</span> <span class='rate-val'>+1.69</span></span></span><span class='pmeta-line pmeta-line2'><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs LHB (informational)'><span class='rate-lab'>use vs LHB</span> <span class='rate-val'>22%</span></span><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs RHB (informational)'><span class='rate-lab'>use vs RHB</span> <span class='rate-val'>22%</span></span><span class='rate-chip grade-mid hand-l' title='This opposing lineup&#x27;s LHB only — mean batter K% vs this pitch (n=5). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs L</span> <span class='rate-val'>16.0%</span></span><span class='rate-chip grade-low hand-r' title='This opposing lineup&#x27;s RHB only — mean batter K% vs this pitch (n=1). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs R</span> <span class='rate-val'>9.4%</span></span><span class='rate-chip grade-low' title='Fastball velo — green = plus heat'><span class='rate-lab'>velo</span> <span class='rate-val'>89.2 mph</span></span></span></span></summary><div class='pitch-list'><div class='pitch-row'><div class='who'><span class='slot'>1.</span><span class='name'>Steven Kwan <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:12%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 43 — green helps pitcher · amber medium · red helps batters'>11.6%</div></div><div class='pitch-row'><div class='who'><span class='slot'>2.</span><span class='name'>José Ramírez <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:19%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='source pitch_vs_rhp · PA 48 — green helps pitcher · amber medium · red helps batters'>18.8%</div></div><div class='pitch-row'><div class='who'><span class='slot'>3.</span><span class='name'>Chase DeLauter <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:16%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='source pitch_vs_rhp · PA 32 — green helps pitcher · amber medium · red helps batters'>15.6%</div></div><div class='pitch-row'><div class='who'><span class='slot'>4.</span><span class='name'>Jo Adell <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:9%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 32 — green helps pitcher · amber medium · red helps batters'>9.4%</div></div><div class='pitch-row'><div class='who'><span class='slot'>5.</span><span class='name'>Nathaniel Lowe <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:14%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 28 — green helps pitcher · amber medium · red helps batters'>14.3%</div></div><div class='pitch-row'><div class='who'><span class='slot'>6.</span><span class='name'>Travis Bazzana <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:21%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 34 — green helps pitcher · amber medium · red helps batters'>20.6%</div></div><div class='pitch-row'><div class='who'><span class='slot'>7.</span><span class='name'>Patrick Bailey <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:11%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 19 — green helps pitcher · amber medium · red helps batters'>10.5%</div></div><div class='pitch-row'><div class='who'><span class='slot'>8.</span><span class='name'>Petey Halpin <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:18%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='source pitch_vs_rhp · PA 17 — green helps pitcher · amber medium · red helps batters'>17.6%</div></div><div class='pitch-row'><div class='who'><span class='slot'>9.</span><span class='name'>Brayan Rocchio <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:5%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 22 — green helps pitcher · amber medium · red helps batters'>4.5%</div></div><div class='pitch-row avg'><div class='who'><span class='name'>Lineup avg</span></div><div class='meter'><span class='bar' style='width:14%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='Lineup avg — green helps pitcher · amber medium · red helps batters'>13.7%</div></div></div></details><details class='pitch-block'><summary><span class='pmeta-lines'><span class='pmeta-line pmeta-line1'><span class='pname' title='4-Seam Fastball'>4-Seam FB</span><span class='rate-chip grade-mid' title='Pitch usage overall — green = featured pitch, red = sparse'><span class='rate-lab'>overall</span> <span class='rate-val'>12.6%</span></span><span class='rate-chip grade-mid' title='Lineup-average K% vs this pitch — green helps the pitcher, red helps the batters'><span class='rate-lab'>lineup avg</span> <span class='rate-val'>17.6%</span></span><span class='rate-chip grade-low' title='Pitcher&#x27;s whiff% on this pitch — green = miss / K helper, red = soft'><span class='rate-lab'>whiff</span> <span class='rate-val'>16.6%</span></span><span class='rate-chip grade-mid' title='FanGraphs Stuff+ for this pitch type (100 = avg). Confirm only.'><span class='rate-lab'>Stuff+</span> <span class='rate-val'>96</span></span><span class='rate-chip grade-mid' title='FanGraphs run value per 100 pitches — positive prevents runs (count/base-state aware linear weights). Confirm only.'><span class='rate-lab'>RV/100</span> <span class='rate-val'>+0.47</span></span></span><span class='pmeta-line pmeta-line2'><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs LHB (informational)'><span class='rate-lab'>use vs LHB</span> <span class='rate-val'>14%</span></span><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs RHB (informational)'><span class='rate-lab'>use vs RHB</span> <span class='rate-val'>11%</span></span><span class='rate-chip grade-low hand-l' title='This opposing lineup&#x27;s LHB only — mean batter K% vs this pitch (n=5). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs L</span> <span class='rate-val'>14.3%</span></span><span class='rate-chip grade-elite hand-r' title='This opposing lineup&#x27;s RHB only — mean batter K% vs this pitch (n=1). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs R</span> <span class='rate-val'>26.9%</span></span><span class='rate-chip grade-mid' title='Fastball velo — green = plus heat'><span class='rate-lab'>velo</span> <span class='rate-val'>92.7 mph</span></span></span></span></summary><div class='pitch-list'><div class='pitch-row'><div class='who'><span class='slot'>1.</span><span class='name'>Steven Kwan <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:5%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 176 — green helps pitcher · amber medium · red helps batters'>5.1%</div></div><div class='pitch-row'><div class='who'><span class='slot'>2.</span><span class='name'>José Ramírez <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:10%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 88 — green helps pitcher · amber medium · red helps batters'>10.2%</div></div><div class='pitch-row'><div class='who'><span class='slot'>3.</span><span class='name'>Chase DeLauter <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:13%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 128 — green helps pitcher · amber medium · red helps batters'>13.3%</div></div><div class='pitch-row'><div class='who'><span class='slot'>4.</span><span class='name'>Jo Adell <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:27%;background:rgba(15,106,77,0.82)'></span></div><div class='kval grade-elite' title='source pitch_vs_rhp · PA 119 — green helps pitcher · amber medium · red helps batters'>26.9%</div></div><div class='pitch-row'><div class='who'><span class='slot'>5.</span><span class='name'>Nathaniel Lowe <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:22%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 182 — green helps pitcher · amber medium · red helps batters'>22.0%</div></div><div class='pitch-row'><div class='who'><span class='slot'>6.</span><span class='name'>Travis Bazzana <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:14%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 123 — green helps pitcher · amber medium · red helps batters'>13.8%</div></div><div class='pitch-row'><div class='who'><span class='slot'>7.</span><span class='name'>Patrick Bailey <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:36%;background:rgba(15,106,77,0.82)'></span></div><div class='kval grade-elite' title='source pitch_vs_rhp · PA 84 — green helps pitcher · amber medium · red helps batters'>35.7%</div></div><div class='pitch-row'><div class='who'><span class='slot'>8.</span><span class='name'>Petey Halpin <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:17%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='source pitch_vs_rhp · PA 46 — green helps pitcher · amber medium · red helps batters'>17.4%</div></div><div class='pitch-row'><div class='who'><span class='slot'>9.</span><span class='name'>Brayan Rocchio <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:14%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 133 — green helps pitcher · amber medium · red helps batters'>13.5%</div></div><div class='pitch-row avg'><div class='who'><span class='name'>Lineup avg</span></div><div class='meter'><span class='bar' style='width:18%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='Lineup avg — green helps pitcher · amber medium · red helps batters'>17.6%</div></div></div></details><p class='hint'>Line 1: <strong>pitch</strong> · <strong>overall</strong> · <strong>lineup avg</strong> · <strong>whiff</strong> (green/amber/red by whether it helps the pitcher). Line 2: <strong>use vs LHB / use vs RHB</strong> (pitcher season usage — uncolored) · <strong>vs L / vs R</strong> (this opposing lineup’s batter K% vs the pitch — green helps pitcher). Open a pitch for each batter’s K% — same scale. Rates prefer true K% vs this pitcher’s hand when sample ≥15 PA; else overall pitch K%; <code>†</code> = same-handed league average. Whiff / velo are own-stuff ceiling — do not change Exp K.</p></div></div><div class='tab-panel panel-lineup'><div class='batter-grid'><div class='batter '><span><span class='slot'>1.</span> Steven Kwan <span class='hand' title='Left-handed batter'>LHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 48 · brl 0.4% · hh 10.5%</span></span><span class='k grade-low' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>5.9%</span></div><div class='batter '><span><span class='slot'>2.</span> José Ramírez <span class='hand' title='Switch-hitter'>SHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 45 · brl 4.1% · hh 38.8%</span></span><span class='k grade-mid' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>15.2%</span></div><div class='batter '><span><span class='slot'>3.</span> Chase DeLauter <span class='hand' title='Left-handed batter'>LHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 55 · brl 6.3% · hh 46.3%</span></span><span class='k grade-low' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>10.2%</span></div><div class='batter '><span><span class='slot'>4.</span> Jo Adell <span class='hand' title='Right-handed batter'>RHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 48 · brl 8.9% · hh 44.9%</span></span><span class='k grade-mid' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>19.1%</span></div><div class='batter '><span><span class='slot'>5.</span> Nathaniel Lowe <span class='hand' title='Left-handed batter'>LHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 54 · brl 8.3% · hh 41.4%</span></span><span class='k grade-mid' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>17.8%</span></div><div class='batter '><span><span class='slot'>6.</span> Travis Bazzana <span class='hand' title='Left-handed batter'>LHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 49 · brl 5.2% · hh 36.2%</span></span><span class='k grade-mid' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>15.2%</span></div><div class='batter '><span><span class='slot'>7.</span> Patrick Bailey <span class='hand' title='Switch-hitter'>SHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 47 · brl 7.6% · hh 42.4%</span></span><span class='k grade-mid' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>18.1%</span></div><div class='batter '><span><span class='slot'>8.</span> Petey Halpin <span class='hand' title='Left-handed batter'>LHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 46 · brl 5.4% · hh 25.5%</span></span><span class='k grade-mid' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>16.1%</span></div><div class='batter '><span><span class='slot'>9.</span> Brayan Rocchio <span class='hand' title='Switch-hitter'>SHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 47 · brl 2.8% · hh 30.0%</span></span><span class='k grade-low' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>9.7%</span></div></div><p class='hint'>Right-side values are arsenal-weighted <strong>K%</strong> vs this starter — <strong>green</strong> helps the pitcher, <strong class='hint-amber'>amber</strong> medium, <strong class='hint-red'>red</strong> helps the batters. Hits / barrel / hard-hit scores are a separate Hits-prop layer and <strong>do not</strong> change expected strikeouts.</p></div><div class='tab-panel panel-history'><div class='vs-summary'><div><span class='meta-label'>Career vs CLE</span><span class='meta-value'>8 G · 21 K / 117 PA · K% 17.9 · AVG .260 · OPS .730 · BB 11 · HR 2</span></div><div><span class='meta-label'>Site split (game logs)</span><span class='meta-value'>HOME 4 G · 9 K (2.2 K/G) · AWAY 1 G · 4 K (4.0 K/G)</span></div></div><div class='vs-table'><div class='vs-head'><div>Date</div><div>Site</div><div>IP</div><div>K</div><div>BB</div><div>H</div><div>ER</div><div>HR</div><div>BF</div></div><div class='vs-row'><div>2026-07-25</div><div><span class='site site-home'>HOME</span></div><div>6.0</div><div>5</div><div>0</div><div>4</div><div>0</div><div>0</div><div>21</div></div><div class='vs-row'><div>2026-04-28</div><div><span class='site site-away'>AWAY</span></div><div>7.0</div><div>4</div><div>1</div><div>3</div><div>0</div><div>0</div><div>25</div></div><div class='vs-row'><div>2024-06-11</div><div><span class='site site-home'>HOME</span></div><div>1.2</div><div>2</div><div>1</div><div>4</div><div>3</div><div>0</div><div>10</div></div><div class='vs-row'><div>2023-06-15</div><div><span class='site site-home'>HOME</span></div><div>2.0</div><div>2</div><div>0</div><div>2</div><div>1</div><div>0</div><div>8</div></div><div class='vs-row'><div>2023-06-13</div><div><span class='site site-home'>HOME</span></div><div>1.0</div><div>0</div><div>0</div><div>1</div><div>0</div><div>0</div><div>4</div></div></div><p class='hint'>Site is the <strong>pitcher’s</strong> home/away (HOME = pitched at home vs this batting team). Use with arsenal rank — history confirms or cautions the model side.</p></div></div></div></details>
+<details class='matchup' data-search='shawn armstrong rhp cle tb tb@cle 7:00 pm ct prior:2026-10-15 ok under_ok elite' data-lineup='prior:2026-10-15' data-status='scored' data-expected-ks='0.7805553194761294' data-k-line='None' data-k-edge='None' data-projected-ip='1.3414581818181819' data-tto='0.6666666666666666' data-kpct='15.978877254576755' data-rank='2' data-pitcher='Shawn Armstrong'><summary><div class='summary-grid'><div class='rank'>2</div><div class='who'><div class='pitcher'>Shawn Armstrong <span class='hand hand-r' title='Right-handed pitcher'>RHP</span><span class='style-chip ark-pstyle-fly_popup' title='Pitcher out-getting style: fly-ball + popup (IFFB) outs — FB% 44.8, IFFB% 11.6. Season FanGraphs K%/Contact%/GB%/FB%/IFFB — confirmation only; does not change Exp K.'><span class='style-chip-lab'>STYLE</span> FLY</span></div><div class='sub'>CLE vs TB</div></div><div class='game'>TB@CLE<span class='gametime'>7:00 PM CT</span></div><div class='stat-row'><div class='num ks grade-low' title='Expected strikeouts from PA matchups × volume (not pitcher season K% alone)'><span class='nval'>0.78</span><span class='nlab'>Exp K</span></div><div class='num kline' title='Book K O/U (The Odds API) — not used in Exp K'><span class='nval'>—</span><span class='nlab'>Line</span></div><div class='num kedge' title='Exp K − book line (positive = model above the number). Question-first — books may be sharper; edge ≠ ticket.'><span class='nval'>—</span><span class='nlab'>Edge</span></div><div class='num kpover' title='Model P(K &gt; book line) from PA-level K probs × projected BF. Shape cue for props — not a bet recommendation.'><span class='nval'>—</span><span class='nlab'>P(O)</span></div><div class='num ip grade-low' title='Projected innings pitched'><span class='nval'>1.3</span><span class='nlab'>IP</span></div><div class='num tto grade-low' title='Times through the order'><span class='nval'>0.67×</span><span class='nlab'>TTO</span></div><div class='num kpct grade-low' title='Arsenal K% vs opposing lineup (PA interaction environment)'><span class='rank-chips'><span class='ark ark-abs ark-soft' title='Solo arsenal vs this batting team (absolute expected K% bands: elite≥24, strong≥22.5, avg≥20, soft&lt;20). Does not depend on other pitchers today.'>SOFT</span><span class='ark ark-opp' title='Opposing batting-team K% rank on slate (#1 = highest opp lineup K%) — relative only'>#1</span><span class='ark ark-slate ark-elite' title='Slate rank of arsenal K% vs lineup (#1 = best matchup among today\'s starters) — relative only'>#1</span></span><span class='nval'><span class='kpct-val'>15.98</span></span><span class='nlab'>K%</span></div></div><div class='badges'><span class='badge prior'>prior 2026-10-15</span><span class='outlook outlook-under_ok'>UNDER OK</span></div></div></summary><div class='detail'><div class='meta-strip'><div class='meta-cell meta-matchup'><span class='meta-label'>Arsenal matchup</span><span class='meta-value meta-rates'><span class='rate-chip grade-low' title='Solo arsenal vs this nine — picks the side (ELITE/STRONG over · SOFT under · AVG usually pass)'><span class='rate-lab'>solo</span> <span class='rate-val'>SOFT vs TB</span></span><span class='rate-chip grade-low' title='Arsenal-weighted K% vs lineup · ELITE≥24 STRONG≥22.5 AVG≥20 SOFT&lt;20'><span class='rate-lab'>arsenal K%</span> <span class='rate-val'>16.0</span></span><span class='rate-chip grade-low' title='Arsenal K% minus league ~22.5% — positive helps overs'><span class='rate-lab'>vs league</span> <span class='rate-val'>-6.5</span></span><span class='rate-chip grade-low' title='Mix vs lineup raw K% — positive = mix beats the nine&#x27;s tendency'><span class='rate-lab'>vs opp K%</span> <span class='rate-val'>-1.0</span></span><span class='rate-chip grade-elite' title='Slate-relative arsenal rank only — secondary to solo grade'><span class='rate-lab'>slate</span> <span class='rate-val'>#1 elite</span></span><span class='rate-chip grade-low' title='Lineup season K% vs RHP — primary opp-K confirm (higher helps overs)'><span class='rate-lab'>opp K% vs RHP</span> <span class='rate-val'>17.0</span></span><span class='rate-chip grade-mid' title='Overall lineup K% (recent) — secondary to vs-hand'><span class='rate-lab'>opp K% all</span> <span class='rate-val'>20.5</span></span><span class='rate-chip grade-mid' title='Lineup balls-in-play % — whiff_prone helps overs · contact_heavy helps unders'><span class='rate-lab'>opp BIP</span> <span class='rate-val'>70.1% neutral</span></span><span class='rate-chip grade-mid' title='Opposing lineup BB% — high = patient / pitch-count risk'><span class='rate-lab'>opp BB%</span> <span class='rate-val'>9.1</span></span><span class='rate-chip grade-low' title='Lineup PA-weighted FanGraphs wOBA — lower = softer offense (helps length / K comfort); leash confirm only'><span class='rate-lab'>opp wOBA</span> <span class='rate-val'>0.336</span></span><span class='rate-chip grade-low' title='Lineup PA-weighted FanGraphs wRC+ (100=lg) — lower = softer offense / longer leash OK; does not flip solo grade'><span class='rate-lab'>opp wRC+</span> <span class='rate-val'>114</span></span><span class='rate-chip grade-high' title='Lineup PA-weighted FanGraphs ISO — lower = less power / crooked-number risk; leash confirm only'><span class='rate-lab'>opp ISO</span> <span class='rate-val'>0.152</span></span><span class='rate-chip grade-mid' title='Plate-discipline grade for the opposing nine'><span class='rate-lab'>disc</span> <span class='rate-val'>neutral</span></span><span class='rate-chip grade-mid' title='Pitch-count risk from patient / walk-heavy nines'><span class='rate-lab'>pitch-count</span> <span class='rate-val'>mild</span></span></span></div><div class='meta-cell meta-pstyle'><span class='meta-label'>Pitcher style (Ks vs BIP outs)</span><span class='meta-value meta-rates'><span class='rate-chip rate-na'><span class='rate-val'>Fly / popup</span></span><span class='rate-chip grade-mid' title='Season pitcher K% — higher confirms WHIFF'><span class='rate-lab'>K%</span> <span class='rate-val'>22.1</span></span><span class='rate-chip grade-low' title='Season contact% — lower = more swing-and-miss'><span class='rate-lab'>Con%</span> <span class='rate-val'>81.1</span></span><span class='rate-chip rate-na' title='Ground-ball rate'><span class='rate-lab'>GB%</span> <span class='rate-val'>42.7</span></span><span class='rate-chip rate-na' title='Fly-ball rate'><span class='rate-lab'>FB%</span> <span class='rate-val'>44.8</span></span><span class='rate-chip rate-na' title='Infield-fly rate'><span class='rate-lab'>IFFB%</span> <span class='rate-val'>11.6</span></span></span></div><div class='meta-cell meta-stuff'><span class='meta-label'>Stuff ceiling (velo / whiff)</span><span class='meta-value meta-rates'><span class='rate-chip grade-mid' title='FanGraphs Stuff+ — pitch quality vs average (100). Confirm only; does not change Exp K.'><span class='rate-lab'>Stuff+</span> <span class='rate-val'>101</span></span><span class='rate-chip grade-low' title='FanGraphs Location+ — command / location quality (100 = avg). Confirm only.'><span class='rate-lab'>Loc+</span> <span class='rate-val'>90</span></span><span class='rate-chip grade-low' title='FanGraphs Pitching+ — Stuff+ and Location+ combined (100 = avg). Confirm only.'><span class='rate-lab'>Pit+</span> <span class='rate-val'>89</span></span><span class='rate-chip grade-mid' title='Usage-weighted pitcher whiff% (avg)'><span class='rate-lab'>stuff whiff</span> <span class='rate-val'>23.8% (avg)</span></span><span class='rate-chip rate-na' title='Primary fastball velocity'><span class='rate-lab'>FF</span> <span class='rate-val'>93.5 mph</span></span></span></div><div class='meta-cell meta-rates-cell'><span class='meta-label'>Rates / form</span><span class='meta-value meta-rates'><span class='rate-chip grade-low' title='Walk rate — lower is better for command / length'><span class='rate-lab'>BB/9</span> <span class='rate-val'>4.84</span></span><span class='rate-chip grade-high' title='Home-run rate — lower is better'><span class='rate-lab'>HR/9</span> <span class='rate-val'>1.02</span></span><span class='rate-chip grade-mid' title='FIP — fielding-independent ERA estimator; lower is better (confirm only)'><span class='rate-lab'>FIP</span> <span class='rate-val'>4.43</span></span><span class='rate-chip grade-low' title='Expected FIP — HR/FB normalized; lower is better (confirm only)'><span class='rate-lab'>xFIP</span> <span class='rate-val'>4.80</span></span><span class='rate-chip grade-mid' title='SIERA — skill-interactive ERA; credits GB/popup weak contact (confirm only)'><span class='rate-lab'>SIERA</span> <span class='rate-val'>4.35</span></span><span class='rate-chip grade-mid' title='Expected ERA (Savant/FG) — quality of contact allowed (confirm only)'><span class='rate-lab'>xERA</span> <span class='rate-val'>4.21</span></span><span class='rate-chip grade-high' title='Season K/9 — higher helps K scripts'><span class='rate-lab'>K9</span> <span class='rate-val'>8.7</span></span><span class='rate-chip grade-high' title='Expected wOBA allowed (Savant) — lower = better contact suppression'><span class='rate-lab'>xwOBA</span> <span class='rate-val'>0.315</span></span><span class='rate-chip grade-elite' title='Expected BA allowed (Savant) — lower is better'><span class='rate-lab'>xBA</span> <span class='rate-val'>0.216</span></span><span class='rate-chip grade-high' title='Expected SLG allowed (Savant) — lower is better'><span class='rate-lab'>xSLG</span> <span class='rate-val'>0.383</span></span><span class='rate-chip grade-mid' title='Strikes ÷ pitches · ≥~65 confirms attack-plate overs'><span class='rate-lab'>Strike%</span> <span class='rate-val'>63.1</span></span><span class='rate-chip grade-mid' title='First-pitch strike rate — higher = more ahead counts'><span class='rate-lab'>F-Strike%</span> <span class='rate-val'>60.4</span></span><span class='rate-chip grade-high' title='In-zone rate · ≥~43 with high Strike% = attacks the plate'><span class='rate-lab'>Zone%</span> <span class='rate-val'>43.6</span></span><span class='rate-chip grade-low' title='In-zone contact allowed (FanGraphs Z-Contact%) — lower = zone whiff / K confirm; Rates confirm only'><span class='rate-lab'>Z-Contact%</span> <span class='rate-val'>86.1</span></span><span class='rate-chip grade-low' title='Swinging-strike rate — miss confirm (does not flip arsenal side)'><span class='rate-lab'>SwStr%</span> <span class='rate-val'>9.2</span></span><span class='rate-chip grade-low' title='Chase rate induced (FanGraphs O-Swing%) — higher = more chase; Rates confirm only'><span class='rate-lab'>O-Swing%</span> <span class='rate-val'>29.7</span></span><span class='rate-chip grade-low' title='Called + swinging strike (FanGraphs C+SwStr%) — command/miss pack'><span class='rate-lab'>CSW%</span> <span class='rate-val'>23.2</span></span><span class='rate-chip grade-elite' title='Soft-contact rate · ≥~20 helps FILLER / UNDER_OK confirms'><span class='rate-lab'>Soft%</span> <span class='rate-val'>10.1</span></span><span class='rate-chip rate-na'>no L3 form</span> <span class='risk risk-medium'>risk medium · high_bb,elev_xfip</span></span></div><div class='meta-cell meta-odds'><span class='meta-label'>Book lines (Odds API)</span><span class='meta-value meta-rates'><span class='muted'>no key / skipped</span></span></div><div class='meta-cell'><span class='meta-label'>Outing / form</span><span class='meta-value'>1.3 IP · 0.67× · BF 6 · cover 100%<span class='role role-opener_likely'>opener likely</span></span></div><div class='meta-cell meta-history'><span class='meta-label'>vs TB history (HOME/AWAY)</span><span class='meta-value'>15 G · K% 27.0 · OPS .910 · HOME 2G/2K · AWAY 3G/3K<br><span class='vs-recent'>2026-07-24 AWAY 0K · 2025-06-05 AWAY 1K · 2025-06-04 AWAY 2K</span></span></div></div><div class='outlook-banner outlook-under_ok'><strong>UNDER OK</strong><span>arsenal K% 16.0 (soft solo, -6.5 vs lg, -1.0 vs opp K%, opp K% vs RHP 17.0; slate #1/2 elite); stuff whiff 23.8% (avg), FF 93.5 mph; pitcher style FLY/popup (FB% 44.8, IFFB% 11.6); UNDER_OK — 2/2+ confirms (GB/FLY style, Exp K ≤4.2); fly/popup out-getter — BIP outs over Ks; same under cue as GB style; also opener_likely — fade full-outing chalk</span></div><div class='outlook-banner outlook-book'><strong>Book vs model</strong><span>No book K line — ask why the pitcher can reach the model total (0.8 Exp) via PA matchups + volume, not season K% alone.</span></div><div class='tabs' role='tablist'><input type='radio' name='tab-m1' id='tab-m1-pitches' checked /><label class='tab' for='tab-m1-pitches'><span class='tab-full'>Arsenal vs lineup</span><span class='tab-short'>Arsenal</span></label><input type='radio' name='tab-m1' id='tab-m1-lineup' /><label class='tab' for='tab-m1-lineup'><span class='tab-full'>Batting order</span><span class='tab-short'>Order</span></label><input type='radio' name='tab-m1' id='tab-m1-history' /><label class='tab' for='tab-m1-history'><span class='tab-full'>vs Team history</span><span class='tab-short'>History</span></label><div class='tab-panel panel-pitches'><div class='pitch-stack'><details class='pitch-block' open><summary><span class='pmeta-lines'><span class='pmeta-line pmeta-line1'><span class='pname' title='4-Seam Fastball'>4-Seam FB</span><span class='rate-chip grade-elite' title='Pitch usage overall — green = featured pitch, red = sparse'><span class='rate-lab'>overall</span> <span class='rate-val'>30.9%</span></span><span class='rate-chip grade-mid' title='Lineup-average K% vs this pitch — green helps the pitcher, red helps the batters'><span class='rate-lab'>lineup avg</span> <span class='rate-val'>17.1%</span></span><span class='rate-chip grade-mid' title='Pitcher&#x27;s whiff% on this pitch — green = miss / K helper, red = soft'><span class='rate-lab'>whiff</span> <span class='rate-val'>23.4%</span></span><span class='rate-chip grade-low' title='FanGraphs Stuff+ for this pitch type (100 = avg). Confirm only.'><span class='rate-lab'>Stuff+</span> <span class='rate-val'>93</span></span><span class='rate-chip grade-low' title='FanGraphs run value per 100 pitches — positive prevents runs (count/base-state aware linear weights). Confirm only.'><span class='rate-lab'>RV/100</span> <span class='rate-val'>-0.98</span></span></span><span class='pmeta-line pmeta-line2'><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs LHB (informational)'><span class='rate-lab'>use vs LHB</span> <span class='rate-val'>39%</span></span><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs RHB (informational)'><span class='rate-lab'>use vs RHB</span> <span class='rate-val'>23%</span></span><span class='rate-chip grade-low hand-l' title='This opposing lineup&#x27;s LHB only — mean batter K% vs this pitch (n=5). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs L</span> <span class='rate-val'>13.4%</span></span><span class='rate-chip grade-high hand-r' title='This opposing lineup&#x27;s RHB only — mean batter K% vs this pitch (n=3). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs R</span> <span class='rate-val'>21.9%</span></span><span class='rate-chip grade-mid' title='Fastball velo — green = plus heat'><span class='rate-lab'>velo</span> <span class='rate-val'>93.5 mph</span></span></span></span></summary><div class='pitch-list'><div class='pitch-row'><div class='who'><span class='slot'>1.</span><span class='name'>Yandy Díaz <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:32%;background:rgba(15,106,77,0.82)'></span></div><div class='kval grade-elite' title='source pitch_vs_rhp · PA 123 — green helps pitcher · amber medium · red helps batters'>31.7%</div></div><div class='pitch-row'><div class='who'><span class='slot'>2.</span><span class='name'>Jonathan Aranda <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:22%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 180 — green helps pitcher · amber medium · red helps batters'>21.7%</div></div><div class='pitch-row'><div class='who'><span class='slot'>3.</span><span class='name'>Junior Caminero <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:20%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 88 — green helps pitcher · amber medium · red helps batters'>20.5%</div></div><div class='pitch-row'><div class='who'><span class='slot'>4.</span><span class='name'>Victor Mesa Jr. <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:24%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 76 — green helps pitcher · amber medium · red helps batters'>23.7%</div></div><div class='pitch-row'><div class='who'><span class='slot'>5.</span><span class='name'>Chandler Simpson <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 182 — green helps pitcher · amber medium · red helps batters'>3.3%</div></div><div class='pitch-row'><div class='who'><span class='slot'>6.</span><span class='name'>Liam Hicks <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 158 — green helps pitcher · amber medium · red helps batters'>4.4%</div></div><div class='pitch-row'><div class='who'><span class='slot'>7.</span><span class='name'>Jonny DeLuca <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:14%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 59 — green helps pitcher · amber medium · red helps batters'>13.6%</div></div><div class='pitch-row'><div class='who'><span class='slot'>8.</span><span class='name'>Richie Palacios <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:14%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 124 — green helps pitcher · amber medium · red helps batters'>13.7%</div></div><div class='pitch-row'><div class='who'><span class='slot'>9.</span><span class='name'>Taylor Walls <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:22%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 116 — green helps pitcher · amber medium · red helps batters'>21.6%</div></div><div class='pitch-row avg'><div class='who'><span class='name'>Lineup avg</span></div><div class='meter'><span class='bar' style='width:17%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='Lineup avg — green helps pitcher · amber medium · red helps batters'>17.1%</div></div></div></details><details class='pitch-block'><summary><span class='pmeta-lines'><span class='pmeta-line pmeta-line1'><span class='pname' title='Sweeper'>Sweeper</span><span class='rate-chip grade-high' title='Pitch usage overall — green = featured pitch, red = sparse'><span class='rate-lab'>overall</span> <span class='rate-val'>28.0%</span></span><span class='rate-chip grade-high' title='Lineup-average K% vs this pitch — green helps the pitcher, red helps the batters'><span class='rate-lab'>lineup avg</span> <span class='rate-val'>21.0%</span></span><span class='rate-chip grade-high' title='Pitcher&#x27;s whiff% on this pitch — green = miss / K helper, red = soft'><span class='rate-lab'>whiff</span> <span class='rate-val'>28.2%</span></span><span class='rate-chip grade-elite' title='FanGraphs Stuff+ for this pitch type (100 = avg). Confirm only.'><span class='rate-lab'>Stuff+</span> <span class='rate-val'>121</span></span><span class='rate-chip grade-mid' title='FanGraphs run value per 100 pitches — positive prevents runs (count/base-state aware linear weights). Confirm only.'><span class='rate-lab'>RV/100</span> <span class='rate-val'>+0.69</span></span></span><span class='pmeta-line pmeta-line2'><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs LHB (informational)'><span class='rate-lab'>use vs LHB</span> <span class='rate-val'>23%</span></span><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs RHB (informational)'><span class='rate-lab'>use vs RHB</span> <span class='rate-val'>33%</span></span><span class='rate-chip grade-low hand-l' title='This opposing lineup&#x27;s LHB only — mean batter K% vs this pitch (n=5). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs L</span> <span class='rate-val'>13.5%</span></span><span class='rate-chip grade-elite hand-r' title='This opposing lineup&#x27;s RHB only — mean batter K% vs this pitch (n=3). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs R</span> <span class='rate-val'>27.6%</span></span><span class='rate-chip' title='Offspeed/breaking velo (informational — not a good/bad K grade)'><span class='rate-lab'>velo</span> <span class='rate-val'>84.5 mph</span></span></span></span></summary><div class='pitch-list'><div class='pitch-row'><div class='who'><span class='slot'>1.</span><span class='name'>Yandy Díaz <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 36 — green helps pitcher · amber medium · red helps batters'>2.8%</div></div><div class='pitch-row'><div class='who'><span class='slot'>2.</span><span class='name'>Jonathan Aranda <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:16%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='source pitch_vs_rhp · PA 19 — green helps pitcher · amber medium · red helps batters'>15.8%</div></div><div class='pitch-row'><div class='who'><span class='slot'>3.</span><span class='name'>Junior Caminero <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:32%;background:rgba(15,106,77,0.82)'></span></div><div class='kval grade-elite' title='source pitch_vs_rhp · PA 69 — green helps pitcher · amber medium · red helps batters'>31.9%</div></div><div class='pitch-row'><div class='who'><span class='slot'>4.</span><span class='name'>Victor Mesa Jr. <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:8%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch · PA 12 — green helps pitcher · amber medium · red helps batters'>8.3%</div></div><div class='pitch-row'><div class='who'><span class='slot'>5.</span><span class='name'>Chandler Simpson <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:22%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch · PA 32 — green helps pitcher · amber medium · red helps batters'>21.9%</div></div><div class='pitch-row'><div class='who'><span class='slot'>6.</span><span class='name'>Liam Hicks <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 15 — green helps pitcher · amber medium · red helps batters'>0.0%</div></div><div class='pitch-row'><div class='who'><span class='slot'>7.</span><span class='name'>Jonny DeLuca <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:48%;background:rgba(15,106,77,0.82)'></span></div><div class='kval grade-elite' title='source pitch_vs_rhp · PA 29 — green helps pitcher · amber medium · red helps batters'>48.3%</div></div><div class='pitch-row'><div class='who'><span class='slot'>8.</span><span class='name'>Richie Palacios <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:21%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch · PA 14 — green helps pitcher · amber medium · red helps batters'>21.4%</div></div><div class='pitch-row'><div class='who'><span class='slot'>9.</span><span class='name'>Taylor Walls <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:38%;background:rgba(15,106,77,0.82)'></span></div><div class='kval grade-elite' title='source pitch · PA 13 — green helps pitcher · amber medium · red helps batters'>38.5%</div></div><div class='pitch-row avg'><div class='who'><span class='name'>Lineup avg</span></div><div class='meter'><span class='bar' style='width:21%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='Lineup avg — green helps pitcher · amber medium · red helps batters'>21.0%</div></div></div></details><details class='pitch-block'><summary><span class='pmeta-lines'><span class='pmeta-line pmeta-line1'><span class='pname' title='Cutter'>Cutter</span><span class='rate-chip grade-high' title='Pitch usage overall — green = featured pitch, red = sparse'><span class='rate-lab'>overall</span> <span class='rate-val'>24.0%</span></span><span class='rate-chip grade-low' title='Lineup-average K% vs this pitch — green helps the pitcher, red helps the batters'><span class='rate-lab'>lineup avg</span> <span class='rate-val'>11.3%</span></span><span class='rate-chip grade-mid' title='Pitcher&#x27;s whiff% on this pitch — green = miss / K helper, red = soft'><span class='rate-lab'>whiff</span> <span class='rate-val'>23.0%</span></span><span class='rate-chip grade-low' title='FanGraphs Stuff+ for this pitch type (100 = avg). Confirm only.'><span class='rate-lab'>Stuff+</span> <span class='rate-val'>88</span></span><span class='rate-chip grade-high' title='FanGraphs run value per 100 pitches — positive prevents runs (count/base-state aware linear weights). Confirm only.'><span class='rate-lab'>RV/100</span> <span class='rate-val'>+1.14</span></span></span><span class='pmeta-line pmeta-line2'><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs LHB (informational)'><span class='rate-lab'>use vs LHB</span> <span class='rate-val'>28%</span></span><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs RHB (informational)'><span class='rate-lab'>use vs RHB</span> <span class='rate-val'>20%</span></span><span class='rate-chip grade-low hand-l' title='This opposing lineup&#x27;s LHB only — mean batter K% vs this pitch (n=5). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs L</span> <span class='rate-val'>11.1%</span></span><span class='rate-chip grade-low hand-r' title='This opposing lineup&#x27;s RHB only — mean batter K% vs this pitch (n=3). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs R</span> <span class='rate-val'>10.6%</span></span><span class='rate-chip grade-low' title='Fastball velo — green = plus heat'><span class='rate-lab'>velo</span> <span class='rate-val'>90.0 mph</span></span></span></span></summary><div class='pitch-list'><div class='pitch-row'><div class='who'><span class='slot'>1.</span><span class='name'>Yandy Díaz <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:15%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 41 — green helps pitcher · amber medium · red helps batters'>14.6%</div></div><div class='pitch-row'><div class='who'><span class='slot'>2.</span><span class='name'>Jonathan Aranda <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:21%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 47 — green helps pitcher · amber medium · red helps batters'>21.3%</div></div><div class='pitch-row'><div class='who'><span class='slot'>3.</span><span class='name'>Junior Caminero <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:8%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 39 — green helps pitcher · amber medium · red helps batters'>7.7%</div></div><div class='pitch-row'><div class='who'><span class='slot'>4.</span><span class='name'>Victor Mesa Jr. <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:18%;background:rgba(154,91,18,0.58)'></span></div><div class='kval grade-mid' title='source pitch · PA 17 — green helps pitcher · amber medium · red helps batters'>17.6%</div></div><div class='pitch-row'><div class='who'><span class='slot'>5.</span><span class='name'>Chandler Simpson <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:5%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 37 — green helps pitcher · amber medium · red helps batters'>5.4%</div></div><div class='pitch-row'><div class='who'><span class='slot'>6.</span><span class='name'>Liam Hicks <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 35 — green helps pitcher · amber medium · red helps batters'>2.9%</div></div><div class='pitch-row'><div class='who'><span class='slot'>7.</span><span class='name'>Jonny DeLuca <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:10%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 21 — green helps pitcher · amber medium · red helps batters'>9.5%</div></div><div class='pitch-row'><div class='who'><span class='slot'>8.</span><span class='name'>Richie Palacios <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:8%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 24 — green helps pitcher · amber medium · red helps batters'>8.3%</div></div><div class='pitch-row'><div class='who'><span class='slot'>9.</span><span class='name'>Taylor Walls <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:15%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 27 — green helps pitcher · amber medium · red helps batters'>14.8%</div></div><div class='pitch-row avg'><div class='who'><span class='name'>Lineup avg</span></div><div class='meter'><span class='bar' style='width:11%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='Lineup avg — green helps pitcher · amber medium · red helps batters'>11.3%</div></div></div></details><details class='pitch-block'><summary><span class='pmeta-lines'><span class='pmeta-line pmeta-line1'><span class='pname' title='Sinker'>Sinker</span><span class='rate-chip grade-mid' title='Pitch usage overall — green = featured pitch, red = sparse'><span class='rate-lab'>overall</span> <span class='rate-val'>17.0%</span></span><span class='rate-chip grade-low' title='Lineup-average K% vs this pitch — green helps the pitcher, red helps the batters'><span class='rate-lab'>lineup avg</span> <span class='rate-val'>11.5%</span></span><span class='rate-chip grade-mid' title='Pitcher&#x27;s whiff% on this pitch — green = miss / K helper, red = soft'><span class='rate-lab'>whiff</span> <span class='rate-val'>18.6%</span></span><span class='rate-chip grade-mid' title='FanGraphs Stuff+ for this pitch type (100 = avg). Confirm only.'><span class='rate-lab'>Stuff+</span> <span class='rate-val'>102</span></span><span class='rate-chip grade-low' title='FanGraphs run value per 100 pitches — positive prevents runs (count/base-state aware linear weights). Confirm only.'><span class='rate-lab'>RV/100</span> <span class='rate-val'>-0.98</span></span></span><span class='pmeta-line pmeta-line2'><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs LHB (informational)'><span class='rate-lab'>use vs LHB</span> <span class='rate-val'>9%</span></span><span class='rate-chip' title='Pitcher&#x27;s season usage of this pitch vs RHB (informational)'><span class='rate-lab'>use vs RHB</span> <span class='rate-val'>24%</span></span><span class='rate-chip grade-low hand-l' title='This opposing lineup&#x27;s LHB only — mean batter K% vs this pitch (n=5). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs L</span> <span class='rate-val'>13.6%</span></span><span class='rate-chip grade-low hand-r' title='This opposing lineup&#x27;s RHB only — mean batter K% vs this pitch (n=3). Not pitcher season stats. Green helps pitcher, red helps bats.'><span class='rate-lab'>vs R</span> <span class='rate-val'>10.0%</span></span><span class='rate-chip grade-mid' title='Fastball velo — green = plus heat'><span class='rate-lab'>velo</span> <span class='rate-val'>93.7 mph</span></span></span></span></summary><div class='pitch-list'><div class='pitch-row'><div class='who'><span class='slot'>1.</span><span class='name'>Yandy Díaz <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:8%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 119 — green helps pitcher · amber medium · red helps batters'>7.6%</div></div><div class='pitch-row'><div class='who'><span class='slot'>2.</span><span class='name'>Jonathan Aranda <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:27%;background:rgba(15,106,77,0.82)'></span></div><div class='kval grade-elite' title='source pitch_vs_rhp · PA 51 — green helps pitcher · amber medium · red helps batters'>27.5%</div></div><div class='pitch-row'><div class='who'><span class='slot'>3.</span><span class='name'>Junior Caminero <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:11%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 122 — green helps pitcher · amber medium · red helps batters'>11.5%</div></div><div class='pitch-row'><div class='who'><span class='slot'>4.</span><span class='name'>Victor Mesa Jr. <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:24%;background:rgba(15,106,77,0.58)'></span></div><div class='kval grade-high' title='source pitch_vs_rhp · PA 17 — green helps pitcher · amber medium · red helps batters'>23.5%</div></div><div class='pitch-row'><div class='who'><span class='slot'>5.</span><span class='name'>Chandler Simpson <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 49 — green helps pitcher · amber medium · red helps batters'>2.0%</div></div><div class='pitch-row'><div class='who'><span class='slot'>6.</span><span class='name'>Liam Hicks <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:4%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 58 — green helps pitcher · amber medium · red helps batters'>3.4%</div></div><div class='pitch-row'><div class='who'><span class='slot'>7.</span><span class='name'>Jonny DeLuca <span class='hand' title='Right-handed batter'>RHB</span></span></div><div class='meter'><span class='bar' style='width:11%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 45 — green helps pitcher · amber medium · red helps batters'>11.1%</div></div><div class='pitch-row'><div class='who'><span class='slot'>8.</span><span class='name'>Richie Palacios <span class='hand' title='Left-handed batter'>LHB</span></span></div><div class='meter'><span class='bar' style='width:12%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 52 — green helps pitcher · amber medium · red helps batters'>11.5%</div></div><div class='pitch-row'><div class='who'><span class='slot'>9.</span><span class='name'>Taylor Walls <span class='hand' title='Switch-hitter'>SHB</span></span></div><div class='meter'><span class='bar' style='width:5%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='source pitch_vs_rhp · PA 40 — green helps pitcher · amber medium · red helps batters'>5.0%</div></div><div class='pitch-row avg'><div class='who'><span class='name'>Lineup avg</span></div><div class='meter'><span class='bar' style='width:11%;background:rgba(140,40,40,0.62)'></span></div><div class='kval grade-low' title='Lineup avg — green helps pitcher · amber medium · red helps batters'>11.5%</div></div></div></details><p class='hint'>Line 1: <strong>pitch</strong> · <strong>overall</strong> · <strong>lineup avg</strong> · <strong>whiff</strong> (green/amber/red by whether it helps the pitcher). Line 2: <strong>use vs LHB / use vs RHB</strong> (pitcher season usage — uncolored) · <strong>vs L / vs R</strong> (this opposing lineup’s batter K% vs the pitch — green helps pitcher). Open a pitch for each batter’s K% — same scale. Rates prefer true K% vs this pitcher’s hand when sample ≥15 PA; else overall pitch K%; <code>†</code> = same-handed league average. Whiff / velo are own-stuff ceiling — do not change Exp K.</p></div></div><div class='tab-panel panel-lineup'><div class='batter-grid'><div class='batter '><span><span class='slot'>1.</span> Yandy Díaz <span class='hand' title='Right-handed batter'>RHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 59 · brl 7.1% · hh 48.1%</span></span><span class='k grade-low' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>13.0%</span></div><div class='batter '><span><span class='slot'>2.</span> Jonathan Aranda <span class='hand' title='Left-handed batter'>LHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 57 · brl 9.9% · hh 46.0%</span></span><span class='k grade-high' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>20.7%</span></div><div class='batter '><span><span class='slot'>3.</span> Junior Caminero <span class='hand' title='Right-handed batter'>RHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 59 · brl 13.1% · hh 49.7%</span></span><span class='k grade-mid' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>19.5%</span></div><div class='batter '><span><span class='slot'>4.</span> Victor Mesa Jr. <span class='hand' title='Left-handed batter'>LHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 51 · brl 10.8% · hh 42.2%</span></span><span class='k grade-high' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>20.4%</span></div><div class='batter '><span><span class='slot'>5.</span> Chandler Simpson <span class='hand' title='Left-handed batter'>LHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 46 · brl 0.0% · hh 13.6%</span></span><span class='k grade-low' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>8.1%</span></div><div class='batter '><span><span class='slot'>6.</span> Liam Hicks <span class='hand' title='Left-handed batter'>LHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 52 · brl 3.7% · hh 27.1%</span></span><span class='k grade-low' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>2.9%</span></div><div class='batter '><span><span class='slot'>7.</span> Jonny DeLuca <span class='hand' title='Right-handed batter'>RHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 45 · brl 3.6% · hh 30.2%</span></span><span class='k grade-high' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>23.5%</span></div><div class='batter '><span><span class='slot'>8.</span> Richie Palacios <span class='hand' title='Left-handed batter'>LHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 46 · brl 3.9% · hh 28.8%</span></span><span class='k grade-low' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>13.8%</span></div><div class='batter '><span><span class='slot'>9.</span> Taylor Walls <span class='hand' title='Switch-hitter'>SHB</span><span class='hits-meta' title='Hits prop score (not used in expected Ks)'>hits 38 · brl 2.1% · hh 21.9%</span></span><span class='k grade-high' title='Arsenal-weighted K% — green helps pitcher · amber medium · red helps batters'>22.0%</span></div></div><p class='hint'>Right-side values are arsenal-weighted <strong>K%</strong> vs this starter — <strong>green</strong> helps the pitcher, <strong class='hint-amber'>amber</strong> medium, <strong class='hint-red'>red</strong> helps the batters. Hits / barrel / hard-hit scores are a separate Hits-prop layer and <strong>do not</strong> change expected strikeouts.</p></div><div class='tab-panel panel-history'><div class='vs-summary'><div><span class='meta-label'>Career vs TB</span><span class='meta-value'>15 G · 17 K / 63 PA · K% 27.0 · AVG .291 · OPS .910 · BB 7 · HR 3</span></div><div><span class='meta-label'>Site split (game logs)</span><span class='meta-value'>HOME 2 G · 2 K (1.0 K/G) · AWAY 3 G · 3 K (1.0 K/G)</span></div></div><div class='vs-table'><div class='vs-head'><div>Date</div><div>Site</div><div>IP</div><div>K</div><div>BB</div><div>H</div><div>ER</div><div>HR</div><div>BF</div></div><div class='vs-row'><div>2026-07-24</div><div><span class='site site-away'>AWAY</span></div><div>0.2</div><div>0</div><div>2</div><div>1</div><div>3</div><div>0</div><div>5</div></div><div class='vs-row'><div>2025-06-05</div><div><span class='site site-away'>AWAY</span></div><div>0.1</div><div>1</div><div>0</div><div>0</div><div>0</div><div>0</div><div>1</div></div><div class='vs-row'><div>2025-06-04</div><div><span class='site site-away'>AWAY</span></div><div>1.0</div><div>2</div><div>0</div><div>0</div><div>0</div><div>0</div><div>3</div></div><div class='vs-row'><div>2025-04-04</div><div><span class='site site-home'>HOME</span></div><div>1.1</div><div>2</div><div>0</div><div>3</div><div>2</div><div>0</div><div>7</div></div><div class='vs-row'><div>2024-08-08</div><div><span class='site site-home'>HOME</span></div><div>0.2</div><div>0</div><div>0</div><div>2</div><div>1</div><div>0</div><div>4</div></div></div><p class='hint'>Site is the <strong>pitcher’s</strong> home/away (HOME = pitched at home vs this batting team). Use with arsenal rank — history confirms or cautions the model side.</p></div></div></div></details>
+        </div>
+        <div class="empty" id="empty" hidden>
+          No matchups match these filters.
+          <span id="emptyHint"></span>
+        </div>
+
+        <p class="footnote">
+          Expand a pitcher → <strong>Arsenal vs lineup</strong> for pitch-by-pitch K%,
+          or <strong>Batting order</strong> for the nine. Arsenal <strong>#</strong> ranks
+          this pitcher vs <em>this</em> lineup (absolute bands). The numeric <strong>#</strong> is
+          only today’s slate rank. FILLER / MATCHUP OK flag soft-contact arms.
+          Pre-lineup days are all <strong>Prior</strong> — use Lineup <strong>All sources</strong>.
+          Switch to the <strong>Hits</strong> tab for Hits / H+R+RBI props.
+        </p>
+      </div>
+
+      <div class="view-panel panel-hits">
+        <section class='hits-board' id='hitsBoard'><h2>Hits board <span>(display-only)</span></h2><p class='hits-lede'>Barrel%, hard-hit%, xwOBA, and AVG vs pitcher hand — ranked for Hits / H+R+RBI props. This board never feeds the strikeout model.</p><div class='hits-colhead'><div>#</div><div>Batter</div><div>Matchup</div><div>Hits</div><div>H+R+RBI</div><div>Brl%</div><div>HH%</div><div>AVG vs</div></div><div class='hits-list'><div class='hits-row'><span class='rk'>1</span><span class='name'>Junior Caminero</span><span class='vs'>vs Shawn Armstrong (RHP)</span><span class='num'>59</span><span class='num'>60</span><span class='num'>13.1</span><span class='num'>49.7</span><span class='num'>0.272</span></div><div class='hits-row'><span class='rk'>2</span><span class='name'>Yandy Díaz</span><span class='vs'>vs Shawn Armstrong (RHP)</span><span class='num'>59</span><span class='num'>57</span><span class='num'>7.1</span><span class='num'>48.1</span><span class='num'>0.305</span></div><div class='hits-row'><span class='rk'>3</span><span class='name'>Jonathan Aranda</span><span class='vs'>vs Shawn Armstrong (RHP)</span><span class='num'>57</span><span class='num'>56</span><span class='num'>9.9</span><span class='num'>46.0</span><span class='num'>0.284</span></div><div class='hits-row'><span class='rk'>4</span><span class='name'>Chase DeLauter</span><span class='vs'>vs Nick Martinez (RHP)</span><span class='num'>55</span><span class='num'>54</span><span class='num'>6.3</span><span class='num'>46.3</span><span class='num'>0.269</span></div><div class='hits-row'><span class='rk'>5</span><span class='name'>Nathaniel Lowe</span><span class='vs'>vs Nick Martinez (RHP)</span><span class='num'>54</span><span class='num'>53</span><span class='num'>8.3</span><span class='num'>41.4</span><span class='num'>0.271</span></div><div class='hits-row'><span class='rk'>6</span><span class='name'>Liam Hicks</span><span class='vs'>vs Shawn Armstrong (RHP)</span><span class='num'>52</span><span class='num'>48</span><span class='num'>3.7</span><span class='num'>27.1</span><span class='num'>0.309</span></div><div class='hits-row'><span class='rk'>7</span><span class='name'>Victor Mesa Jr.</span><span class='vs'>vs Shawn Armstrong (RHP)</span><span class='num'>51</span><span class='num'>52</span><span class='num'>10.8</span><span class='num'>42.2</span><span class='num'>0.234</span></div><div class='hits-row'><span class='rk'>8</span><span class='name'>Travis Bazzana</span><span class='vs'>vs Nick Martinez (RHP)</span><span class='num'>49</span><span class='num'>47</span><span class='num'>5.2</span><span class='num'>36.2</span><span class='num'>0.274</span></div><div class='hits-row'><span class='rk'>9</span><span class='name'>Jo Adell</span><span class='vs'>vs Nick Martinez (RHP)</span><span class='num'>48</span><span class='num'>51</span><span class='num'>8.9</span><span class='num'>44.9</span><span class='num'>0.209</span></div><div class='hits-row'><span class='rk'>10</span><span class='name'>Steven Kwan</span><span class='vs'>vs Nick Martinez (RHP)</span><span class='num'>48</span><span class='num'>42</span><span class='num'>0.4</span><span class='num'>10.5</span><span class='num'>0.306</span></div><div class='hits-row'><span class='rk'>11</span><span class='name'>Brayan Rocchio</span><span class='vs'>vs Nick Martinez (RHP)</span><span class='num'>47</span><span class='num'>44</span><span class='num'>2.8</span><span class='num'>30.0</span><span class='num'>0.272</span></div><div class='hits-row'><span class='rk'>12</span><span class='name'>Patrick Bailey</span><span class='vs'>vs Nick Martinez (RHP)</span><span class='num'>47</span><span class='num'>48</span><span class='num'>7.6</span><span class='num'>42.4</span><span class='num'>0.221</span></div><div class='hits-row'><span class='rk'>13</span><span class='name'>Petey Halpin</span><span class='vs'>vs Nick Martinez (RHP)</span><span class='num'>46</span><span class='num'>44</span><span class='num'>5.4</span><span class='num'>25.5</span><span class='num'>0.259</span></div><div class='hits-row'><span class='rk'>14</span><span class='name'>Chandler Simpson</span><span class='vs'>vs Shawn Armstrong (RHP)</span><span class='num'>46</span><span class='num'>39</span><span class='num'>0.0</span><span class='num'>13.6</span><span class='num'>0.318</span></div><div class='hits-row'><span class='rk'>15</span><span class='name'>Richie Palacios</span><span class='vs'>vs Shawn Armstrong (RHP)</span><span class='num'>46</span><span class='num'>44</span><span class='num'>3.9</span><span class='num'>28.8</span><span class='num'>0.250</span></div></div></section>
+      </div>
+    </section>
+  </div>
+
+  <script id="data" type="application/json">{"generated_at": "2026-10-16 20:45 UTC", "game_date": "2026-10-16", "stable_board_url": "https://htmlpreview.github.io/?https://raw.githubusercontent.com/Ceezwrld/K-matchup/main/index.html", "batters_faced_override": null, "avg_projected_ip": 3.385852633828719, "avg_times_through": 1.5555555555555556, "avg_strike_pct": 65.60787034117425, "row_count": 2, "official_lineups": 1, "hits_board_count": 18}</script>
+  <script>
+    (function () {
+      const THEME_KEY = "k-matchup-theme";
+      const root = document.documentElement;
+      const toggle = document.getElementById("themeToggle");
+      const label = toggle ? toggle.querySelector(".theme-toggle-text") : null;
+
+      function currentTheme() {
+        const t = root.getAttribute("data-theme");
+        return t === "dark" ? "dark" : "light";
+      }
+
+      function applyTheme(theme) {
+        const next = theme === "dark" ? "dark" : "light";
+        root.setAttribute("data-theme", next);
+        try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+        if (toggle) {
+          const other = next === "dark" ? "light" : "dark";
+          toggle.setAttribute("aria-label", "Switch to " + other + " theme");
+          toggle.setAttribute("aria-pressed", next === "dark" ? "true" : "false");
+          if (label) label.textContent = other.charAt(0).toUpperCase() + other.slice(1);
+        }
+      }
+
+      applyTheme(currentTheme());
+      if (toggle) {
+        toggle.addEventListener("click", function () {
+          applyTheme(currentTheme() === "dark" ? "light" : "dark");
+        });
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      const board = document.getElementById("board");
+      const empty = document.getElementById("empty");
+      const q = document.getElementById("q");
+      const lineupFilter = document.getElementById("lineupFilter");
+      const statusFilter = document.getElementById("statusFilter");
+      const sort = document.getElementById("sort");
+      if (!board) return;
+
+      function apply() {
+        const query = (q.value || "").trim().toLowerCase();
+        let lineup = lineupFilter.value;
+        const status = statusFilter.value;
+        const [key, dir] = sort.value.split(":");
+        const cards = Array.from(board.querySelectorAll("details.matchup"));
+        const hasPrior = cards.some((el) => (el.dataset.lineup || "").startsWith("prior"));
+        const hasOfficial = cards.some((el) => (el.dataset.lineup || "") === "official");
+        // Browsers may restore "Official only" from a prior visit; on pre-lineup
+        // slates that hides every card. Reset to All sources in that case.
+        if (lineup === "official" && !hasOfficial && hasPrior) {
+          lineupFilter.value = "all";
+          lineup = "all";
+        }
+        let visible = 0;
+        cards.forEach((el) => {
+          const hay = el.dataset.search || "";
+          const src = el.dataset.lineup || "";
+          const st = el.dataset.status || "";
+          let show = true;
+          if (query && !hay.includes(query)) show = false;
+          if (lineup === "official" && src !== "official") show = false;
+          if (lineup === "prior" && !src.startsWith("prior")) show = false;
+          if (status === "scored" && st !== "scored") show = false;
+          if (status === "missing" && st !== "missing") show = false;
+          el.hidden = !show;
+          if (show) visible += 1;
+        });
+        empty.hidden = visible > 0;
+        const hint = document.getElementById("emptyHint");
+        if (hint) {
+          hint.textContent =
+            visible === 0 && lineup === "official"
+              ? " Official lineups are not posted yet — switch Lineup to All sources."
+              : "";
+        }
+
+        const attrKey = {
+          expected_ks: "expectedKs",
+          k_edge: "kEdge",
+          k_line: "kLine",
+          projected_ip: "projectedIp",
+          tto: "tto",
+          kpct: "kpct",
+          rank: "rank",
+          pitcher: "pitcher",
+        }[key] || "expectedKs";
+
+        const sorted = cards.slice().sort((a, b) => {
+          let av = a.dataset[attrKey];
+          let bv = b.dataset[attrKey];
+          if (key === "pitcher") {
+            av = (av || "").toLowerCase();
+            bv = (bv || "").toLowerCase();
+            return dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+          }
+          const an = av === undefined || av === "" || av === "None" ? null : Number(av);
+          const bn = bv === undefined || bv === "" || bv === "None" ? null : Number(bv);
+          if (an == null && bn == null) return 0;
+          if (an == null) return 1;
+          if (bn == null) return -1;
+          return dir === "asc" ? an - bn : bn - an;
+        });
+        sorted.forEach((el) => board.appendChild(el));
+      }
+
+      q.addEventListener("input", apply);
+      lineupFilter.addEventListener("change", apply);
+      statusFilter.addEventListener("change", apply);
+      sort.addEventListener("change", apply);
+      apply();
+    })();
+  </script>
+</body>
+</html>

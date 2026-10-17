@@ -7,6 +7,10 @@ starter and each opposing lineup batter, then flags HOT / WARM / COLD pockets:
 - **COLD** — pitcher lives there but batter is weak (chase / soft contact)
 - **WARM** — middling frequency + solid damage
 
+Also builds a **recent** window (default last 30 days) beside season and tags
+agreement (``CONFIRM`` / ``SEASON_ONLY`` / ``RECENT_ONLY`` / ``CONFLICT``) plus
+honest **low-sample** FYI flags when BIP / pitch counts are thin.
+
 Display / research only — does **not** change ``expected_ks`` or hits scores.
 
 CLI examples::
@@ -23,6 +27,10 @@ CLI examples::
     # Top N by hits_score from the hits CSV
     python mlb-k-matchups/zone_overlap.py \\
         --hits hits-2026-10-15.csv --pitcher "Gavin Williams" --top 3
+
+    # Season only (skip recent window)
+    python mlb-k-matchups/zone_overlap.py \\
+        --hits hits-DATE.csv --pitcher "Nick Martinez" --no-recent
 """
 
 from __future__ import annotations
@@ -30,6 +38,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from datetime import date, timedelta
 from io import StringIO
 from pathlib import Path
 from typing import Any
@@ -49,6 +58,18 @@ STATCAST_BATTER_URL = (
     "?all=true&hfSea={year}%7C&hfGT=R%7CPO%7CS%7C&player_type=batter"
     "&batters_lookup%5B%5D={batter_id}&min_pitches=1&type=details"
 )
+
+# Sample / recency thresholds (honest sizing, not vetoes)
+DEFAULT_RECENT_DAYS = 30
+LOW_BATTER_PITCHES_VS_HAND = 450  # season pitches vs that pitcher hand
+LOW_ZONE_BIP = 15  # BIP in a zone before HOT/WARM/COLD is "thin"
+LOW_RECENT_PITCHES_VS_HAND = 120
+LOW_RECENT_ZONE_BIP = 8
+MIN_PITCHER_RECENT_PITCHES = 150  # else keep season throw% only
+SEASON_MIN_ZONE_PITCHES = 15
+RECENT_MIN_ZONE_PITCHES = 8
+SEASON_MIN_BIP_XWOBA = 5
+RECENT_MIN_BIP_XWOBA = 3
 
 # Catcher's view labels for Savant zones 1–9 / 11–14
 ZONE_LABEL = {
@@ -105,6 +126,22 @@ def fetch_batter_pitches(batter_id: int, year: int) -> pd.DataFrame:
         url = url.replace("hfGT=R%7CPO%7CS%7C", "hfGT=R%7C")
         df = fetch_statcast(url)
     return df
+
+
+def filter_by_recent_days(
+    df: pd.DataFrame,
+    days: int,
+    *,
+    as_of: date | None = None,
+) -> pd.DataFrame:
+    """Keep pitches whose ``game_date`` falls in the last ``days`` ending ``as_of``."""
+    if df.empty or days <= 0 or "game_date" not in df.columns:
+        return df.iloc[0:0].copy()
+    gd = pd.to_datetime(df["game_date"], errors="coerce")
+    end = pd.Timestamp(as_of or date.today())
+    start = end - pd.Timedelta(days=int(days))
+    mask = (gd >= start) & (gd <= end)
+    return df.loc[mask].copy()
 
 
 def _zone_series(df: pd.DataFrame) -> pd.Series:
@@ -209,6 +246,9 @@ def analyze_batter_vs_hand(
     *,
     name: str,
     vs_hand: str,
+    min_zone_pitches: int = SEASON_MIN_ZONE_PITCHES,
+    min_bip_xwoba: int = SEASON_MIN_BIP_XWOBA,
+    window: str = "season",
 ) -> dict[str, Any]:
     """Batter swing / damage by zone vs pitcher hand (``R`` or ``L``)."""
     d = df.copy()
@@ -237,14 +277,14 @@ def analyze_batter_vs_hand(
             continue
         z = int(z)
         n = len(g)
-        if n < 15:
+        if n < int(min_zone_pitches):
             continue
         swings = int(g["is_swing"].sum())
         whiffs = int(g["is_whiff"].sum())
         bip = g[g["is_bip"]]
-        xw = bip["xwoba"].mean() if len(bip) >= 5 else float("nan")
-        ev = bip["ev"].mean() if len(bip) >= 5 else float("nan")
-        brl = bip["is_barrel"].mean() if len(bip) >= 5 else float("nan")
+        xw = bip["xwoba"].mean() if len(bip) >= int(min_bip_xwoba) else float("nan")
+        ev = bip["ev"].mean() if len(bip) >= int(min_bip_xwoba) else float("nan")
+        brl = bip["is_barrel"].mean() if len(bip) >= int(min_bip_xwoba) else float("nan")
         rows.append(
             {
                 "zone": z,
@@ -261,30 +301,49 @@ def analyze_batter_vs_hand(
             }
         )
     zone_df = pd.DataFrame(rows)
+    empty = {
+        "name": name,
+        "vs_hand": vs_hand,
+        "window": window,
+        "n_pitches": int(len(d)),
+        "stand": None,
+        "all_zones": [],
+        "top_swing_zones": [],
+        "top_damage_zones": [],
+        "sample_flags": [],
+    }
     if zone_df.empty:
-        return {
-            "name": name,
-            "vs_hand": vs_hand,
-            "n_pitches": int(len(d)),
-            "stand": None,
-            "all_zones": [],
-            "top_swing_zones": [],
-            "top_damage_zones": [],
-        }
+        empty["sample_flags"] = (
+            ["LOW_SAMPLE_RECENT"] if window == "recent" else ["LOW_SAMPLE_BATTER"]
+        )
+        return empty
 
+    dmg_floor = 5 if window == "recent" else 8
+    swing_floor = 12 if window == "recent" else 25
     dmg = zone_df[
-        (zone_df["bip"] >= 8) & zone_df["xwoba_bip"].notna()
+        (zone_df["bip"] >= dmg_floor) & zone_df["xwoba_bip"].notna()
     ].sort_values("xwoba_bip", ascending=False)
-    swing = zone_df[zone_df["n"] >= 25].sort_values("swing_pct", ascending=False)
+    swing = zone_df[zone_df["n"] >= swing_floor].sort_values(
+        "swing_pct", ascending=False
+    )
     stand = None
     if "stand" in d.columns and len(d):
         stand = str(d["stand"].mode().iloc[0])
 
+    flags: list[str] = []
+    n_pitches = int(len(d))
+    if window == "season" and n_pitches < LOW_BATTER_PITCHES_VS_HAND:
+        flags.append("LOW_SAMPLE_BATTER")
+    if window == "recent" and n_pitches < LOW_RECENT_PITCHES_VS_HAND:
+        flags.append("LOW_SAMPLE_RECENT")
+
     return {
         "name": name,
         "vs_hand": vs_hand,
-        "n_pitches": int(len(d)),
+        "window": window,
+        "n_pitches": n_pitches,
         "stand": stand,
+        "sample_flags": flags,
         "swing_pct": round(100 * float(d["is_swing"].mean()), 1) if len(d) else None,
         "whiff_of_swing": (
             round(
@@ -305,9 +364,23 @@ def analyze_batter_vs_hand(
     }
 
 
+def _risk_from_share_xwoba(share: float, xw: float | None) -> str:
+    if xw is None:
+        return "—"
+    if float(xw) >= 0.400 and float(share) >= 0.06:
+        return "HOT"
+    if float(xw) >= 0.350 and float(share) >= 0.05:
+        return "WARM"
+    if float(xw) <= 0.280 and float(share) >= 0.07:
+        return "COLD"
+    return "—"
+
+
 def overlap_rows(
     batter: dict[str, Any],
     pitcher_stand_block: dict[str, Any],
+    *,
+    low_bip: int = LOW_ZONE_BIP,
 ) -> list[dict[str, Any]]:
     """Join pitcher zone share vs batter damage for the batter's stand."""
     share_map = pitcher_stand_block.get("zone_share") or {}
@@ -319,16 +392,14 @@ def overlap_rows(
         if not b:
             continue
         xw = b.get("xwoba_bip")
+        bip = int(b.get("bip") or 0)
         score = None
-        if xw is not None and b.get("bip", 0) >= 6:
+        if xw is not None and bip >= 6:
             score = round(float(share) * float(xw) * 100, 2)
-        risk = "—"
-        if xw is not None and float(xw) >= 0.400 and float(share) >= 0.06:
-            risk = "HOT"
-        elif xw is not None and float(xw) >= 0.350 and float(share) >= 0.05:
-            risk = "WARM"
-        elif xw is not None and float(xw) <= 0.280 and float(share) >= 0.07:
-            risk = "COLD"
+        risk = _risk_from_share_xwoba(float(share), xw)
+        flags: list[str] = []
+        if risk in ("HOT", "WARM", "COLD") and bip < int(low_bip):
+            flags.append("LOW_SAMPLE_ZONE")
         rows.append(
             {
                 "zone": z,
@@ -338,9 +409,10 @@ def overlap_rows(
                 "batter_xwoba": xw,
                 "batter_ev": b.get("ev_bip"),
                 "batter_barrel": b.get("barrel_bip"),
-                "bip": b.get("bip"),
+                "bip": bip,
                 "overlap_score": score,
                 "risk": risk,
+                "sample_flags": flags,
             }
         )
     rows.sort(
@@ -351,6 +423,130 @@ def overlap_rows(
         reverse=True,
     )
     return rows
+
+
+def _agreement_tag(season_risk: str, recent_risk: str | None) -> str | None:
+    """How season and recent zone flags line up."""
+    s = season_risk if season_risk in ("HOT", "WARM", "COLD") else None
+    r = recent_risk if recent_risk in ("HOT", "WARM", "COLD") else None
+    if not s and not r:
+        return None
+    if s and r:
+        if s == r:
+            return "CONFIRM"
+        # HOT vs COLD (or reverse) is a real conflict; HOT vs WARM = soft confirm
+        if {s, r} == {"HOT", "COLD"} or {s, r} == {"WARM", "COLD"}:
+            return "CONFLICT"
+        if {s, r} <= {"HOT", "WARM"}:
+            return "CONFIRM"
+        return "CONFLICT"
+    if s and not r:
+        return "SEASON_ONLY"
+    return "RECENT_ONLY"
+
+
+def merge_season_recent_overlaps(
+    season_rows: list[dict[str, Any]],
+    recent_rows: list[dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    """Attach recent risk/xwOBA onto season overlap rows + agreement tags."""
+    recent_map = {int(r["zone"]): r for r in (recent_rows or [])}
+    out: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    for row in season_rows:
+        z = int(row["zone"])
+        seen.add(z)
+        rr = recent_map.get(z)
+        merged = dict(row)
+        merged["season_risk"] = row.get("risk")
+        merged["recent_risk"] = rr.get("risk") if rr else None
+        merged["recent_xwoba"] = rr.get("batter_xwoba") if rr else None
+        merged["recent_bip"] = rr.get("bip") if rr else None
+        merged["recent_pitcher_pct"] = rr.get("pitcher_pct") if rr else None
+        flags = list(row.get("sample_flags") or [])
+        if rr:
+            for f in rr.get("sample_flags") or []:
+                if f not in flags:
+                    flags.append(f)
+            if (rr.get("bip") or 0) < LOW_RECENT_ZONE_BIP and rr.get("risk") in (
+                "HOT",
+                "WARM",
+                "COLD",
+            ):
+                if "LOW_SAMPLE_RECENT" not in flags:
+                    flags.append("LOW_SAMPLE_RECENT")
+        merged["sample_flags"] = flags
+        merged["agreement"] = _agreement_tag(
+            str(merged.get("season_risk") or "—"),
+            merged.get("recent_risk"),
+        )
+        # Prefer confirmed HOTs when sorting
+        conf_boost = 1 if merged.get("agreement") == "CONFIRM" else 0
+        merged["_sort_boost"] = conf_boost
+        out.append(merged)
+
+    # Recent-only zones that season missed (still on pitcher tunnel)
+    for z, rr in recent_map.items():
+        if z in seen:
+            continue
+        if rr.get("risk") not in ("HOT", "WARM", "COLD"):
+            continue
+        flags = list(rr.get("sample_flags") or [])
+        if "LOW_SAMPLE_RECENT" not in flags:
+            flags.append("LOW_SAMPLE_RECENT")
+        out.append(
+            {
+                "zone": z,
+                "label": rr.get("label") or ZONE_LABEL.get(z, str(z)),
+                "pitcher_pct": rr.get("pitcher_pct"),
+                "batter_swing": rr.get("batter_swing"),
+                "batter_xwoba": rr.get("batter_xwoba"),
+                "batter_ev": rr.get("batter_ev"),
+                "batter_barrel": rr.get("batter_barrel"),
+                "bip": rr.get("bip"),
+                "overlap_score": rr.get("overlap_score"),
+                "risk": rr.get("risk"),  # surface recent for viz
+                "season_risk": "—",
+                "recent_risk": rr.get("risk"),
+                "recent_xwoba": rr.get("batter_xwoba"),
+                "recent_bip": rr.get("bip"),
+                "recent_pitcher_pct": rr.get("pitcher_pct"),
+                "sample_flags": flags,
+                "agreement": "RECENT_ONLY",
+                "_sort_boost": 0,
+            }
+        )
+
+    out.sort(
+        key=lambda r: (
+            r.get("_sort_boost") or 0,
+            r.get("overlap_score") is not None,
+            r.get("overlap_score") or 0,
+        ),
+        reverse=True,
+    )
+    for r in out:
+        r.pop("_sort_boost", None)
+    return out
+
+
+def batter_sample_summary(
+    season: dict[str, Any],
+    recent: dict[str, Any] | None,
+) -> list[str]:
+    """Player-level FYI flags for the lean card."""
+    flags: list[str] = []
+    for f in season.get("sample_flags") or []:
+        if f not in flags:
+            flags.append(f)
+    if recent:
+        for f in recent.get("sample_flags") or []:
+            if f not in flags:
+                flags.append(f)
+        if int(recent.get("n_pitches") or 0) < LOW_RECENT_PITCHES_VS_HAND:
+            if "LOW_SAMPLE_RECENT" not in flags:
+                flags.append("LOW_SAMPLE_RECENT")
+    return flags
 
 
 def slugify(name: str) -> str:
@@ -373,6 +569,7 @@ def render_markdown(
     batters: list[dict[str, Any]],
     overlaps: dict[str, list[dict[str, Any]]],
     hits_rows: list[dict[str, Any]] | None = None,
+    recent_days: int | None = None,
 ) -> str:
     lines: list[str] = []
     lines.append(f"# Zone overlap — vs {pitcher_name} ({year} Statcast)")
@@ -383,9 +580,19 @@ def render_markdown(
         f"**Pitcher:** {pitcher_name} ({pitcher_hand}HP, id {pitcher_id}) · "
         f"n={pitcher_sum.get('n')} pitches"
     )
+    recent_meta = pitcher_sum.get("recent") or {}
+    if recent_days:
+        rn = recent_meta.get("n")
+        lines.append(
+            f"**Windows:** season + **last {recent_days}d**"
+            + (f" (pitcher recent n={rn})" if rn is not None else "")
+        )
     lines.append("")
     lines.append(
-        "Catcher’s view. Display-only — does not change Exp K or hits scores."
+        "Catcher’s view. Display-only — does not change Exp K or hits scores. "
+        "HOT/WARM/COLD use **season** pitcher location × batter damage; "
+        "**recent** confirms or flags conflict. "
+        "`LOW_SAMPLE_*` = FYI — size down, don’t veto automatically."
     )
     lines.append("")
     mix = pitcher_sum.get("by_pitch") or {}
@@ -452,44 +659,113 @@ def render_markdown(
     lines.append("")
     for b in batters:
         name = b["name"]
+        recent_b = b.get("recent") or {}
+        rn = recent_b.get("n_pitches")
         lines.append(
             f"### {name} (stand {b.get('stand')}, vs {b.get('vs_hand')}HP, "
-            f"n={b.get('n_pitches')})"
+            f"season n={b.get('n_pitches')}"
+            + (f", recent n={rn}" if rn is not None else "")
+            + ")"
         )
+        flags = b.get("sample_flags") or []
+        if flags:
+            lines.append(
+                "- **FYI sample:** "
+                + ", ".join(flags)
+                + " — thin MLB / recent sample; inform size, don’t auto-fade"
+            )
         lines.append(
             f"- Swing {b.get('swing_pct')}% · whiff/swing {b.get('whiff_of_swing')}%"
         )
         if b.get("top_swing_zones"):
-            lines.append("- **Top swing:** " + "; ".join(
+            lines.append("- **Top swing (season):** " + "; ".join(
                 f"{r['label']} {r['swing_pct']}%" for r in b["top_swing_zones"][:4]
             ))
         if b.get("top_damage_zones"):
-            lines.append("- **Top damage (xwOBA BIP):** " + "; ".join(
+            lines.append("- **Top damage season (xwOBA BIP):** " + "; ".join(
                 f"{r['label']} {r['xwoba_bip']:.3f} "
-                f"(EV {r['ev_bip']}, brl {r['barrel_bip']}%)"
+                f"(EV {r['ev_bip']}, brl {r['barrel_bip']}%, BIP {r['bip']})"
                 for r in b["top_damage_zones"][:4]
             ))
+        if recent_b.get("top_damage_zones"):
+            lines.append(
+                f"- **Top damage recent ({recent_days or '?'}d):** "
+                + "; ".join(
+                    f"{r['label']} {r['xwoba_bip']:.3f} (BIP {r['bip']})"
+                    for r in recent_b["top_damage_zones"][:4]
+                )
+            )
         ov = overlaps.get(name) or []
-        hot = [r for r in ov if r["risk"] in ("HOT", "WARM") and r.get("batter_xwoba") is not None]
-        cold = [r for r in ov if r["risk"] == "COLD"]
+        hot = [
+            r
+            for r in ov
+            if (r.get("season_risk") or r.get("risk")) in ("HOT", "WARM")
+            and r.get("batter_xwoba") is not None
+        ]
+        cold = [
+            r for r in ov if (r.get("season_risk") or r.get("risk")) == "COLD"
+        ]
         if hot:
-            lines.append("- **HOT/WARM overlap:** " + "; ".join(
-                f"{r['risk']} {r['label']} (W {r['pitcher_pct']}%, "
-                f"xwOBA {r['batter_xwoba']})"
-                for r in hot[:5]
-            ))
+            bits = []
+            for r in hot[:5]:
+                ag = r.get("agreement") or ""
+                ag_s = f" · {ag}" if ag else ""
+                recent_bit = ""
+                if r.get("recent_risk"):
+                    recent_bit = (
+                        f", recent {r['recent_risk']} "
+                        f"xwOBA {r.get('recent_xwoba')} BIP {r.get('recent_bip')}"
+                    )
+                thin = ""
+                if r.get("sample_flags"):
+                    thin = " [" + ",".join(r["sample_flags"]) + "]"
+                bits.append(
+                    f"{r.get('season_risk') or r.get('risk')} {r['label']} "
+                    f"(W {r['pitcher_pct']}%, xwOBA {r['batter_xwoba']}"
+                    f"{recent_bit}{ag_s}){thin}"
+                )
+            lines.append("- **HOT/WARM overlap:** " + "; ".join(bits))
         if cold:
             lines.append("- **COLD vs his tunnel:** " + "; ".join(
-                f"{r['label']} (W {r['pitcher_pct']}%, xwOBA {r['batter_xwoba']})"
+                f"{r['label']} (W {r['pitcher_pct']}%, xwOBA {r['batter_xwoba']}"
+                + (
+                    f", recent {r['recent_risk']}"
+                    if r.get("recent_risk")
+                    else ""
+                )
+                + (f" · {r['agreement']}" if r.get("agreement") else "")
+                + ")"
                 for r in cold[:3]
             ))
+        confirm = [r for r in ov if r.get("agreement") == "CONFIRM"]
+        conflict = [r for r in ov if r.get("agreement") == "CONFLICT"]
+        if confirm:
+            lines.append(
+                "- **Season ∩ recent CONFIRM:** "
+                + ", ".join(
+                    f"{r.get('season_risk') or r.get('risk')} {r['label']}"
+                    for r in confirm[:5]
+                )
+            )
+        if conflict:
+            lines.append(
+                "- **Season vs recent CONFLICT:** "
+                + ", ".join(
+                    f"{r['label']} ({r.get('season_risk')}→{r.get('recent_risk')})"
+                    for r in conflict[:4]
+                )
+            )
         lines.append("")
 
     if hits_rows:
         lines.append("## Hits / H+R+RBI board (same slate)")
         lines.append("")
-        lines.append("| Slot | Batter | Hits | HR/RBI | AVG vs hand | Barrel | HH | Zone note |")
-        lines.append("|------|--------|------|--------|-------------|--------|----|-----------|")
+        lines.append(
+            "| Slot | Batter | Hits | HR/RBI | AVG vs hand | Barrel | HH | Zone note |"
+        )
+        lines.append(
+            "|------|--------|------|--------|-------------|--------|----|-----------|"
+        )
         for r in hits_rows:
             note = r.get("zone_note") or "—"
             lines.append(
@@ -503,7 +779,8 @@ def render_markdown(
 
     lines.append(
         "*Generated by `mlb-k-matchups/zone_overlap.py` — re-run on future "
-        "slates with `--hits` + `--pitcher`.*"
+        "slates with `--hits` + `--pitcher`. Prefer CONFIRM HOTs; treat "
+        "`LOW_SAMPLE_*` as sizing FYI.*"
     )
     return "\n".join(lines) + "\n"
 
@@ -577,17 +854,39 @@ def resolve_pitcher_id(
     return int(m["pitcher_id"].iloc[0]), str(m["pitch_hand"].iloc[0])
 
 
-def zone_note_for_batter(ov: list[dict[str, Any]]) -> str:
-    hot = [r for r in ov if r["risk"] == "HOT"]
-    warm = [r for r in ov if r["risk"] == "WARM"]
-    cold = [r for r in ov if r["risk"] == "COLD"]
-    bits = []
-    if hot:
+def zone_note_for_batter(
+    ov: list[dict[str, Any]],
+    *,
+    sample_flags: list[str] | None = None,
+) -> str:
+    """Compact note for hits-board table: risk + agreement + sample FYI."""
+    def _season_risk(r: dict[str, Any]) -> str:
+        return str(r.get("season_risk") or r.get("risk") or "—")
+
+    hot = [r for r in ov if _season_risk(r) == "HOT"]
+    warm = [r for r in ov if _season_risk(r) == "WARM"]
+    cold = [r for r in ov if _season_risk(r) == "COLD"]
+    confirm = [r for r in ov if r.get("agreement") == "CONFIRM"]
+    bits: list[str] = []
+    if confirm:
+        bits.append(
+            "CONFIRM "
+            + "/".join(
+                f"{_season_risk(r)} {r['label']}" for r in confirm[:2]
+            )
+        )
+    elif hot:
         bits.append("HOT " + "/".join(r["label"] for r in hot[:2]))
     elif warm:
         bits.append("WARM " + "/".join(r["label"] for r in warm[:2]))
     if cold:
         bits.append("COLD " + cold[0]["label"])
+    conflict = [r for r in ov if r.get("agreement") == "CONFLICT"]
+    if conflict:
+        bits.append("CONFLICT " + conflict[0]["label"])
+    thin = [f for f in (sample_flags or []) if f.startswith("LOW_SAMPLE")]
+    if thin:
+        bits.append("+".join(thin[:2]))
     return "; ".join(bits) if bits else "—"
 
 
@@ -599,6 +898,8 @@ def run_overlap(
     year: int,
     batter_specs: list[dict[str, Any]],
     game: str | None = None,
+    recent_days: int | None = DEFAULT_RECENT_DAYS,
+    as_of: date | None = None,
 ) -> dict[str, Any]:
     print(f"Fetching {pitcher_name} ({pitcher_id}) {year} Statcast…")
     pdf = fetch_pitcher_pitches(pitcher_id, year)
@@ -606,6 +907,22 @@ def run_overlap(
         raise SystemExit(f"No Statcast pitches for pitcher_id={pitcher_id} year={year}")
     p_sum = analyze_pitcher(pdf)
     vs_hand = pitcher_hand.upper()[0]
+
+    # Recent pitcher location only if enough pitches; else keep season tunnel.
+    p_recent_sum: dict[str, Any] | None = None
+    if recent_days and recent_days > 0:
+        pdf_r = filter_by_recent_days(pdf, recent_days, as_of=as_of)
+        if len(pdf_r) >= MIN_PITCHER_RECENT_PITCHES:
+            p_recent_sum = analyze_pitcher(pdf_r)
+            print(
+                f"  pitcher recent {recent_days}d: n={len(pdf_r)} "
+                f"(using recent throw% for recent overlaps)"
+            )
+        else:
+            print(
+                f"  pitcher recent {recent_days}d: n={len(pdf_r)} "
+                f"< {MIN_PITCHER_RECENT_PITCHES} — season throw% only"
+            )
 
     batter_results: list[dict[str, Any]] = []
     overlaps: dict[str, list[dict[str, Any]]] = {}
@@ -615,20 +932,66 @@ def run_overlap(
         print(f"  batter {name} ({bid})…")
         bdf = fetch_batter_pitches(bid, year)
         if bdf.empty:
-            print(f"    skip — no pitches")
+            print("    skip — no pitches")
             continue
-        b_sum = analyze_batter_vs_hand(bdf, name=name, vs_hand=vs_hand)
+        b_sum = analyze_batter_vs_hand(
+            bdf,
+            name=name,
+            vs_hand=vs_hand,
+            min_zone_pitches=SEASON_MIN_ZONE_PITCHES,
+            min_bip_xwoba=SEASON_MIN_BIP_XWOBA,
+            window="season",
+        )
         stand = b_sum.get("stand") or "R"
         block = (p_sum.get("by_stand") or {}).get(stand) or {}
-        ov = overlap_rows(b_sum, block) if block else []
-        # strip private frames
+        season_ov = overlap_rows(b_sum, block, low_bip=LOW_ZONE_BIP) if block else []
+
+        recent_sum: dict[str, Any] | None = None
+        recent_ov: list[dict[str, Any]] | None = None
+        if recent_days and recent_days > 0:
+            bdf_r = filter_by_recent_days(bdf, recent_days, as_of=as_of)
+            recent_sum = analyze_batter_vs_hand(
+                bdf_r,
+                name=name,
+                vs_hand=vs_hand,
+                min_zone_pitches=RECENT_MIN_ZONE_PITCHES,
+                min_bip_xwoba=RECENT_MIN_BIP_XWOBA,
+                window="recent",
+            )
+            # Prefer recent pitcher location when sample is enough; else season plan.
+            r_block = block
+            if p_recent_sum:
+                r_block = (p_recent_sum.get("by_stand") or {}).get(stand) or block
+            recent_ov = (
+                overlap_rows(recent_sum, r_block, low_bip=LOW_RECENT_ZONE_BIP)
+                if r_block
+                else []
+            )
+            print(
+                f"    season n={b_sum.get('n_pitches')} · "
+                f"recent{recent_days}d n={recent_sum.get('n_pitches')}"
+            )
+
+        merged = merge_season_recent_overlaps(season_ov, recent_ov)
         clean = {k: v for k, v in b_sum.items() if not k.startswith("_")}
         clean["slot"] = spec.get("slot")
         clean["team"] = spec.get("team")
+        if recent_sum is not None:
+            clean["recent"] = {
+                k: v for k, v in recent_sum.items() if not k.startswith("_")
+            }
+        clean["sample_flags"] = batter_sample_summary(b_sum, recent_sum)
         batter_results.append(clean)
-        overlaps[name] = ov
+        overlaps[name] = merged
 
     p_clean = {k: v for k, v in p_sum.items() if not k.startswith("_")}
+    if recent_days:
+        p_clean["recent_days"] = recent_days
+        p_clean["recent"] = {
+            "n": int(len(filter_by_recent_days(pdf, recent_days, as_of=as_of))),
+            "used_for_throw_pct": p_recent_sum is not None,
+            "as_of": (as_of or date.today()).isoformat(),
+        }
     return {
         "pitcher": {
             "name": pitcher_name,
@@ -640,6 +1003,16 @@ def run_overlap(
         },
         "batters": batter_results,
         "overlaps": overlaps,
+        "meta": {
+            "recent_days": recent_days,
+            "as_of": (as_of or date.today()).isoformat() if recent_days else None,
+            "thresholds": {
+                "low_batter_pitches_vs_hand": LOW_BATTER_PITCHES_VS_HAND,
+                "low_zone_bip": LOW_ZONE_BIP,
+                "low_recent_pitches_vs_hand": LOW_RECENT_PITCHES_VS_HAND,
+                "low_recent_zone_bip": LOW_RECENT_ZONE_BIP,
+            },
+        },
     }
 
 
@@ -710,6 +1083,26 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Skip Statcast fetch — rebuild markdown/images from an existing overlap JSON",
     )
+    p.add_argument(
+        "--recent-days",
+        type=int,
+        default=DEFAULT_RECENT_DAYS,
+        help=(
+            "Also score a rolling recent window (default: "
+            f"{DEFAULT_RECENT_DAYS}). Use 0 with --no-recent to skip."
+        ),
+    )
+    p.add_argument(
+        "--recent",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Compare season HOTs to a recent Statcast window (default: on)",
+    )
+    p.add_argument(
+        "--as-of",
+        default=None,
+        help="End date for recent window YYYY-MM-DD (default: today)",
+    )
     return p.parse_args(argv)
 
 
@@ -717,6 +1110,14 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     game = None
     hits_rows: list[dict[str, Any]] | None = None
+    recent_days = int(args.recent_days) if args.recent else 0
+    if recent_days <= 0:
+        recent_days_opt: int | None = None
+    else:
+        recent_days_opt = recent_days
+    as_of_date: date | None = None
+    if args.as_of:
+        as_of_date = date.fromisoformat(str(args.as_of))
 
     # Rebuild images / notes from a prior JSON (no Statcast re-pull)
     if args.from_json:
@@ -736,6 +1137,7 @@ def main(argv: list[str] | None = None) -> None:
         )
         md_path = Path(str(prefix) + ".md")
         json_path = Path(str(prefix) + ".json")
+        meta = payload.get("meta") or {}
         md = render_markdown(
             pitcher_name=args.pitcher,
             pitcher_id=pid,
@@ -746,6 +1148,7 @@ def main(argv: list[str] | None = None) -> None:
             batters=payload.get("batters") or [],
             overlaps=payload.get("overlaps") or {},
             hits_rows=None,
+            recent_days=meta.get("recent_days") or pitcher.get("recent_days"),
         )
         md_path.write_text(md)
         json_path.write_text(json.dumps(payload, indent=2, default=str))
@@ -808,13 +1211,17 @@ def main(argv: list[str] | None = None) -> None:
         year=args.year,
         batter_specs=batter_specs,
         game=game,
+        recent_days=recent_days_opt,
+        as_of=as_of_date,
     )
 
     # Attach zone notes onto hits rows
     if hits_rows is not None:
+        batter_by_name = {b["name"]: b for b in payload.get("batters") or []}
         for row in hits_rows:
             ov = payload["overlaps"].get(row["batter"]) or []
-            row["zone_note"] = zone_note_for_batter(ov)
+            flags = (batter_by_name.get(row["batter"]) or {}).get("sample_flags")
+            row["zone_note"] = zone_note_for_batter(ov, sample_flags=flags)
 
     # Default output prefix
     date_bit = ""
@@ -837,6 +1244,7 @@ def main(argv: list[str] | None = None) -> None:
         batters=payload["batters"],
         overlaps=payload["overlaps"],
         hits_rows=hits_rows,
+        recent_days=recent_days_opt,
     )
     md_path = Path(str(prefix) + ".md") if prefix.suffix != ".md" else prefix
     if prefix.suffix == ".md":

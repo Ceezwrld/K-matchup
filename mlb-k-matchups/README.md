@@ -75,10 +75,29 @@ Barrel%, hard-hit% (EV95%), xwOBA/xBA from Savant plus AVG vs pitcher hand feed 
 
 Statcast pitch-level location (`zone` / `plate_x`/`plate_z`) for a starter vs each opposing batter’s swing% and BIP damage (xwOBA / EV / barrel). Flags **HOT** (he throws there + they crush it), **WARM**, and **COLD** (his tunnel, their weak pocket). Use after the hits board to confirm Hits / H+R+RBI leans.
 
+**Season + recent (default):** each batter also gets a rolling **last 30 days** damage window. Agreement tags:
+- `CONFIRM` — season and recent agree (size up)
+- `SEASON_ONLY` / `RECENT_ONLY` — one window only
+- `CONFLICT` — season HOT/WARM vs recent COLD (or reverse)
+
+**Low-sample FYI flags** (do not auto-veto — inform sizing):
+- `LOW_SAMPLE_BATTER` — thin season pitches vs that hand
+- `LOW_SAMPLE_ZONE` — HOT/WARM/COLD zone with &lt;~15 BIP
+- `LOW_SAMPLE_RECENT` — recent window too small to trust alone
+
 ```bash
 # Full opposing lineup from today's hits CSV (+ PNG heatmaps by default)
 python3 mlb-k-matchups/zone_overlap.py \
   --hits hits-YYYY-MM-DD.csv --pitcher "Griffin Jax"
+
+# Custom recent window / as-of date
+python3 mlb-k-matchups/zone_overlap.py \
+  --hits hits-YYYY-MM-DD.csv --pitcher "Nick Martinez" \
+  --recent-days 30 --as-of 2026-10-17
+
+# Season only
+python3 mlb-k-matchups/zone_overlap.py \
+  --hits hits-YYYY-MM-DD.csv --pitcher "Nick Martinez" --no-recent
 
 # Top N by hits_score only
 python3 mlb-k-matchups/zone_overlap.py \
@@ -90,14 +109,14 @@ python3 mlb-k-matchups/zone_overlap.py \
 ```
 
 Writes:
-- `zone-overlap-<pitcher>-<date>.md` + `.json` — HOT/WARM/COLD text
+- `zone-overlap-<pitcher>-<date>.md` + `.json` — HOT/WARM/COLD + recent agreement + sample flags
 - `zone-maps/<pitcher>-<date>/` — **PNG heatmaps** (pitcher throw %, batter damage xwOBA, overlap) + `index.html` gallery
 
 Catcher’s-view plates:
 - **Pitch plan panels** — where each pitch type (FF/SL/KC/…) lands vs **LHB and RHB** separately  
 - Blue overall throw % · green/red batter BIP damage · overlap cells show **`W% + primary pitch`** · red/blue outlines = HOT/COLD  
 
-Display-only — does not change Exp K or hits scores. Needs network to Baseball Savant on first pull (~1–2 min per pitcher+lineup); `matplotlib` required for PNGs.
+Display-only — does not change Exp K or hits scores. Needs network to Baseball Savant on first pull (~1–2 min per pitcher+lineup); `matplotlib` required for PNGs. Prefer **CONFIRM** HOTs with board backup; treat `LOW_SAMPLE_*` as sizing FYI.
 
 If a starter is missing from the Savant arsenal board (common for returning arms below the default `min` PA filter), the model falls back to **Statcast pitch-level usage** for that pitcher instead of leaving them unscored.
 

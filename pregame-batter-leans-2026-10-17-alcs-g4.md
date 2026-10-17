@@ -6,6 +6,8 @@
 
 Bulk watch: **Griffin (L)** · **Cantillo (L)** · Bibee/Cecconi (R)
 
+**Sharper layer (new):** season ∩ **last 30d** heatmaps + `LOW_SAMPLE_*` FYI flags — see `pregame-batter-leans-2026-10-17-alcs-g4-sharpened.md` and `zone-overlap-*-2026-10-17.md`. Prefer **CONFIRM** HOTs; Halpin tagged `LOW_SAMPLE_RECENT`.
+
 ---
 
 ## Official lineups

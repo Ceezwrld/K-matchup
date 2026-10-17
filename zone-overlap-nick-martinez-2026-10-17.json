@@ -1,0 +1,6523 @@
+{
+  "pitcher": {
+    "name": "Nick Martinez",
+    "id": 607259,
+    "hand": "R",
+    "year": 2026,
+    "game": "TB@CLE",
+    "n": 2849,
+    "by_pitch": {
+      "SI": 0.306,
+      "CH": 0.259,
+      "FC": 0.22,
+      "FF": 0.13,
+      "SL": 0.044,
+      "CU": 0.04,
+      "PO": 0.001
+    },
+    "velo": {
+      "CH": 78.2,
+      "CU": 79.9,
+      "FC": 89.2,
+      "FF": 92.7,
+      "PO": 93.2,
+      "SI": 92.4,
+      "SL": 85.2
+    },
+    "by_stand": {
+      "L": {
+        "n": 1655,
+        "inzone": 0.537,
+        "heart": 0.082,
+        "mean_px": -0.027,
+        "mean_pz": 2.393,
+        "top_zones": {
+          "OUT-DN-3B": 0.14,
+          "OUT-UP-1B": 0.112,
+          "OUT-UP-3B": 0.108,
+          "OUT-DN-1B": 0.102,
+          "HEART": 0.082,
+          "MID-AWAY": 0.073
+        },
+        "pitch_usage": {
+          "CH": 0.291,
+          "SI": 0.249,
+          "FC": 0.225,
+          "FF": 0.144,
+          "SL": 0.046,
+          "CU": 0.044,
+          "PO": 0.001
+        },
+        "pitch_loc": {
+          "CH": {
+            "OUT-DN-3B": 0.362,
+            "OUT-UP-3B": 0.16,
+            "LO-IN": 0.098
+          },
+          "CU": {
+            "OUT-UP-3B": 0.167,
+            "OUT-DN-3B": 0.167,
+            "OUT-DN-1B": 0.167
+          },
+          "FC": {
+            "OUT-UP-1B": 0.18,
+            "OUT-DN-1B": 0.15,
+            "MID-AWAY": 0.139
+          },
+          "FF": {
+            "OUT-UP-3B": 0.192,
+            "OUT-UP-1B": 0.134,
+            "MID-IN": 0.109
+          },
+          "SI": {
+            "OUT-UP-1B": 0.189,
+            "HI-AWAY (1B)": 0.153,
+            "MID-AWAY": 0.133
+          },
+          "SL": {
+            "OUT-DN-3B": 0.237,
+            "OUT-DN-1B": 0.158,
+            "HEART": 0.132
+          }
+        },
+        "pitch_loc_zones": {
+          "CH": {
+            "13": 0.3617,
+            "11": 0.1601,
+            "7": 0.0977,
+            "4": 0.0873,
+            "14": 0.0852,
+            "8": 0.0603,
+            "5": 0.0541,
+            "1": 0.0457,
+            "9": 0.0166,
+            "2": 0.0146,
+            "12": 0.0125,
+            "6": 0.0021,
+            "3": 0.0021
+          },
+          "CU": {
+            "11": 0.1667,
+            "13": 0.1667,
+            "14": 0.1667,
+            "4": 0.125,
+            "5": 0.0833,
+            "1": 0.0694,
+            "7": 0.0556,
+            "2": 0.0556,
+            "8": 0.0417,
+            "9": 0.0417,
+            "12": 0.0139,
+            "6": 0.0139
+          },
+          "FC": {
+            "12": 0.1796,
+            "14": 0.1501,
+            "6": 0.1394,
+            "5": 0.0965,
+            "2": 0.0938,
+            "9": 0.0643,
+            "3": 0.0563,
+            "11": 0.0483,
+            "8": 0.0483,
+            "13": 0.0429,
+            "4": 0.0349,
+            "1": 0.0241,
+            "7": 0.0214
+          },
+          "FF": {
+            "11": 0.1925,
+            "12": 0.1339,
+            "4": 0.1088,
+            "2": 0.1046,
+            "1": 0.0921,
+            "5": 0.0879,
+            "3": 0.0628,
+            "8": 0.0502,
+            "6": 0.046,
+            "14": 0.0418,
+            "13": 0.0293,
+            "7": 0.0293,
+            "9": 0.0209
+          },
+          "SI": {
+            "12": 0.1893,
+            "3": 0.1529,
+            "6": 0.1335,
+            "2": 0.1068,
+            "14": 0.0922,
+            "5": 0.0874,
+            "9": 0.0704,
+            "8": 0.0485,
+            "11": 0.0437,
+            "1": 0.0316,
+            "4": 0.0267,
+            "13": 0.0121,
+            "7": 0.0049
+          },
+          "SL": {
+            "13": 0.2368,
+            "14": 0.1579,
+            "5": 0.1316,
+            "11": 0.1053,
+            "7": 0.1053,
+            "8": 0.0789,
+            "4": 0.0658,
+            "1": 0.0658,
+            "2": 0.0263,
+            "6": 0.0132,
+            "9": 0.0132
+          }
+        },
+        "zone_pitch_mix": {
+          "1": [
+            {
+              "pitch": "FF",
+              "share": 0.289,
+              "label": "HI-IN (3B)"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.289,
+              "label": "HI-IN (3B)"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.171,
+              "label": "HI-IN (3B)"
+            }
+          ],
+          "2": [
+            {
+              "pitch": "SI",
+              "share": 0.376,
+              "label": "HI-MID"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.299,
+              "label": "HI-MID"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.214,
+              "label": "HI-MID"
+            }
+          ],
+          "3": [
+            {
+              "pitch": "SI",
+              "share": 0.63,
+              "label": "HI-AWAY (1B)"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.21,
+              "label": "HI-AWAY (1B)"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.15,
+              "label": "HI-AWAY (1B)"
+            }
+          ],
+          "4": [
+            {
+              "pitch": "CH",
+              "share": 0.396,
+              "label": "MID-IN"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.245,
+              "label": "MID-IN"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.123,
+              "label": "MID-IN"
+            }
+          ],
+          "5": [
+            {
+              "pitch": "SI",
+              "share": 0.267,
+              "label": "HEART"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.267,
+              "label": "HEART"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.193,
+              "label": "HEART"
+            }
+          ],
+          "6": [
+            {
+              "pitch": "SI",
+              "share": 0.455,
+              "label": "MID-AWAY"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.43,
+              "label": "MID-AWAY"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.091,
+              "label": "MID-AWAY"
+            }
+          ],
+          "7": [
+            {
+              "pitch": "CH",
+              "share": 0.618,
+              "label": "LO-IN"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.105,
+              "label": "LO-IN"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.105,
+              "label": "LO-IN"
+            }
+          ],
+          "8": [
+            {
+              "pitch": "CH",
+              "share": 0.33,
+              "label": "LO-MID"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.227,
+              "label": "LO-MID"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.205,
+              "label": "LO-MID"
+            }
+          ],
+          "9": [
+            {
+              "pitch": "SI",
+              "share": 0.414,
+              "label": "LO-AWAY"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.343,
+              "label": "LO-AWAY"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.114,
+              "label": "LO-AWAY"
+            }
+          ],
+          "11": [
+            {
+              "pitch": "CH",
+              "share": 0.43,
+              "label": "OUT-UP-3B"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.257,
+              "label": "OUT-UP-3B"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.101,
+              "label": "OUT-UP-3B"
+            }
+          ],
+          "12": [
+            {
+              "pitch": "SI",
+              "share": 0.419,
+              "label": "OUT-UP-1B"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.36,
+              "label": "OUT-UP-1B"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.172,
+              "label": "OUT-UP-1B"
+            }
+          ],
+          "13": [
+            {
+              "pitch": "CH",
+              "share": 0.75,
+              "label": "OUT-DN-3B"
+            },
+            {
+              "pitch": "SL",
+              "share": 0.078,
+              "label": "OUT-DN-3B"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.069,
+              "label": "OUT-DN-3B"
+            }
+          ],
+          "14": [
+            {
+              "pitch": "FC",
+              "share": 0.331,
+              "label": "OUT-DN-1B"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.243,
+              "label": "OUT-DN-1B"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.225,
+              "label": "OUT-DN-1B"
+            }
+          ]
+        },
+        "zone_share": {
+          "1": 0.0459,
+          "2": 0.0707,
+          "3": 0.0604,
+          "4": 0.064,
+          "5": 0.0816,
+          "6": 0.0731,
+          "7": 0.0459,
+          "8": 0.0532,
+          "9": 0.0423,
+          "11": 0.1082,
+          "12": 0.1124,
+          "13": 0.1402,
+          "14": 0.1021
+        }
+      },
+      "R": {
+        "n": 1194,
+        "inzone": 0.511,
+        "heart": 0.076,
+        "mean_px": -0.027,
+        "mean_pz": 2.189,
+        "top_zones": {
+          "OUT-DN-1B": 0.18,
+          "OUT-UP-3B": 0.126,
+          "OUT-DN-3B": 0.121,
+          "HEART": 0.076,
+          "LO-MID": 0.064,
+          "LO-AWAY": 0.063
+        },
+        "pitch_usage": {
+          "SI": 0.384,
+          "CH": 0.216,
+          "FC": 0.213,
+          "FF": 0.109,
+          "SL": 0.042,
+          "CU": 0.036
+        },
+        "pitch_loc": {
+          "CH": {
+            "OUT-DN-3B": 0.329,
+            "OUT-DN-1B": 0.244,
+            "OUT-UP-3B": 0.074
+          },
+          "CU": {
+            "OUT-DN-1B": 0.209,
+            "OUT-DN-3B": 0.209,
+            "OUT-UP-3B": 0.186
+          },
+          "FC": {
+            "OUT-DN-1B": 0.307,
+            "MID-AWAY": 0.15,
+            "HEART": 0.114
+          },
+          "FF": {
+            "OUT-UP-1B": 0.292,
+            "OUT-UP-3B": 0.223,
+            "HI-MID": 0.123
+          },
+          "SI": {
+            "OUT-UP-3B": 0.19,
+            "HI-IN (3B)": 0.098,
+            "MID-IN": 0.098
+          },
+          "SL": {
+            "OUT-DN-1B": 0.52,
+            "LO-AWAY": 0.12,
+            "LO-MID": 0.1
+          }
+        },
+        "pitch_loc_zones": {
+          "CH": {
+            "13": 0.3295,
+            "14": 0.2442,
+            "11": 0.0736,
+            "8": 0.0698,
+            "7": 0.0659,
+            "4": 0.0543,
+            "9": 0.0465,
+            "2": 0.0388,
+            "5": 0.0349,
+            "1": 0.0271,
+            "12": 0.0078,
+            "3": 0.0039,
+            "6": 0.0039
+          },
+          "CU": {
+            "14": 0.2093,
+            "13": 0.2093,
+            "11": 0.186,
+            "1": 0.1163,
+            "9": 0.0698,
+            "8": 0.0698,
+            "2": 0.0465,
+            "12": 0.0233,
+            "5": 0.0233,
+            "3": 0.0233,
+            "4": 0.0233
+          },
+          "FC": {
+            "14": 0.3071,
+            "6": 0.1496,
+            "5": 0.1142,
+            "9": 0.0984,
+            "8": 0.0748,
+            "12": 0.0669,
+            "3": 0.0433,
+            "7": 0.0315,
+            "11": 0.0276,
+            "2": 0.0276,
+            "4": 0.0236,
+            "1": 0.0197,
+            "13": 0.0157
+          },
+          "FF": {
+            "12": 0.2923,
+            "11": 0.2231,
+            "2": 0.1231,
+            "14": 0.0692,
+            "9": 0.0615,
+            "5": 0.0538,
+            "4": 0.0462,
+            "3": 0.0385,
+            "1": 0.0308,
+            "6": 0.0308,
+            "13": 0.0154,
+            "7": 0.0077,
+            "8": 0.0077
+          },
+          "SI": {
+            "11": 0.1895,
+            "1": 0.098,
+            "4": 0.098,
+            "7": 0.0959,
+            "13": 0.0937,
+            "5": 0.0915,
+            "8": 0.0675,
+            "14": 0.0654,
+            "2": 0.0632,
+            "9": 0.0458,
+            "6": 0.0436,
+            "12": 0.0305,
+            "3": 0.0174
+          },
+          "SL": {
+            "14": 0.52,
+            "9": 0.12,
+            "8": 0.1,
+            "5": 0.06,
+            "4": 0.04,
+            "13": 0.04,
+            "3": 0.02,
+            "6": 0.02,
+            "11": 0.02,
+            "7": 0.02,
+            "2": 0.02,
+            "12": 0.02
+          }
+        },
+        "zone_pitch_mix": {
+          "1": [
+            {
+              "pitch": "SI",
+              "share": 0.682,
+              "label": "HI-IN (3B)"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.106,
+              "label": "HI-IN (3B)"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.076,
+              "label": "HI-IN (3B)"
+            }
+          ],
+          "2": [
+            {
+              "pitch": "SI",
+              "share": 0.446,
+              "label": "HI-MID"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.246,
+              "label": "HI-MID"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.154,
+              "label": "HI-MID"
+            }
+          ],
+          "3": [
+            {
+              "pitch": "FC",
+              "share": 0.407,
+              "label": "HI-AWAY (1B)"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.296,
+              "label": "HI-AWAY (1B)"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.185,
+              "label": "HI-AWAY (1B)"
+            }
+          ],
+          "4": [
+            {
+              "pitch": "SI",
+              "share": 0.608,
+              "label": "MID-IN"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.189,
+              "label": "MID-IN"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.081,
+              "label": "MID-IN"
+            }
+          ],
+          "5": [
+            {
+              "pitch": "SI",
+              "share": 0.462,
+              "label": "HEART"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.319,
+              "label": "HEART"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.099,
+              "label": "HEART"
+            }
+          ],
+          "6": [
+            {
+              "pitch": "FC",
+              "share": 0.594,
+              "label": "MID-AWAY"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.312,
+              "label": "MID-AWAY"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.062,
+              "label": "MID-AWAY"
+            }
+          ],
+          "7": [
+            {
+              "pitch": "SI",
+              "share": 0.62,
+              "label": "LO-IN"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.239,
+              "label": "LO-IN"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.113,
+              "label": "LO-IN"
+            }
+          ],
+          "8": [
+            {
+              "pitch": "SI",
+              "share": 0.403,
+              "label": "LO-MID"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.247,
+              "label": "LO-MID"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.234,
+              "label": "LO-MID"
+            }
+          ],
+          "9": [
+            {
+              "pitch": "FC",
+              "share": 0.333,
+              "label": "LO-AWAY"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.28,
+              "label": "LO-AWAY"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.16,
+              "label": "LO-AWAY"
+            }
+          ],
+          "11": [
+            {
+              "pitch": "SI",
+              "share": 0.576,
+              "label": "OUT-UP-3B"
+            },
+            {
+              "pitch": "FF",
+              "share": 0.192,
+              "label": "OUT-UP-3B"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.126,
+              "label": "OUT-UP-3B"
+            }
+          ],
+          "12": [
+            {
+              "pitch": "FF",
+              "share": 0.521,
+              "label": "OUT-UP-1B"
+            },
+            {
+              "pitch": "FC",
+              "share": 0.233,
+              "label": "OUT-UP-1B"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.192,
+              "label": "OUT-UP-1B"
+            }
+          ],
+          "13": [
+            {
+              "pitch": "CH",
+              "share": 0.586,
+              "label": "OUT-DN-3B"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.297,
+              "label": "OUT-DN-3B"
+            },
+            {
+              "pitch": "CU",
+              "share": 0.062,
+              "label": "OUT-DN-3B"
+            }
+          ],
+          "14": [
+            {
+              "pitch": "FC",
+              "share": 0.363,
+              "label": "OUT-DN-1B"
+            },
+            {
+              "pitch": "CH",
+              "share": 0.293,
+              "label": "OUT-DN-1B"
+            },
+            {
+              "pitch": "SI",
+              "share": 0.14,
+              "label": "OUT-DN-1B"
+            }
+          ]
+        },
+        "zone_share": {
+          "1": 0.0553,
+          "2": 0.0544,
+          "3": 0.0226,
+          "4": 0.062,
+          "5": 0.0762,
+          "6": 0.0536,
+          "7": 0.0595,
+          "8": 0.0645,
+          "9": 0.0628,
+          "11": 0.1265,
+          "12": 0.0611,
+          "13": 0.1214,
+          "14": 0.1801
+        }
+      }
+    },
+    "recent_days": 30,
+    "recent": {
+      "n": 207,
+      "used_for_throw_pct": true,
+      "as_of": "2026-10-17"
+    }
+  },
+  "batters": [
+    {
+      "name": "Chase DeLauter",
+      "vs_hand": "R",
+      "window": "season",
+      "n_pitches": 1654,
+      "stand": "L",
+      "sample_flags": [],
+      "swing_pct": 41.8,
+      "whiff_of_swing": 12.0,
+      "top_swing_zones": [
+        {
+          "label": "HI-AWAY (1B)",
+          "swing_pct": 94.7,
+          "n": 38,
+          "whiff_of_swing": 19.4
+        },
+        {
+          "label": "HEART",
+          "swing_pct": 82.5,
+          "n": 97,
+          "whiff_of_swing": 1.2
+        },
+        {
+          "label": "MID-AWAY",
+          "swing_pct": 75.7,
+          "n": 74,
+          "whiff_of_swing": 7.1
+        },
+        {
+          "label": "HI-MID",
+          "swing_pct": 75.4,
+          "n": 69,
+          "whiff_of_swing": 7.7
+        },
+        {
+          "label": "LO-MID",
+          "swing_pct": 70.2,
+          "n": 124,
+          "whiff_of_swing": 5.7
+        }
+      ],
+      "top_damage_zones": [
+        {
+          "label": "HI-AWAY (1B)",
+          "xwoba_bip": 0.481,
+          "ev_bip": 86.2,
+          "barrel_bip": 7.7,
+          "bip": 13,
+          "swing_pct": 94.7
+        },
+        {
+          "label": "MID-AWAY",
+          "xwoba_bip": 0.456,
+          "ev_bip": 92.7,
+          "barrel_bip": 10.3,
+          "bip": 29,
+          "swing_pct": 75.7
+        },
+        {
+          "label": "LO-AWAY",
+          "xwoba_bip": 0.45,
+          "ev_bip": 96.0,
+          "barrel_bip": 13.8,
+          "bip": 29,
+          "swing_pct": 60.8
+        },
+        {
+          "label": "HI-IN (3B)",
+          "xwoba_bip": 0.428,
+          "ev_bip": 96.3,
+          "barrel_bip": 14.3,
+          "bip": 14,
+          "swing_pct": 44.4
+        },
+        {
+          "label": "LO-MID",
+          "xwoba_bip": 0.427,
+          "ev_bip": 97.2,
+          "barrel_bip": 9.8,
+          "bip": 51,
+          "swing_pct": 70.2
+        }
+      ],
+      "all_zones": [
+        {
+          "zone": 1,
+          "label": "HI-IN (3B)",
+          "n": 81,
+          "swing_pct": 44.4,
+          "whiff_of_swing": 13.9,
+          "bip": 14,
+          "xwoba_bip": 0.428,
+          "ev_bip": 96.3,
+          "barrel_bip": 14.3
+        },
+        {
+          "zone": 2,
+          "label": "HI-MID",
+          "n": 69,
+          "swing_pct": 75.4,
+          "whiff_of_swing": 7.7,
+          "bip": 29,
+          "xwoba_bip": 0.397,
+          "ev_bip": 92.2,
+          "barrel_bip": 17.2
+        },
+        {
+          "zone": 3,
+          "label": "HI-AWAY (1B)",
+          "n": 38,
+          "swing_pct": 94.7,
+          "whiff_of_swing": 19.4,
+          "bip": 13,
+          "xwoba_bip": 0.481,
+          "ev_bip": 86.2,
+          "barrel_bip": 7.7
+        },
+        {
+          "zone": 4,
+          "label": "MID-IN",
+          "n": 114,
+          "swing_pct": 56.1,
+          "whiff_of_swing": 7.8,
+          "bip": 29,
+          "xwoba_bip": 0.378,
+          "ev_bip": 93.8,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 5,
+          "label": "HEART",
+          "n": 97,
+          "swing_pct": 82.5,
+          "whiff_of_swing": 1.2,
+          "bip": 46,
+          "xwoba_bip": 0.339,
+          "ev_bip": 95.0,
+          "barrel_bip": 4.3
+        },
+        {
+          "zone": 6,
+          "label": "MID-AWAY",
+          "n": 74,
+          "swing_pct": 75.7,
+          "whiff_of_swing": 7.1,
+          "bip": 29,
+          "xwoba_bip": 0.456,
+          "ev_bip": 92.7,
+          "barrel_bip": 10.3
+        },
+        {
+          "zone": 7,
+          "label": "LO-IN",
+          "n": 100,
+          "swing_pct": 56.0,
+          "whiff_of_swing": 0.0,
+          "bip": 31,
+          "xwoba_bip": 0.257,
+          "ev_bip": 91.0,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 8,
+          "label": "LO-MID",
+          "n": 124,
+          "swing_pct": 70.2,
+          "whiff_of_swing": 5.7,
+          "bip": 51,
+          "xwoba_bip": 0.427,
+          "ev_bip": 97.2,
+          "barrel_bip": 9.8
+        },
+        {
+          "zone": 9,
+          "label": "LO-AWAY",
+          "n": 79,
+          "swing_pct": 60.8,
+          "whiff_of_swing": 2.1,
+          "bip": 29,
+          "xwoba_bip": 0.45,
+          "ev_bip": 96.0,
+          "barrel_bip": 13.8
+        },
+        {
+          "zone": 11,
+          "label": "OUT-UP-3B",
+          "n": 281,
+          "swing_pct": 10.7,
+          "whiff_of_swing": 10.0,
+          "bip": 12,
+          "xwoba_bip": 0.37,
+          "ev_bip": 90.8,
+          "barrel_bip": 8.3
+        },
+        {
+          "zone": 12,
+          "label": "OUT-UP-1B",
+          "n": 78,
+          "swing_pct": 50.0,
+          "whiff_of_swing": 28.2,
+          "bip": 9,
+          "xwoba_bip": 0.2,
+          "ev_bip": 77.1,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 13,
+          "label": "OUT-DN-3B",
+          "n": 243,
+          "swing_pct": 23.0,
+          "whiff_of_swing": 28.6,
+          "bip": 22,
+          "xwoba_bip": 0.222,
+          "ev_bip": 84.7,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 14,
+          "label": "OUT-DN-1B",
+          "n": 276,
+          "swing_pct": 18.8,
+          "whiff_of_swing": 40.4,
+          "bip": 12,
+          "xwoba_bip": 0.37,
+          "ev_bip": 85.8,
+          "barrel_bip": 8.3
+        }
+      ],
+      "slot": 3,
+      "team": "CLE",
+      "recent": {
+        "name": "Chase DeLauter",
+        "vs_hand": "R",
+        "window": "recent",
+        "n_pitches": 162,
+        "stand": "L",
+        "sample_flags": [],
+        "swing_pct": 43.8,
+        "whiff_of_swing": 18.3,
+        "top_swing_zones": [
+          {
+            "label": "HEART",
+            "swing_pct": 92.9,
+            "n": 14,
+            "whiff_of_swing": 0.0
+          },
+          {
+            "label": "OUT-UP-1B",
+            "swing_pct": 35.7,
+            "n": 14,
+            "whiff_of_swing": 20.0
+          },
+          {
+            "label": "OUT-DN-3B",
+            "swing_pct": 30.8,
+            "n": 26,
+            "whiff_of_swing": 37.5
+          },
+          {
+            "label": "OUT-UP-3B",
+            "swing_pct": 12.5,
+            "n": 24,
+            "whiff_of_swing": 0.0
+          },
+          {
+            "label": "OUT-DN-1B",
+            "swing_pct": 12.5,
+            "n": 24,
+            "whiff_of_swing": 66.7
+          }
+        ],
+        "top_damage_zones": [
+          {
+            "label": "HEART",
+            "xwoba_bip": 0.39,
+            "ev_bip": 97.7,
+            "barrel_bip": 0.0,
+            "bip": 6,
+            "swing_pct": 92.9
+          }
+        ],
+        "all_zones": [
+          {
+            "zone": 2,
+            "label": "HI-MID",
+            "n": 8,
+            "swing_pct": 62.5,
+            "whiff_of_swing": 20.0,
+            "bip": 4,
+            "xwoba_bip": 0.398,
+            "ev_bip": 93.3,
+            "barrel_bip": 25.0
+          },
+          {
+            "zone": 3,
+            "label": "HI-AWAY (1B)",
+            "n": 8,
+            "swing_pct": 87.5,
+            "whiff_of_swing": 42.9,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 4,
+            "label": "MID-IN",
+            "n": 9,
+            "swing_pct": 44.4,
+            "whiff_of_swing": 0.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 5,
+            "label": "HEART",
+            "n": 14,
+            "swing_pct": 92.9,
+            "whiff_of_swing": 0.0,
+            "bip": 6,
+            "xwoba_bip": 0.39,
+            "ev_bip": 97.7,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 6,
+            "label": "MID-AWAY",
+            "n": 9,
+            "swing_pct": 66.7,
+            "whiff_of_swing": 0.0,
+            "bip": 3,
+            "xwoba_bip": 0.403,
+            "ev_bip": 95.5,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 8,
+            "label": "LO-MID",
+            "n": 10,
+            "swing_pct": 70.0,
+            "whiff_of_swing": 14.3,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 9,
+            "label": "LO-AWAY",
+            "n": 8,
+            "swing_pct": 37.5,
+            "whiff_of_swing": 33.3,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 11,
+            "label": "OUT-UP-3B",
+            "n": 24,
+            "swing_pct": 12.5,
+            "whiff_of_swing": 0.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 12,
+            "label": "OUT-UP-1B",
+            "n": 14,
+            "swing_pct": 35.7,
+            "whiff_of_swing": 20.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 13,
+            "label": "OUT-DN-3B",
+            "n": 26,
+            "swing_pct": 30.8,
+            "whiff_of_swing": 37.5,
+            "bip": 3,
+            "xwoba_bip": 0.347,
+            "ev_bip": 81.2,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 14,
+            "label": "OUT-DN-1B",
+            "n": 24,
+            "swing_pct": 12.5,
+            "whiff_of_swing": 66.7,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          }
+        ]
+      }
+    },
+    {
+      "name": "Nathaniel Lowe",
+      "vs_hand": "R",
+      "window": "season",
+      "n_pitches": 1786,
+      "stand": "L",
+      "sample_flags": [],
+      "swing_pct": 45.4,
+      "whiff_of_swing": 19.0,
+      "top_swing_zones": [
+        {
+          "label": "HI-MID",
+          "swing_pct": 77.5,
+          "n": 111,
+          "whiff_of_swing": 12.8
+        },
+        {
+          "label": "HEART",
+          "swing_pct": 73.9,
+          "n": 119,
+          "whiff_of_swing": 4.5
+        },
+        {
+          "label": "HI-AWAY (1B)",
+          "swing_pct": 72.2,
+          "n": 79,
+          "whiff_of_swing": 10.5
+        },
+        {
+          "label": "MID-AWAY",
+          "swing_pct": 63.9,
+          "n": 108,
+          "whiff_of_swing": 1.4
+        },
+        {
+          "label": "HI-IN (3B)",
+          "swing_pct": 62.6,
+          "n": 99,
+          "whiff_of_swing": 21.0
+        }
+      ],
+      "top_damage_zones": [
+        {
+          "label": "HEART",
+          "xwoba_bip": 0.596,
+          "ev_bip": 96.7,
+          "barrel_bip": 19.5,
+          "bip": 41,
+          "swing_pct": 73.9
+        },
+        {
+          "label": "HI-IN (3B)",
+          "xwoba_bip": 0.507,
+          "ev_bip": 96.1,
+          "barrel_bip": 11.8,
+          "bip": 17,
+          "swing_pct": 62.6
+        },
+        {
+          "label": "MID-IN",
+          "xwoba_bip": 0.502,
+          "ev_bip": 95.4,
+          "barrel_bip": 13.6,
+          "bip": 22,
+          "swing_pct": 59.8
+        },
+        {
+          "label": "LO-AWAY",
+          "xwoba_bip": 0.47,
+          "ev_bip": 95.1,
+          "barrel_bip": 13.6,
+          "bip": 22,
+          "swing_pct": 59.6
+        },
+        {
+          "label": "LO-MID",
+          "xwoba_bip": 0.464,
+          "ev_bip": 98.2,
+          "barrel_bip": 9.3,
+          "bip": 43,
+          "swing_pct": 60.0
+        }
+      ],
+      "all_zones": [
+        {
+          "zone": 1,
+          "label": "HI-IN (3B)",
+          "n": 99,
+          "swing_pct": 62.6,
+          "whiff_of_swing": 21.0,
+          "bip": 17,
+          "xwoba_bip": 0.507,
+          "ev_bip": 96.1,
+          "barrel_bip": 11.8
+        },
+        {
+          "zone": 2,
+          "label": "HI-MID",
+          "n": 111,
+          "swing_pct": 77.5,
+          "whiff_of_swing": 12.8,
+          "bip": 31,
+          "xwoba_bip": 0.31,
+          "ev_bip": 88.0,
+          "barrel_bip": 6.5
+        },
+        {
+          "zone": 3,
+          "label": "HI-AWAY (1B)",
+          "n": 79,
+          "swing_pct": 72.2,
+          "whiff_of_swing": 10.5,
+          "bip": 14,
+          "xwoba_bip": 0.356,
+          "ev_bip": 79.4,
+          "barrel_bip": 7.1
+        },
+        {
+          "zone": 4,
+          "label": "MID-IN",
+          "n": 92,
+          "swing_pct": 59.8,
+          "whiff_of_swing": 12.7,
+          "bip": 22,
+          "xwoba_bip": 0.502,
+          "ev_bip": 95.4,
+          "barrel_bip": 13.6
+        },
+        {
+          "zone": 5,
+          "label": "HEART",
+          "n": 119,
+          "swing_pct": 73.9,
+          "whiff_of_swing": 4.5,
+          "bip": 41,
+          "xwoba_bip": 0.596,
+          "ev_bip": 96.7,
+          "barrel_bip": 19.5
+        },
+        {
+          "zone": 6,
+          "label": "MID-AWAY",
+          "n": 108,
+          "swing_pct": 63.9,
+          "whiff_of_swing": 1.4,
+          "bip": 35,
+          "xwoba_bip": 0.448,
+          "ev_bip": 87.2,
+          "barrel_bip": 8.6
+        },
+        {
+          "zone": 7,
+          "label": "LO-IN",
+          "n": 65,
+          "swing_pct": 55.4,
+          "whiff_of_swing": 11.1,
+          "bip": 15,
+          "xwoba_bip": 0.283,
+          "ev_bip": 90.0,
+          "barrel_bip": 13.3
+        },
+        {
+          "zone": 8,
+          "label": "LO-MID",
+          "n": 115,
+          "swing_pct": 60.0,
+          "whiff_of_swing": 8.7,
+          "bip": 43,
+          "xwoba_bip": 0.464,
+          "ev_bip": 98.2,
+          "barrel_bip": 9.3
+        },
+        {
+          "zone": 9,
+          "label": "LO-AWAY",
+          "n": 89,
+          "swing_pct": 59.6,
+          "whiff_of_swing": 13.2,
+          "bip": 22,
+          "xwoba_bip": 0.47,
+          "ev_bip": 95.1,
+          "barrel_bip": 13.6
+        },
+        {
+          "zone": 11,
+          "label": "OUT-UP-3B",
+          "n": 252,
+          "swing_pct": 23.0,
+          "whiff_of_swing": 58.6,
+          "bip": 7,
+          "xwoba_bip": 0.135,
+          "ev_bip": 82.0,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 12,
+          "label": "OUT-UP-1B",
+          "n": 193,
+          "swing_pct": 34.2,
+          "whiff_of_swing": 19.7,
+          "bip": 14,
+          "xwoba_bip": 0.164,
+          "ev_bip": 63.4,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 13,
+          "label": "OUT-DN-3B",
+          "n": 182,
+          "swing_pct": 25.8,
+          "whiff_of_swing": 40.4,
+          "bip": 13,
+          "xwoba_bip": 0.373,
+          "ev_bip": 84.7,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 14,
+          "label": "OUT-DN-1B",
+          "n": 282,
+          "swing_pct": 23.0,
+          "whiff_of_swing": 44.6,
+          "bip": 12,
+          "xwoba_bip": 0.299,
+          "ev_bip": 89.8,
+          "barrel_bip": 8.3
+        }
+      ],
+      "slot": 5,
+      "team": "CLE",
+      "recent": {
+        "name": "Nathaniel Lowe",
+        "vs_hand": "R",
+        "window": "recent",
+        "n_pitches": 138,
+        "stand": "L",
+        "sample_flags": [],
+        "swing_pct": 49.3,
+        "whiff_of_swing": 23.5,
+        "top_swing_zones": [
+          {
+            "label": "OUT-UP-3B",
+            "swing_pct": 36.8,
+            "n": 19,
+            "whiff_of_swing": 71.4
+          },
+          {
+            "label": "OUT-DN-1B",
+            "swing_pct": 18.5,
+            "n": 27,
+            "whiff_of_swing": 40.0
+          },
+          {
+            "label": "OUT-UP-1B",
+            "swing_pct": 15.8,
+            "n": 19,
+            "whiff_of_swing": 66.7
+          }
+        ],
+        "top_damage_zones": [
+          {
+            "label": "MID-AWAY",
+            "xwoba_bip": 0.348,
+            "ev_bip": 84.2,
+            "barrel_bip": 16.7,
+            "bip": 6,
+            "swing_pct": 63.6
+          }
+        ],
+        "all_zones": [
+          {
+            "zone": 1,
+            "label": "HI-IN (3B)",
+            "n": 10,
+            "swing_pct": 60.0,
+            "whiff_of_swing": 50.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 2,
+            "label": "HI-MID",
+            "n": 9,
+            "swing_pct": 88.9,
+            "whiff_of_swing": 0.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 4,
+            "label": "MID-IN",
+            "n": 8,
+            "swing_pct": 50.0,
+            "whiff_of_swing": 25.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 5,
+            "label": "HEART",
+            "n": 8,
+            "swing_pct": 87.5,
+            "whiff_of_swing": 0.0,
+            "bip": 3,
+            "xwoba_bip": 0.29,
+            "ev_bip": 94.9,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 6,
+            "label": "MID-AWAY",
+            "n": 11,
+            "swing_pct": 63.6,
+            "whiff_of_swing": 0.0,
+            "bip": 6,
+            "xwoba_bip": 0.348,
+            "ev_bip": 84.2,
+            "barrel_bip": 16.7
+          },
+          {
+            "zone": 8,
+            "label": "LO-MID",
+            "n": 9,
+            "swing_pct": 77.8,
+            "whiff_of_swing": 14.3,
+            "bip": 4,
+            "xwoba_bip": 0.361,
+            "ev_bip": 98.6,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 9,
+            "label": "LO-AWAY",
+            "n": 9,
+            "swing_pct": 88.9,
+            "whiff_of_swing": 12.5,
+            "bip": 4,
+            "xwoba_bip": 0.476,
+            "ev_bip": 105.2,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 11,
+            "label": "OUT-UP-3B",
+            "n": 19,
+            "swing_pct": 36.8,
+            "whiff_of_swing": 71.4,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 12,
+            "label": "OUT-UP-1B",
+            "n": 19,
+            "swing_pct": 15.8,
+            "whiff_of_swing": 66.7,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 14,
+            "label": "OUT-DN-1B",
+            "n": 27,
+            "swing_pct": 18.5,
+            "whiff_of_swing": 40.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          }
+        ]
+      }
+    },
+    {
+      "name": "Travis Bazzana",
+      "vs_hand": "R",
+      "window": "season",
+      "n_pitches": 1520,
+      "stand": "L",
+      "sample_flags": [],
+      "swing_pct": 45.8,
+      "whiff_of_swing": 21.4,
+      "top_swing_zones": [
+        {
+          "label": "MID-AWAY",
+          "swing_pct": 85.7,
+          "n": 49,
+          "whiff_of_swing": 2.4
+        },
+        {
+          "label": "HEART",
+          "swing_pct": 82.9,
+          "n": 117,
+          "whiff_of_swing": 3.1
+        },
+        {
+          "label": "LO-AWAY",
+          "swing_pct": 79.7,
+          "n": 64,
+          "whiff_of_swing": 23.5
+        },
+        {
+          "label": "HI-MID",
+          "swing_pct": 79.2,
+          "n": 72,
+          "whiff_of_swing": 28.1
+        },
+        {
+          "label": "HI-AWAY (1B)",
+          "swing_pct": 78.1,
+          "n": 32,
+          "whiff_of_swing": 4.0
+        }
+      ],
+      "top_damage_zones": [
+        {
+          "label": "MID-AWAY",
+          "xwoba_bip": 0.497,
+          "ev_bip": 94.1,
+          "barrel_bip": 15.8,
+          "bip": 19,
+          "swing_pct": 85.7
+        },
+        {
+          "label": "HEART",
+          "xwoba_bip": 0.429,
+          "ev_bip": 96.2,
+          "barrel_bip": 12.0,
+          "bip": 50,
+          "swing_pct": 82.9
+        },
+        {
+          "label": "MID-IN",
+          "xwoba_bip": 0.348,
+          "ev_bip": 86.9,
+          "barrel_bip": 6.9,
+          "bip": 29,
+          "swing_pct": 51.7
+        },
+        {
+          "label": "HI-MID",
+          "xwoba_bip": 0.324,
+          "ev_bip": 91.9,
+          "barrel_bip": 13.0,
+          "bip": 23,
+          "swing_pct": 79.2
+        },
+        {
+          "label": "OUT-DN-1B",
+          "xwoba_bip": 0.322,
+          "ev_bip": 82.0,
+          "barrel_bip": 0.0,
+          "bip": 13,
+          "swing_pct": 41.1
+        }
+      ],
+      "all_zones": [
+        {
+          "zone": 1,
+          "label": "HI-IN (3B)",
+          "n": 88,
+          "swing_pct": 36.4,
+          "whiff_of_swing": 15.6,
+          "bip": 7,
+          "xwoba_bip": 0.43,
+          "ev_bip": 93.2,
+          "barrel_bip": 14.3
+        },
+        {
+          "zone": 2,
+          "label": "HI-MID",
+          "n": 72,
+          "swing_pct": 79.2,
+          "whiff_of_swing": 28.1,
+          "bip": 23,
+          "xwoba_bip": 0.324,
+          "ev_bip": 91.9,
+          "barrel_bip": 13.0
+        },
+        {
+          "zone": 3,
+          "label": "HI-AWAY (1B)",
+          "n": 32,
+          "swing_pct": 78.1,
+          "whiff_of_swing": 4.0,
+          "bip": 10,
+          "xwoba_bip": 0.253,
+          "ev_bip": 86.2,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 4,
+          "label": "MID-IN",
+          "n": 120,
+          "swing_pct": 51.7,
+          "whiff_of_swing": 8.1,
+          "bip": 29,
+          "xwoba_bip": 0.348,
+          "ev_bip": 86.9,
+          "barrel_bip": 6.9
+        },
+        {
+          "zone": 5,
+          "label": "HEART",
+          "n": 117,
+          "swing_pct": 82.9,
+          "whiff_of_swing": 3.1,
+          "bip": 50,
+          "xwoba_bip": 0.429,
+          "ev_bip": 96.2,
+          "barrel_bip": 12.0
+        },
+        {
+          "zone": 6,
+          "label": "MID-AWAY",
+          "n": 49,
+          "swing_pct": 85.7,
+          "whiff_of_swing": 2.4,
+          "bip": 19,
+          "xwoba_bip": 0.497,
+          "ev_bip": 94.1,
+          "barrel_bip": 15.8
+        },
+        {
+          "zone": 7,
+          "label": "LO-IN",
+          "n": 85,
+          "swing_pct": 52.9,
+          "whiff_of_swing": 4.4,
+          "bip": 25,
+          "xwoba_bip": 0.296,
+          "ev_bip": 86.2,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 8,
+          "label": "LO-MID",
+          "n": 106,
+          "swing_pct": 72.6,
+          "whiff_of_swing": 11.7,
+          "bip": 39,
+          "xwoba_bip": 0.295,
+          "ev_bip": 91.1,
+          "barrel_bip": 2.6
+        },
+        {
+          "zone": 9,
+          "label": "LO-AWAY",
+          "n": 64,
+          "swing_pct": 79.7,
+          "whiff_of_swing": 23.5,
+          "bip": 23,
+          "xwoba_bip": 0.288,
+          "ev_bip": 89.9,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 11,
+          "label": "OUT-UP-3B",
+          "n": 263,
+          "swing_pct": 8.7,
+          "whiff_of_swing": 17.4,
+          "bip": 5,
+          "xwoba_bip": 0.192,
+          "ev_bip": 80.1,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 12,
+          "label": "OUT-UP-1B",
+          "n": 70,
+          "swing_pct": 41.4,
+          "whiff_of_swing": 24.1,
+          "bip": 5,
+          "xwoba_bip": 0.53,
+          "ev_bip": 80.2,
+          "barrel_bip": 20.0
+        },
+        {
+          "zone": 13,
+          "label": "OUT-DN-3B",
+          "n": 208,
+          "swing_pct": 26.4,
+          "whiff_of_swing": 50.9,
+          "bip": 15,
+          "xwoba_bip": 0.247,
+          "ev_bip": 71.9,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 14,
+          "label": "OUT-DN-1B",
+          "n": 246,
+          "swing_pct": 41.1,
+          "whiff_of_swing": 55.4,
+          "bip": 13,
+          "xwoba_bip": 0.322,
+          "ev_bip": 82.0,
+          "barrel_bip": 0.0
+        }
+      ],
+      "slot": 6,
+      "team": "CLE",
+      "recent": {
+        "name": "Travis Bazzana",
+        "vs_hand": "R",
+        "window": "recent",
+        "n_pitches": 130,
+        "stand": "L",
+        "sample_flags": [],
+        "swing_pct": 53.8,
+        "whiff_of_swing": 15.7,
+        "top_swing_zones": [
+          {
+            "label": "HEART",
+            "swing_pct": 100.0,
+            "n": 15,
+            "whiff_of_swing": 6.7
+          },
+          {
+            "label": "OUT-DN-1B",
+            "swing_pct": 47.4,
+            "n": 19,
+            "whiff_of_swing": 33.3
+          },
+          {
+            "label": "OUT-DN-3B",
+            "swing_pct": 26.3,
+            "n": 19,
+            "whiff_of_swing": 80.0
+          },
+          {
+            "label": "OUT-UP-3B",
+            "swing_pct": 17.6,
+            "n": 17,
+            "whiff_of_swing": 0.0
+          }
+        ],
+        "top_damage_zones": [
+          {
+            "label": "LO-IN",
+            "xwoba_bip": 0.331,
+            "ev_bip": 91.1,
+            "barrel_bip": 0.0,
+            "bip": 5,
+            "swing_pct": 62.5
+          },
+          {
+            "label": "HEART",
+            "xwoba_bip": 0.29,
+            "ev_bip": 92.7,
+            "barrel_bip": 12.5,
+            "bip": 8,
+            "swing_pct": 100.0
+          }
+        ],
+        "all_zones": [
+          {
+            "zone": 1,
+            "label": "HI-IN (3B)",
+            "n": 9,
+            "swing_pct": 55.6,
+            "whiff_of_swing": 0.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 4,
+            "label": "MID-IN",
+            "n": 11,
+            "swing_pct": 72.7,
+            "whiff_of_swing": 25.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 5,
+            "label": "HEART",
+            "n": 15,
+            "swing_pct": 100.0,
+            "whiff_of_swing": 6.7,
+            "bip": 8,
+            "xwoba_bip": 0.29,
+            "ev_bip": 92.7,
+            "barrel_bip": 12.5
+          },
+          {
+            "zone": 7,
+            "label": "LO-IN",
+            "n": 8,
+            "swing_pct": 62.5,
+            "whiff_of_swing": 0.0,
+            "bip": 5,
+            "xwoba_bip": 0.331,
+            "ev_bip": 91.1,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 8,
+            "label": "LO-MID",
+            "n": 9,
+            "swing_pct": 55.6,
+            "whiff_of_swing": 0.0,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 11,
+            "label": "OUT-UP-3B",
+            "n": 17,
+            "swing_pct": 17.6,
+            "whiff_of_swing": 0.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 12,
+            "label": "OUT-UP-1B",
+            "n": 8,
+            "swing_pct": 37.5,
+            "whiff_of_swing": 0.0,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 13,
+            "label": "OUT-DN-3B",
+            "n": 19,
+            "swing_pct": 26.3,
+            "whiff_of_swing": 80.0,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 14,
+            "label": "OUT-DN-1B",
+            "n": 19,
+            "swing_pct": 47.4,
+            "whiff_of_swing": 33.3,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          }
+        ]
+      }
+    },
+    {
+      "name": "Jo Adell",
+      "vs_hand": "R",
+      "window": "season",
+      "n_pitches": 2074,
+      "stand": "R",
+      "sample_flags": [],
+      "swing_pct": 52.9,
+      "whiff_of_swing": 25.5,
+      "top_swing_zones": [
+        {
+          "label": "HEART",
+          "swing_pct": 82.9,
+          "n": 140,
+          "whiff_of_swing": 8.6
+        },
+        {
+          "label": "LO-MID",
+          "swing_pct": 76.5,
+          "n": 115,
+          "whiff_of_swing": 13.6
+        },
+        {
+          "label": "MID-AWAY",
+          "swing_pct": 74.8,
+          "n": 127,
+          "whiff_of_swing": 15.8
+        },
+        {
+          "label": "HI-MID",
+          "swing_pct": 73.6,
+          "n": 106,
+          "whiff_of_swing": 21.8
+        },
+        {
+          "label": "MID-IN",
+          "swing_pct": 73.3,
+          "n": 90,
+          "whiff_of_swing": 4.5
+        }
+      ],
+      "top_damage_zones": [
+        {
+          "label": "HI-AWAY (1B)",
+          "xwoba_bip": 0.47,
+          "ev_bip": 99.3,
+          "barrel_bip": 0.0,
+          "bip": 15,
+          "swing_pct": 72.0
+        },
+        {
+          "label": "LO-MID",
+          "xwoba_bip": 0.462,
+          "ev_bip": 97.8,
+          "barrel_bip": 11.8,
+          "bip": 34,
+          "swing_pct": 76.5
+        },
+        {
+          "label": "OUT-DN-3B",
+          "xwoba_bip": 0.445,
+          "ev_bip": 88.2,
+          "barrel_bip": 15.4,
+          "bip": 13,
+          "swing_pct": 48.1
+        },
+        {
+          "label": "MID-AWAY",
+          "xwoba_bip": 0.434,
+          "ev_bip": 95.0,
+          "barrel_bip": 13.2,
+          "bip": 38,
+          "swing_pct": 74.8
+        },
+        {
+          "label": "HI-MID",
+          "xwoba_bip": 0.43,
+          "ev_bip": 94.7,
+          "barrel_bip": 20.0,
+          "bip": 25,
+          "swing_pct": 73.6
+        }
+      ],
+      "all_zones": [
+        {
+          "zone": 1,
+          "label": "HI-IN (3B)",
+          "n": 75,
+          "swing_pct": 70.7,
+          "whiff_of_swing": 15.1,
+          "bip": 20,
+          "xwoba_bip": 0.312,
+          "ev_bip": 76.6,
+          "barrel_bip": 5.0
+        },
+        {
+          "zone": 2,
+          "label": "HI-MID",
+          "n": 106,
+          "swing_pct": 73.6,
+          "whiff_of_swing": 21.8,
+          "bip": 25,
+          "xwoba_bip": 0.43,
+          "ev_bip": 94.7,
+          "barrel_bip": 20.0
+        },
+        {
+          "zone": 3,
+          "label": "HI-AWAY (1B)",
+          "n": 75,
+          "swing_pct": 72.0,
+          "whiff_of_swing": 29.6,
+          "bip": 15,
+          "xwoba_bip": 0.47,
+          "ev_bip": 99.3,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 4,
+          "label": "MID-IN",
+          "n": 90,
+          "swing_pct": 73.3,
+          "whiff_of_swing": 4.5,
+          "bip": 33,
+          "xwoba_bip": 0.246,
+          "ev_bip": 81.5,
+          "barrel_bip": 3.0
+        },
+        {
+          "zone": 5,
+          "label": "HEART",
+          "n": 140,
+          "swing_pct": 82.9,
+          "whiff_of_swing": 8.6,
+          "bip": 50,
+          "xwoba_bip": 0.306,
+          "ev_bip": 93.3,
+          "barrel_bip": 8.0
+        },
+        {
+          "zone": 6,
+          "label": "MID-AWAY",
+          "n": 127,
+          "swing_pct": 74.8,
+          "whiff_of_swing": 15.8,
+          "bip": 38,
+          "xwoba_bip": 0.434,
+          "ev_bip": 95.0,
+          "barrel_bip": 13.2
+        },
+        {
+          "zone": 7,
+          "label": "LO-IN",
+          "n": 76,
+          "swing_pct": 65.8,
+          "whiff_of_swing": 8.0,
+          "bip": 18,
+          "xwoba_bip": 0.331,
+          "ev_bip": 91.6,
+          "barrel_bip": 11.1
+        },
+        {
+          "zone": 8,
+          "label": "LO-MID",
+          "n": 115,
+          "swing_pct": 76.5,
+          "whiff_of_swing": 13.6,
+          "bip": 34,
+          "xwoba_bip": 0.462,
+          "ev_bip": 97.8,
+          "barrel_bip": 11.8
+        },
+        {
+          "zone": 9,
+          "label": "LO-AWAY",
+          "n": 138,
+          "swing_pct": 69.6,
+          "whiff_of_swing": 18.8,
+          "bip": 42,
+          "xwoba_bip": 0.403,
+          "ev_bip": 93.0,
+          "barrel_bip": 7.1
+        },
+        {
+          "zone": 11,
+          "label": "OUT-UP-3B",
+          "n": 213,
+          "swing_pct": 29.6,
+          "whiff_of_swing": 27.0,
+          "bip": 16,
+          "xwoba_bip": 0.2,
+          "ev_bip": 59.9,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 12,
+          "label": "OUT-UP-1B",
+          "n": 166,
+          "swing_pct": 30.7,
+          "whiff_of_swing": 35.3,
+          "bip": 7,
+          "xwoba_bip": 0.338,
+          "ev_bip": 89.8,
+          "barrel_bip": 14.3
+        },
+        {
+          "zone": 13,
+          "label": "OUT-DN-3B",
+          "n": 156,
+          "swing_pct": 48.1,
+          "whiff_of_swing": 32.0,
+          "bip": 13,
+          "xwoba_bip": 0.445,
+          "ev_bip": 88.2,
+          "barrel_bip": 15.4
+        },
+        {
+          "zone": 14,
+          "label": "OUT-DN-1B",
+          "n": 597,
+          "swing_pct": 35.5,
+          "whiff_of_swing": 55.7,
+          "bip": 39,
+          "xwoba_bip": 0.34,
+          "ev_bip": 86.9,
+          "barrel_bip": 2.6
+        }
+      ],
+      "slot": 4,
+      "team": "CLE",
+      "recent": {
+        "name": "Jo Adell",
+        "vs_hand": "R",
+        "window": "recent",
+        "n_pitches": 173,
+        "stand": "R",
+        "sample_flags": [],
+        "swing_pct": 48.6,
+        "whiff_of_swing": 29.8,
+        "top_swing_zones": [
+          {
+            "label": "HEART",
+            "swing_pct": 84.2,
+            "n": 19,
+            "whiff_of_swing": 12.5
+          },
+          {
+            "label": "HI-AWAY (1B)",
+            "swing_pct": 58.3,
+            "n": 12,
+            "whiff_of_swing": 28.6
+          },
+          {
+            "label": "OUT-UP-3B",
+            "swing_pct": 38.9,
+            "n": 18,
+            "whiff_of_swing": 14.3
+          },
+          {
+            "label": "OUT-DN-1B",
+            "swing_pct": 30.4,
+            "n": 46,
+            "whiff_of_swing": 71.4
+          },
+          {
+            "label": "OUT-DN-3B",
+            "swing_pct": 25.0,
+            "n": 12,
+            "whiff_of_swing": 33.3
+          }
+        ],
+        "top_damage_zones": [
+          {
+            "label": "HEART",
+            "xwoba_bip": 0.12,
+            "ev_bip": 88.3,
+            "barrel_bip": 0.0,
+            "bip": 8,
+            "swing_pct": 84.2
+          }
+        ],
+        "all_zones": [
+          {
+            "zone": 2,
+            "label": "HI-MID",
+            "n": 10,
+            "swing_pct": 90.0,
+            "whiff_of_swing": 55.6,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 3,
+            "label": "HI-AWAY (1B)",
+            "n": 12,
+            "swing_pct": 58.3,
+            "whiff_of_swing": 28.6,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 5,
+            "label": "HEART",
+            "n": 19,
+            "swing_pct": 84.2,
+            "whiff_of_swing": 12.5,
+            "bip": 8,
+            "xwoba_bip": 0.12,
+            "ev_bip": 88.3,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 6,
+            "label": "MID-AWAY",
+            "n": 8,
+            "swing_pct": 75.0,
+            "whiff_of_swing": 0.0,
+            "bip": 3,
+            "xwoba_bip": 0.656,
+            "ev_bip": 95.9,
+            "barrel_bip": 33.3
+          },
+          {
+            "zone": 8,
+            "label": "LO-MID",
+            "n": 8,
+            "swing_pct": 50.0,
+            "whiff_of_swing": 0.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 9,
+            "label": "LO-AWAY",
+            "n": 11,
+            "swing_pct": 54.5,
+            "whiff_of_swing": 33.3,
+            "bip": 3,
+            "xwoba_bip": 0.494,
+            "ev_bip": 102.2,
+            "barrel_bip": 33.3
+          },
+          {
+            "zone": 11,
+            "label": "OUT-UP-3B",
+            "n": 18,
+            "swing_pct": 38.9,
+            "whiff_of_swing": 14.3,
+            "bip": 3,
+            "xwoba_bip": 0.076,
+            "ev_bip": 64.5,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 12,
+            "label": "OUT-UP-1B",
+            "n": 16,
+            "swing_pct": 18.8,
+            "whiff_of_swing": 33.3,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 13,
+            "label": "OUT-DN-3B",
+            "n": 12,
+            "swing_pct": 25.0,
+            "whiff_of_swing": 33.3,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 14,
+            "label": "OUT-DN-1B",
+            "n": 46,
+            "swing_pct": 30.4,
+            "whiff_of_swing": 71.4,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          }
+        ]
+      }
+    },
+    {
+      "name": "Steven Kwan",
+      "vs_hand": "R",
+      "window": "season",
+      "n_pitches": 2056,
+      "stand": "L",
+      "sample_flags": [],
+      "swing_pct": 35.9,
+      "whiff_of_swing": 5.3,
+      "top_swing_zones": [
+        {
+          "label": "HEART",
+          "swing_pct": 62.7,
+          "n": 153,
+          "whiff_of_swing": 3.1
+        },
+        {
+          "label": "LO-IN",
+          "swing_pct": 58.2,
+          "n": 91,
+          "whiff_of_swing": 1.9
+        },
+        {
+          "label": "MID-IN",
+          "swing_pct": 55.5,
+          "n": 155,
+          "whiff_of_swing": 1.2
+        },
+        {
+          "label": "HI-MID",
+          "swing_pct": 55.3,
+          "n": 132,
+          "whiff_of_swing": 4.1
+        },
+        {
+          "label": "MID-AWAY",
+          "swing_pct": 53.1,
+          "n": 98,
+          "whiff_of_swing": 0.0
+        }
+      ],
+      "top_damage_zones": [
+        {
+          "label": "LO-AWAY",
+          "xwoba_bip": 0.439,
+          "ev_bip": 87.5,
+          "barrel_bip": 0.0,
+          "bip": 16,
+          "swing_pct": 33.3
+        },
+        {
+          "label": "LO-MID",
+          "xwoba_bip": 0.353,
+          "ev_bip": 89.4,
+          "barrel_bip": 0.0,
+          "bip": 45,
+          "swing_pct": 50.0
+        },
+        {
+          "label": "HI-MID",
+          "xwoba_bip": 0.35,
+          "ev_bip": 82.9,
+          "barrel_bip": 0.0,
+          "bip": 36,
+          "swing_pct": 55.3
+        },
+        {
+          "label": "LO-IN",
+          "xwoba_bip": 0.345,
+          "ev_bip": 85.1,
+          "barrel_bip": 0.0,
+          "bip": 32,
+          "swing_pct": 58.2
+        },
+        {
+          "label": "MID-IN",
+          "xwoba_bip": 0.322,
+          "ev_bip": 80.8,
+          "barrel_bip": 0.0,
+          "bip": 50,
+          "swing_pct": 55.5
+        }
+      ],
+      "all_zones": [
+        {
+          "zone": 1,
+          "label": "HI-IN (3B)",
+          "n": 137,
+          "swing_pct": 41.6,
+          "whiff_of_swing": 7.0,
+          "bip": 23,
+          "xwoba_bip": 0.256,
+          "ev_bip": 84.8,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 2,
+          "label": "HI-MID",
+          "n": 132,
+          "swing_pct": 55.3,
+          "whiff_of_swing": 4.1,
+          "bip": 36,
+          "xwoba_bip": 0.35,
+          "ev_bip": 82.9,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 3,
+          "label": "HI-AWAY (1B)",
+          "n": 64,
+          "swing_pct": 43.8,
+          "whiff_of_swing": 0.0,
+          "bip": 19,
+          "xwoba_bip": 0.226,
+          "ev_bip": 79.2,
+          "barrel_bip": 5.3
+        },
+        {
+          "zone": 4,
+          "label": "MID-IN",
+          "n": 155,
+          "swing_pct": 55.5,
+          "whiff_of_swing": 1.2,
+          "bip": 50,
+          "xwoba_bip": 0.322,
+          "ev_bip": 80.8,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 5,
+          "label": "HEART",
+          "n": 153,
+          "swing_pct": 62.7,
+          "whiff_of_swing": 3.1,
+          "bip": 57,
+          "xwoba_bip": 0.311,
+          "ev_bip": 87.4,
+          "barrel_bip": 1.8
+        },
+        {
+          "zone": 6,
+          "label": "MID-AWAY",
+          "n": 98,
+          "swing_pct": 53.1,
+          "whiff_of_swing": 0.0,
+          "bip": 27,
+          "xwoba_bip": 0.27,
+          "ev_bip": 82.3,
+          "barrel_bip": 3.7
+        },
+        {
+          "zone": 7,
+          "label": "LO-IN",
+          "n": 91,
+          "swing_pct": 58.2,
+          "whiff_of_swing": 1.9,
+          "bip": 32,
+          "xwoba_bip": 0.345,
+          "ev_bip": 85.1,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 8,
+          "label": "LO-MID",
+          "n": 128,
+          "swing_pct": 50.0,
+          "whiff_of_swing": 3.1,
+          "bip": 45,
+          "xwoba_bip": 0.353,
+          "ev_bip": 89.4,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 9,
+          "label": "LO-AWAY",
+          "n": 90,
+          "swing_pct": 33.3,
+          "whiff_of_swing": 3.3,
+          "bip": 16,
+          "xwoba_bip": 0.439,
+          "ev_bip": 87.5,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 11,
+          "label": "OUT-UP-3B",
+          "n": 440,
+          "swing_pct": 13.9,
+          "whiff_of_swing": 3.3,
+          "bip": 22,
+          "xwoba_bip": 0.242,
+          "ev_bip": 78.1,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 12,
+          "label": "OUT-UP-1B",
+          "n": 126,
+          "swing_pct": 26.2,
+          "whiff_of_swing": 6.1,
+          "bip": 15,
+          "xwoba_bip": 0.247,
+          "ev_bip": 72.9,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 13,
+          "label": "OUT-DN-3B",
+          "n": 197,
+          "swing_pct": 29.9,
+          "whiff_of_swing": 15.3,
+          "bip": 28,
+          "xwoba_bip": 0.275,
+          "ev_bip": 76.8,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 14,
+          "label": "OUT-DN-1B",
+          "n": 245,
+          "swing_pct": 19.2,
+          "whiff_of_swing": 23.4,
+          "bip": 12,
+          "xwoba_bip": 0.208,
+          "ev_bip": 76.2,
+          "barrel_bip": 0.0
+        }
+      ],
+      "slot": 1,
+      "team": "CLE",
+      "recent": {
+        "name": "Steven Kwan",
+        "vs_hand": "R",
+        "window": "recent",
+        "n_pitches": 199,
+        "stand": "L",
+        "sample_flags": [],
+        "swing_pct": 31.7,
+        "whiff_of_swing": 3.2,
+        "top_swing_zones": [
+          {
+            "label": "HEART",
+            "swing_pct": 69.2,
+            "n": 13,
+            "whiff_of_swing": 0.0
+          },
+          {
+            "label": "HI-MID",
+            "swing_pct": 50.0,
+            "n": 12,
+            "whiff_of_swing": 0.0
+          },
+          {
+            "label": "MID-IN",
+            "swing_pct": 43.8,
+            "n": 16,
+            "whiff_of_swing": 0.0
+          },
+          {
+            "label": "LO-AWAY",
+            "swing_pct": 41.7,
+            "n": 12,
+            "whiff_of_swing": 20.0
+          },
+          {
+            "label": "OUT-DN-3B",
+            "swing_pct": 27.8,
+            "n": 18,
+            "whiff_of_swing": 0.0
+          }
+        ],
+        "top_damage_zones": [
+          {
+            "label": "HEART",
+            "xwoba_bip": 0.423,
+            "ev_bip": 91.4,
+            "barrel_bip": 0.0,
+            "bip": 6,
+            "swing_pct": 69.2
+          },
+          {
+            "label": "MID-IN",
+            "xwoba_bip": 0.266,
+            "ev_bip": 88.6,
+            "barrel_bip": 0.0,
+            "bip": 5,
+            "swing_pct": 43.8
+          }
+        ],
+        "all_zones": [
+          {
+            "zone": 1,
+            "label": "HI-IN (3B)",
+            "n": 10,
+            "swing_pct": 60.0,
+            "whiff_of_swing": 16.7,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 2,
+            "label": "HI-MID",
+            "n": 12,
+            "swing_pct": 50.0,
+            "whiff_of_swing": 0.0,
+            "bip": 4,
+            "xwoba_bip": 0.46,
+            "ev_bip": 79.1,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 4,
+            "label": "MID-IN",
+            "n": 16,
+            "swing_pct": 43.8,
+            "whiff_of_swing": 0.0,
+            "bip": 5,
+            "xwoba_bip": 0.266,
+            "ev_bip": 88.6,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 5,
+            "label": "HEART",
+            "n": 13,
+            "swing_pct": 69.2,
+            "whiff_of_swing": 0.0,
+            "bip": 6,
+            "xwoba_bip": 0.423,
+            "ev_bip": 91.4,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 6,
+            "label": "MID-AWAY",
+            "n": 9,
+            "swing_pct": 66.7,
+            "whiff_of_swing": 0.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 8,
+            "label": "LO-MID",
+            "n": 15,
+            "swing_pct": 26.7,
+            "whiff_of_swing": 0.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 9,
+            "label": "LO-AWAY",
+            "n": 12,
+            "swing_pct": 41.7,
+            "whiff_of_swing": 20.0,
+            "bip": 3,
+            "xwoba_bip": 0.38,
+            "ev_bip": 68.8,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 11,
+            "label": "OUT-UP-3B",
+            "n": 45,
+            "swing_pct": 8.9,
+            "whiff_of_swing": 0.0,
+            "bip": 3,
+            "xwoba_bip": 0.15,
+            "ev_bip": 82.3,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 12,
+            "label": "OUT-UP-1B",
+            "n": 11,
+            "swing_pct": 18.2,
+            "whiff_of_swing": 0.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 13,
+            "label": "OUT-DN-3B",
+            "n": 18,
+            "swing_pct": 27.8,
+            "whiff_of_swing": 0.0,
+            "bip": 3,
+            "xwoba_bip": 0.102,
+            "ev_bip": 78.2,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 14,
+            "label": "OUT-DN-1B",
+            "n": 25,
+            "swing_pct": 16.0,
+            "whiff_of_swing": 0.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          }
+        ]
+      }
+    },
+    {
+      "name": "Brayan Rocchio",
+      "vs_hand": "R",
+      "window": "season",
+      "n_pitches": 1750,
+      "stand": "L",
+      "sample_flags": [],
+      "swing_pct": 47.5,
+      "whiff_of_swing": 19.5,
+      "top_swing_zones": [
+        {
+          "label": "HI-AWAY (1B)",
+          "swing_pct": 75.0,
+          "n": 48,
+          "whiff_of_swing": 5.6
+        },
+        {
+          "label": "HEART",
+          "swing_pct": 74.3,
+          "n": 109,
+          "whiff_of_swing": 11.1
+        },
+        {
+          "label": "HI-MID",
+          "swing_pct": 72.9,
+          "n": 96,
+          "whiff_of_swing": 5.7
+        },
+        {
+          "label": "LO-MID",
+          "swing_pct": 71.3,
+          "n": 115,
+          "whiff_of_swing": 9.8
+        },
+        {
+          "label": "MID-IN",
+          "swing_pct": 67.9,
+          "n": 106,
+          "whiff_of_swing": 12.5
+        }
+      ],
+      "top_damage_zones": [
+        {
+          "label": "HI-IN (3B)",
+          "xwoba_bip": 0.41,
+          "ev_bip": 90.0,
+          "barrel_bip": 5.0,
+          "bip": 20,
+          "swing_pct": 64.0
+        },
+        {
+          "label": "LO-MID",
+          "xwoba_bip": 0.33,
+          "ev_bip": 95.1,
+          "barrel_bip": 4.8,
+          "bip": 42,
+          "swing_pct": 71.3
+        },
+        {
+          "label": "LO-AWAY",
+          "xwoba_bip": 0.33,
+          "ev_bip": 89.5,
+          "barrel_bip": 9.1,
+          "bip": 11,
+          "swing_pct": 47.7
+        },
+        {
+          "label": "OUT-UP-1B",
+          "xwoba_bip": 0.316,
+          "ev_bip": 71.0,
+          "barrel_bip": 0.0,
+          "bip": 9,
+          "swing_pct": 34.7
+        },
+        {
+          "label": "HI-MID",
+          "xwoba_bip": 0.313,
+          "ev_bip": 88.6,
+          "barrel_bip": 2.8,
+          "bip": 36,
+          "swing_pct": 72.9
+        }
+      ],
+      "all_zones": [
+        {
+          "zone": 1,
+          "label": "HI-IN (3B)",
+          "n": 100,
+          "swing_pct": 64.0,
+          "whiff_of_swing": 7.8,
+          "bip": 20,
+          "xwoba_bip": 0.41,
+          "ev_bip": 90.0,
+          "barrel_bip": 5.0
+        },
+        {
+          "zone": 2,
+          "label": "HI-MID",
+          "n": 96,
+          "swing_pct": 72.9,
+          "whiff_of_swing": 5.7,
+          "bip": 36,
+          "xwoba_bip": 0.313,
+          "ev_bip": 88.6,
+          "barrel_bip": 2.8
+        },
+        {
+          "zone": 3,
+          "label": "HI-AWAY (1B)",
+          "n": 48,
+          "swing_pct": 75.0,
+          "whiff_of_swing": 5.6,
+          "bip": 14,
+          "xwoba_bip": 0.189,
+          "ev_bip": 78.0,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 4,
+          "label": "MID-IN",
+          "n": 106,
+          "swing_pct": 67.9,
+          "whiff_of_swing": 12.5,
+          "bip": 46,
+          "xwoba_bip": 0.311,
+          "ev_bip": 91.2,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 5,
+          "label": "HEART",
+          "n": 109,
+          "swing_pct": 74.3,
+          "whiff_of_swing": 11.1,
+          "bip": 41,
+          "xwoba_bip": 0.287,
+          "ev_bip": 91.0,
+          "barrel_bip": 4.9
+        },
+        {
+          "zone": 6,
+          "label": "MID-AWAY",
+          "n": 64,
+          "swing_pct": 57.8,
+          "whiff_of_swing": 8.1,
+          "bip": 25,
+          "xwoba_bip": 0.311,
+          "ev_bip": 81.9,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 7,
+          "label": "LO-IN",
+          "n": 89,
+          "swing_pct": 64.0,
+          "whiff_of_swing": 19.3,
+          "bip": 27,
+          "xwoba_bip": 0.298,
+          "ev_bip": 90.4,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 8,
+          "label": "LO-MID",
+          "n": 115,
+          "swing_pct": 71.3,
+          "whiff_of_swing": 9.8,
+          "bip": 42,
+          "xwoba_bip": 0.33,
+          "ev_bip": 95.1,
+          "barrel_bip": 4.8
+        },
+        {
+          "zone": 9,
+          "label": "LO-AWAY",
+          "n": 65,
+          "swing_pct": 47.7,
+          "whiff_of_swing": 9.7,
+          "bip": 11,
+          "xwoba_bip": 0.33,
+          "ev_bip": 89.5,
+          "barrel_bip": 9.1
+        },
+        {
+          "zone": 11,
+          "label": "OUT-UP-3B",
+          "n": 328,
+          "swing_pct": 21.0,
+          "whiff_of_swing": 23.2,
+          "bip": 22,
+          "xwoba_bip": 0.231,
+          "ev_bip": 82.3,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 12,
+          "label": "OUT-UP-1B",
+          "n": 98,
+          "swing_pct": 34.7,
+          "whiff_of_swing": 23.5,
+          "bip": 9,
+          "xwoba_bip": 0.316,
+          "ev_bip": 71.0,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 13,
+          "label": "OUT-DN-3B",
+          "n": 253,
+          "swing_pct": 39.5,
+          "whiff_of_swing": 40.0,
+          "bip": 32,
+          "xwoba_bip": 0.299,
+          "ev_bip": 80.9,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 14,
+          "label": "OUT-DN-1B",
+          "n": 279,
+          "swing_pct": 35.1,
+          "whiff_of_swing": 44.9,
+          "bip": 19,
+          "xwoba_bip": 0.28,
+          "ev_bip": 80.1,
+          "barrel_bip": 5.3
+        }
+      ],
+      "slot": 9,
+      "team": "CLE",
+      "recent": {
+        "name": "Brayan Rocchio",
+        "vs_hand": "R",
+        "window": "recent",
+        "n_pitches": 133,
+        "stand": "L",
+        "sample_flags": [],
+        "swing_pct": 42.1,
+        "whiff_of_swing": 14.3,
+        "top_swing_zones": [
+          {
+            "label": "OUT-DN-3B",
+            "swing_pct": 26.3,
+            "n": 19,
+            "whiff_of_swing": 60.0
+          },
+          {
+            "label": "OUT-DN-1B",
+            "swing_pct": 26.3,
+            "n": 19,
+            "whiff_of_swing": 60.0
+          },
+          {
+            "label": "OUT-UP-3B",
+            "swing_pct": 13.3,
+            "n": 30,
+            "whiff_of_swing": 25.0
+          }
+        ],
+        "top_damage_zones": [
+          {
+            "label": "MID-IN",
+            "xwoba_bip": 0.099,
+            "ev_bip": 90.5,
+            "barrel_bip": 0.0,
+            "bip": 5,
+            "swing_pct": 66.7
+          }
+        ],
+        "all_zones": [
+          {
+            "zone": 1,
+            "label": "HI-IN (3B)",
+            "n": 10,
+            "swing_pct": 50.0,
+            "whiff_of_swing": 0.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 4,
+            "label": "MID-IN",
+            "n": 9,
+            "swing_pct": 66.7,
+            "whiff_of_swing": 0.0,
+            "bip": 5,
+            "xwoba_bip": 0.099,
+            "ev_bip": 90.5,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 5,
+            "label": "HEART",
+            "n": 10,
+            "swing_pct": 60.0,
+            "whiff_of_swing": 0.0,
+            "bip": 3,
+            "xwoba_bip": 0.484,
+            "ev_bip": 96.6,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 11,
+            "label": "OUT-UP-3B",
+            "n": 30,
+            "swing_pct": 13.3,
+            "whiff_of_swing": 25.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 12,
+            "label": "OUT-UP-1B",
+            "n": 9,
+            "swing_pct": 44.4,
+            "whiff_of_swing": 25.0,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 13,
+            "label": "OUT-DN-3B",
+            "n": 19,
+            "swing_pct": 26.3,
+            "whiff_of_swing": 60.0,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 14,
+            "label": "OUT-DN-1B",
+            "n": 19,
+            "swing_pct": 26.3,
+            "whiff_of_swing": 60.0,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          }
+        ]
+      }
+    },
+    {
+      "name": "Patrick Bailey",
+      "vs_hand": "R",
+      "window": "season",
+      "n_pitches": 1263,
+      "stand": "L",
+      "sample_flags": [],
+      "swing_pct": 51.1,
+      "whiff_of_swing": 23.4,
+      "top_swing_zones": [
+        {
+          "label": "HI-MID",
+          "swing_pct": 84.5,
+          "n": 84,
+          "whiff_of_swing": 16.9
+        },
+        {
+          "label": "MID-IN",
+          "swing_pct": 73.8,
+          "n": 80,
+          "whiff_of_swing": 6.8
+        },
+        {
+          "label": "HEART",
+          "swing_pct": 72.2,
+          "n": 108,
+          "whiff_of_swing": 7.7
+        },
+        {
+          "label": "HI-IN (3B)",
+          "swing_pct": 71.7,
+          "n": 46,
+          "whiff_of_swing": 24.2
+        },
+        {
+          "label": "HI-AWAY (1B)",
+          "swing_pct": 71.0,
+          "n": 31,
+          "whiff_of_swing": 13.6
+        }
+      ],
+      "top_damage_zones": [
+        {
+          "label": "HI-MID",
+          "xwoba_bip": 0.645,
+          "ev_bip": 93.7,
+          "barrel_bip": 21.7,
+          "bip": 23,
+          "swing_pct": 84.5
+        },
+        {
+          "label": "HEART",
+          "xwoba_bip": 0.526,
+          "ev_bip": 94.8,
+          "barrel_bip": 19.4,
+          "bip": 36,
+          "swing_pct": 72.2
+        },
+        {
+          "label": "HI-IN (3B)",
+          "xwoba_bip": 0.498,
+          "ev_bip": 95.6,
+          "barrel_bip": 0.0,
+          "bip": 11,
+          "swing_pct": 71.7
+        },
+        {
+          "label": "MID-AWAY",
+          "xwoba_bip": 0.442,
+          "ev_bip": 91.4,
+          "barrel_bip": 6.2,
+          "bip": 16,
+          "swing_pct": 63.6
+        },
+        {
+          "label": "MID-IN",
+          "xwoba_bip": 0.378,
+          "ev_bip": 90.0,
+          "barrel_bip": 6.1,
+          "bip": 33,
+          "swing_pct": 73.8
+        }
+      ],
+      "all_zones": [
+        {
+          "zone": 1,
+          "label": "HI-IN (3B)",
+          "n": 46,
+          "swing_pct": 71.7,
+          "whiff_of_swing": 24.2,
+          "bip": 11,
+          "xwoba_bip": 0.498,
+          "ev_bip": 95.6,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 2,
+          "label": "HI-MID",
+          "n": 84,
+          "swing_pct": 84.5,
+          "whiff_of_swing": 16.9,
+          "bip": 23,
+          "xwoba_bip": 0.645,
+          "ev_bip": 93.7,
+          "barrel_bip": 21.7
+        },
+        {
+          "zone": 3,
+          "label": "HI-AWAY (1B)",
+          "n": 31,
+          "swing_pct": 71.0,
+          "whiff_of_swing": 13.6,
+          "bip": 4,
+          "xwoba_bip": NaN,
+          "ev_bip": NaN,
+          "barrel_bip": NaN
+        },
+        {
+          "zone": 4,
+          "label": "MID-IN",
+          "n": 80,
+          "swing_pct": 73.8,
+          "whiff_of_swing": 6.8,
+          "bip": 33,
+          "xwoba_bip": 0.378,
+          "ev_bip": 90.0,
+          "barrel_bip": 6.1
+        },
+        {
+          "zone": 5,
+          "label": "HEART",
+          "n": 108,
+          "swing_pct": 72.2,
+          "whiff_of_swing": 7.7,
+          "bip": 36,
+          "xwoba_bip": 0.526,
+          "ev_bip": 94.8,
+          "barrel_bip": 19.4
+        },
+        {
+          "zone": 6,
+          "label": "MID-AWAY",
+          "n": 55,
+          "swing_pct": 63.6,
+          "whiff_of_swing": 11.4,
+          "bip": 16,
+          "xwoba_bip": 0.442,
+          "ev_bip": 91.4,
+          "barrel_bip": 6.2
+        },
+        {
+          "zone": 7,
+          "label": "LO-IN",
+          "n": 71,
+          "swing_pct": 64.8,
+          "whiff_of_swing": 15.2,
+          "bip": 24,
+          "xwoba_bip": 0.353,
+          "ev_bip": 87.4,
+          "barrel_bip": 4.2
+        },
+        {
+          "zone": 8,
+          "label": "LO-MID",
+          "n": 82,
+          "swing_pct": 67.1,
+          "whiff_of_swing": 12.7,
+          "bip": 29,
+          "xwoba_bip": 0.355,
+          "ev_bip": 88.3,
+          "barrel_bip": 3.4
+        },
+        {
+          "zone": 9,
+          "label": "LO-AWAY",
+          "n": 67,
+          "swing_pct": 64.2,
+          "whiff_of_swing": 27.9,
+          "bip": 12,
+          "xwoba_bip": 0.226,
+          "ev_bip": 86.9,
+          "barrel_bip": 16.7
+        },
+        {
+          "zone": 11,
+          "label": "OUT-UP-3B",
+          "n": 213,
+          "swing_pct": 28.2,
+          "whiff_of_swing": 35.0,
+          "bip": 7,
+          "xwoba_bip": 0.373,
+          "ev_bip": 80.4,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 12,
+          "label": "OUT-UP-1B",
+          "n": 42,
+          "swing_pct": 64.3,
+          "whiff_of_swing": 29.6,
+          "bip": 5,
+          "xwoba_bip": 0.234,
+          "ev_bip": 73.4,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 13,
+          "label": "OUT-DN-3B",
+          "n": 177,
+          "swing_pct": 27.1,
+          "whiff_of_swing": 39.6,
+          "bip": 18,
+          "xwoba_bip": 0.293,
+          "ev_bip": 80.9,
+          "barrel_bip": 5.6
+        },
+        {
+          "zone": 14,
+          "label": "OUT-DN-1B",
+          "n": 207,
+          "swing_pct": 32.9,
+          "whiff_of_swing": 58.8,
+          "bip": 11,
+          "xwoba_bip": 0.293,
+          "ev_bip": 81.0,
+          "barrel_bip": 0.0
+        }
+      ],
+      "slot": 7,
+      "team": "CLE",
+      "recent": {
+        "name": "Patrick Bailey",
+        "vs_hand": "R",
+        "window": "recent",
+        "n_pitches": 128,
+        "stand": "L",
+        "sample_flags": [],
+        "swing_pct": 52.3,
+        "whiff_of_swing": 29.9,
+        "top_swing_zones": [
+          {
+            "label": "HI-MID",
+            "swing_pct": 75.0,
+            "n": 12,
+            "whiff_of_swing": 22.2
+          },
+          {
+            "label": "OUT-DN-3B",
+            "swing_pct": 36.4,
+            "n": 22,
+            "whiff_of_swing": 25.0
+          },
+          {
+            "label": "OUT-DN-1B",
+            "swing_pct": 31.2,
+            "n": 16,
+            "whiff_of_swing": 80.0
+          },
+          {
+            "label": "OUT-UP-3B",
+            "swing_pct": 30.0,
+            "n": 20,
+            "whiff_of_swing": 100.0
+          }
+        ],
+        "top_damage_zones": [
+          {
+            "label": "HI-MID",
+            "xwoba_bip": 0.743,
+            "ev_bip": 101.1,
+            "barrel_bip": 40.0,
+            "bip": 5,
+            "swing_pct": 75.0
+          },
+          {
+            "label": "OUT-DN-3B",
+            "xwoba_bip": 0.507,
+            "ev_bip": 86.2,
+            "barrel_bip": 20.0,
+            "bip": 5,
+            "swing_pct": 36.4
+          }
+        ],
+        "all_zones": [
+          {
+            "zone": 2,
+            "label": "HI-MID",
+            "n": 12,
+            "swing_pct": 75.0,
+            "whiff_of_swing": 22.2,
+            "bip": 5,
+            "xwoba_bip": 0.743,
+            "ev_bip": 101.1,
+            "barrel_bip": 40.0
+          },
+          {
+            "zone": 4,
+            "label": "MID-IN",
+            "n": 9,
+            "swing_pct": 77.8,
+            "whiff_of_swing": 0.0,
+            "bip": 3,
+            "xwoba_bip": 0.769,
+            "ev_bip": 94.4,
+            "barrel_bip": 33.3
+          },
+          {
+            "zone": 5,
+            "label": "HEART",
+            "n": 9,
+            "swing_pct": 55.6,
+            "whiff_of_swing": 20.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 9,
+            "label": "LO-AWAY",
+            "n": 10,
+            "swing_pct": 80.0,
+            "whiff_of_swing": 25.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 11,
+            "label": "OUT-UP-3B",
+            "n": 20,
+            "swing_pct": 30.0,
+            "whiff_of_swing": 100.0,
+            "bip": 0,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 13,
+            "label": "OUT-DN-3B",
+            "n": 22,
+            "swing_pct": 36.4,
+            "whiff_of_swing": 25.0,
+            "bip": 5,
+            "xwoba_bip": 0.507,
+            "ev_bip": 86.2,
+            "barrel_bip": 20.0
+          },
+          {
+            "zone": 14,
+            "label": "OUT-DN-1B",
+            "n": 16,
+            "swing_pct": 31.2,
+            "whiff_of_swing": 80.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          }
+        ]
+      }
+    },
+    {
+      "name": "Petey Halpin",
+      "vs_hand": "R",
+      "window": "season",
+      "n_pitches": 652,
+      "stand": "L",
+      "sample_flags": [
+        "LOW_SAMPLE_RECENT"
+      ],
+      "swing_pct": 58.3,
+      "whiff_of_swing": 21.8,
+      "top_swing_zones": [
+        {
+          "label": "HI-MID",
+          "swing_pct": 90.3,
+          "n": 31,
+          "whiff_of_swing": 32.1
+        },
+        {
+          "label": "MID-IN",
+          "swing_pct": 86.8,
+          "n": 38,
+          "whiff_of_swing": 21.2
+        },
+        {
+          "label": "HEART",
+          "swing_pct": 86.5,
+          "n": 52,
+          "whiff_of_swing": 6.7
+        },
+        {
+          "label": "LO-AWAY",
+          "swing_pct": 81.6,
+          "n": 38,
+          "whiff_of_swing": 9.7
+        },
+        {
+          "label": "HI-IN (3B)",
+          "swing_pct": 79.3,
+          "n": 29,
+          "whiff_of_swing": 34.8
+        }
+      ],
+      "top_damage_zones": [
+        {
+          "label": "OUT-DN-3B",
+          "xwoba_bip": 0.525,
+          "ev_bip": 84.5,
+          "barrel_bip": 6.7,
+          "bip": 15,
+          "swing_pct": 50.7
+        },
+        {
+          "label": "MID-AWAY",
+          "xwoba_bip": 0.497,
+          "ev_bip": 85.9,
+          "barrel_bip": 7.7,
+          "bip": 13,
+          "swing_pct": 72.7
+        },
+        {
+          "label": "MID-IN",
+          "xwoba_bip": 0.47,
+          "ev_bip": 90.5,
+          "barrel_bip": 22.2,
+          "bip": 9,
+          "swing_pct": 86.8
+        },
+        {
+          "label": "LO-IN",
+          "xwoba_bip": 0.404,
+          "ev_bip": 87.7,
+          "barrel_bip": 7.1,
+          "bip": 14,
+          "swing_pct": 73.5
+        },
+        {
+          "label": "HEART",
+          "xwoba_bip": 0.35,
+          "ev_bip": 90.5,
+          "barrel_bip": 8.7,
+          "bip": 23,
+          "swing_pct": 86.5
+        }
+      ],
+      "all_zones": [
+        {
+          "zone": 1,
+          "label": "HI-IN (3B)",
+          "n": 29,
+          "swing_pct": 79.3,
+          "whiff_of_swing": 34.8,
+          "bip": 3,
+          "xwoba_bip": NaN,
+          "ev_bip": NaN,
+          "barrel_bip": NaN
+        },
+        {
+          "zone": 2,
+          "label": "HI-MID",
+          "n": 31,
+          "swing_pct": 90.3,
+          "whiff_of_swing": 32.1,
+          "bip": 6,
+          "xwoba_bip": 0.175,
+          "ev_bip": 92.3,
+          "barrel_bip": 16.7
+        },
+        {
+          "zone": 4,
+          "label": "MID-IN",
+          "n": 38,
+          "swing_pct": 86.8,
+          "whiff_of_swing": 21.2,
+          "bip": 9,
+          "xwoba_bip": 0.47,
+          "ev_bip": 90.5,
+          "barrel_bip": 22.2
+        },
+        {
+          "zone": 5,
+          "label": "HEART",
+          "n": 52,
+          "swing_pct": 86.5,
+          "whiff_of_swing": 6.7,
+          "bip": 23,
+          "xwoba_bip": 0.35,
+          "ev_bip": 90.5,
+          "barrel_bip": 8.7
+        },
+        {
+          "zone": 6,
+          "label": "MID-AWAY",
+          "n": 33,
+          "swing_pct": 72.7,
+          "whiff_of_swing": 4.2,
+          "bip": 13,
+          "xwoba_bip": 0.497,
+          "ev_bip": 85.9,
+          "barrel_bip": 7.7
+        },
+        {
+          "zone": 7,
+          "label": "LO-IN",
+          "n": 34,
+          "swing_pct": 73.5,
+          "whiff_of_swing": 8.0,
+          "bip": 14,
+          "xwoba_bip": 0.404,
+          "ev_bip": 87.7,
+          "barrel_bip": 7.1
+        },
+        {
+          "zone": 8,
+          "label": "LO-MID",
+          "n": 33,
+          "swing_pct": 78.8,
+          "whiff_of_swing": 11.5,
+          "bip": 11,
+          "xwoba_bip": 0.301,
+          "ev_bip": 80.4,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 9,
+          "label": "LO-AWAY",
+          "n": 38,
+          "swing_pct": 81.6,
+          "whiff_of_swing": 9.7,
+          "bip": 15,
+          "xwoba_bip": 0.229,
+          "ev_bip": 84.4,
+          "barrel_bip": 6.7
+        },
+        {
+          "zone": 11,
+          "label": "OUT-UP-3B",
+          "n": 145,
+          "swing_pct": 25.5,
+          "whiff_of_swing": 43.2,
+          "bip": 7,
+          "xwoba_bip": 0.533,
+          "ev_bip": 86.2,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 12,
+          "label": "OUT-UP-1B",
+          "n": 32,
+          "swing_pct": 53.1,
+          "whiff_of_swing": 29.4,
+          "bip": 4,
+          "xwoba_bip": NaN,
+          "ev_bip": NaN,
+          "barrel_bip": NaN
+        },
+        {
+          "zone": 13,
+          "label": "OUT-DN-3B",
+          "n": 71,
+          "swing_pct": 50.7,
+          "whiff_of_swing": 27.8,
+          "bip": 15,
+          "xwoba_bip": 0.525,
+          "ev_bip": 84.5,
+          "barrel_bip": 6.7
+        },
+        {
+          "zone": 14,
+          "label": "OUT-DN-1B",
+          "n": 104,
+          "swing_pct": 42.3,
+          "whiff_of_swing": 34.1,
+          "bip": 14,
+          "xwoba_bip": 0.211,
+          "ev_bip": 85.1,
+          "barrel_bip": 0.0
+        }
+      ],
+      "slot": 8,
+      "team": "CLE",
+      "recent": {
+        "name": "Petey Halpin",
+        "vs_hand": "R",
+        "window": "recent",
+        "n_pitches": 89,
+        "stand": "L",
+        "sample_flags": [
+          "LOW_SAMPLE_RECENT"
+        ],
+        "swing_pct": 53.9,
+        "whiff_of_swing": 20.8,
+        "top_swing_zones": [
+          {
+            "label": "OUT-UP-3B",
+            "swing_pct": 33.3,
+            "n": 27,
+            "whiff_of_swing": 11.1
+          },
+          {
+            "label": "OUT-DN-3B",
+            "swing_pct": 33.3,
+            "n": 15,
+            "whiff_of_swing": 60.0
+          }
+        ],
+        "top_damage_zones": [],
+        "all_zones": [
+          {
+            "zone": 11,
+            "label": "OUT-UP-3B",
+            "n": 27,
+            "swing_pct": 33.3,
+            "whiff_of_swing": 11.1,
+            "bip": 1,
+            "xwoba_bip": null,
+            "ev_bip": null,
+            "barrel_bip": null
+          },
+          {
+            "zone": 13,
+            "label": "OUT-DN-3B",
+            "n": 15,
+            "swing_pct": 33.3,
+            "whiff_of_swing": 60.0,
+            "bip": 1,
+            "xwoba_bip": null,
+            "ev_bip": null,
+            "barrel_bip": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "Jos\u00e9 Ram\u00edrez",
+      "vs_hand": "R",
+      "window": "season",
+      "n_pitches": 1832,
+      "stand": "L",
+      "sample_flags": [],
+      "swing_pct": 44.9,
+      "whiff_of_swing": 14.9,
+      "top_swing_zones": [
+        {
+          "label": "HEART",
+          "swing_pct": 73.6,
+          "n": 125,
+          "whiff_of_swing": 2.2
+        },
+        {
+          "label": "HI-MID",
+          "swing_pct": 72.5,
+          "n": 102,
+          "whiff_of_swing": 9.5
+        },
+        {
+          "label": "LO-IN",
+          "swing_pct": 67.9,
+          "n": 84,
+          "whiff_of_swing": 8.8
+        },
+        {
+          "label": "LO-MID",
+          "swing_pct": 67.2,
+          "n": 128,
+          "whiff_of_swing": 8.1
+        },
+        {
+          "label": "HI-AWAY (1B)",
+          "swing_pct": 63.9,
+          "n": 61,
+          "whiff_of_swing": 5.1
+        }
+      ],
+      "top_damage_zones": [
+        {
+          "label": "OUT-UP-3B",
+          "xwoba_bip": 0.484,
+          "ev_bip": 91.8,
+          "barrel_bip": 16.7,
+          "bip": 18,
+          "swing_pct": 17.7
+        },
+        {
+          "label": "LO-AWAY",
+          "xwoba_bip": 0.4,
+          "ev_bip": 83.6,
+          "barrel_bip": 7.7,
+          "bip": 13,
+          "swing_pct": 61.9
+        },
+        {
+          "label": "MID-IN",
+          "xwoba_bip": 0.394,
+          "ev_bip": 94.5,
+          "barrel_bip": 2.7,
+          "bip": 37,
+          "swing_pct": 56.1
+        },
+        {
+          "label": "OUT-DN-1B",
+          "xwoba_bip": 0.352,
+          "ev_bip": 80.4,
+          "barrel_bip": 0.0,
+          "bip": 13,
+          "swing_pct": 32.5
+        },
+        {
+          "label": "HEART",
+          "xwoba_bip": 0.349,
+          "ev_bip": 90.6,
+          "barrel_bip": 9.1,
+          "bip": 44,
+          "swing_pct": 73.6
+        }
+      ],
+      "all_zones": [
+        {
+          "zone": 1,
+          "label": "HI-IN (3B)",
+          "n": 93,
+          "swing_pct": 48.4,
+          "whiff_of_swing": 11.1,
+          "bip": 11,
+          "xwoba_bip": 0.309,
+          "ev_bip": 94.3,
+          "barrel_bip": 18.2
+        },
+        {
+          "zone": 2,
+          "label": "HI-MID",
+          "n": 102,
+          "swing_pct": 72.5,
+          "whiff_of_swing": 9.5,
+          "bip": 30,
+          "xwoba_bip": 0.317,
+          "ev_bip": 85.4,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 3,
+          "label": "HI-AWAY (1B)",
+          "n": 61,
+          "swing_pct": 63.9,
+          "whiff_of_swing": 5.1,
+          "bip": 14,
+          "xwoba_bip": 0.25,
+          "ev_bip": 79.8,
+          "barrel_bip": 7.1
+        },
+        {
+          "zone": 4,
+          "label": "MID-IN",
+          "n": 114,
+          "swing_pct": 56.1,
+          "whiff_of_swing": 7.8,
+          "bip": 37,
+          "xwoba_bip": 0.394,
+          "ev_bip": 94.5,
+          "barrel_bip": 2.7
+        },
+        {
+          "zone": 5,
+          "label": "HEART",
+          "n": 125,
+          "swing_pct": 73.6,
+          "whiff_of_swing": 2.2,
+          "bip": 44,
+          "xwoba_bip": 0.349,
+          "ev_bip": 90.6,
+          "barrel_bip": 9.1
+        },
+        {
+          "zone": 6,
+          "label": "MID-AWAY",
+          "n": 71,
+          "swing_pct": 60.6,
+          "whiff_of_swing": 2.3,
+          "bip": 19,
+          "xwoba_bip": 0.23,
+          "ev_bip": 84.5,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 7,
+          "label": "LO-IN",
+          "n": 84,
+          "swing_pct": 67.9,
+          "whiff_of_swing": 8.8,
+          "bip": 31,
+          "xwoba_bip": 0.274,
+          "ev_bip": 86.9,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 8,
+          "label": "LO-MID",
+          "n": 128,
+          "swing_pct": 67.2,
+          "whiff_of_swing": 8.1,
+          "bip": 41,
+          "xwoba_bip": 0.337,
+          "ev_bip": 90.9,
+          "barrel_bip": 7.3
+        },
+        {
+          "zone": 9,
+          "label": "LO-AWAY",
+          "n": 63,
+          "swing_pct": 61.9,
+          "whiff_of_swing": 7.7,
+          "bip": 13,
+          "xwoba_bip": 0.4,
+          "ev_bip": 83.6,
+          "barrel_bip": 7.7
+        },
+        {
+          "zone": 11,
+          "label": "OUT-UP-3B",
+          "n": 378,
+          "swing_pct": 17.7,
+          "whiff_of_swing": 38.8,
+          "bip": 18,
+          "xwoba_bip": 0.484,
+          "ev_bip": 91.8,
+          "barrel_bip": 16.7
+        },
+        {
+          "zone": 12,
+          "label": "OUT-UP-1B",
+          "n": 108,
+          "swing_pct": 38.9,
+          "whiff_of_swing": 16.7,
+          "bip": 13,
+          "xwoba_bip": 0.25,
+          "ev_bip": 73.7,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 13,
+          "label": "OUT-DN-3B",
+          "n": 253,
+          "swing_pct": 36.8,
+          "whiff_of_swing": 23.7,
+          "bip": 38,
+          "xwoba_bip": 0.236,
+          "ev_bip": 79.2,
+          "barrel_bip": 0.0
+        },
+        {
+          "zone": 14,
+          "label": "OUT-DN-1B",
+          "n": 252,
+          "swing_pct": 32.5,
+          "whiff_of_swing": 37.8,
+          "bip": 13,
+          "xwoba_bip": 0.352,
+          "ev_bip": 80.4,
+          "barrel_bip": 0.0
+        }
+      ],
+      "slot": 2,
+      "team": "CLE",
+      "recent": {
+        "name": "Jos\u00e9 Ram\u00edrez",
+        "vs_hand": "R",
+        "window": "recent",
+        "n_pitches": 170,
+        "stand": "L",
+        "sample_flags": [],
+        "swing_pct": 45.3,
+        "whiff_of_swing": 9.1,
+        "top_swing_zones": [
+          {
+            "label": "LO-IN",
+            "swing_pct": 75.0,
+            "n": 12,
+            "whiff_of_swing": 0.0
+          },
+          {
+            "label": "HEART",
+            "swing_pct": 58.3,
+            "n": 12,
+            "whiff_of_swing": 0.0
+          },
+          {
+            "label": "OUT-DN-1B",
+            "swing_pct": 42.9,
+            "n": 21,
+            "whiff_of_swing": 22.2
+          },
+          {
+            "label": "HI-IN (3B)",
+            "swing_pct": 35.7,
+            "n": 14,
+            "whiff_of_swing": 20.0
+          },
+          {
+            "label": "OUT-DN-3B",
+            "swing_pct": 22.7,
+            "n": 22,
+            "whiff_of_swing": 20.0
+          }
+        ],
+        "top_damage_zones": [
+          {
+            "label": "LO-MID",
+            "xwoba_bip": 0.592,
+            "ev_bip": 93.4,
+            "barrel_bip": 20.0,
+            "bip": 5,
+            "swing_pct": 80.0
+          },
+          {
+            "label": "HEART",
+            "xwoba_bip": 0.309,
+            "ev_bip": 93.2,
+            "barrel_bip": 0.0,
+            "bip": 5,
+            "swing_pct": 58.3
+          },
+          {
+            "label": "MID-IN",
+            "xwoba_bip": 0.222,
+            "ev_bip": 93.8,
+            "barrel_bip": 0.0,
+            "bip": 5,
+            "swing_pct": 60.0
+          },
+          {
+            "label": "LO-IN",
+            "xwoba_bip": 0.142,
+            "ev_bip": 91.0,
+            "barrel_bip": 0.0,
+            "bip": 6,
+            "swing_pct": 75.0
+          }
+        ],
+        "all_zones": [
+          {
+            "zone": 1,
+            "label": "HI-IN (3B)",
+            "n": 14,
+            "swing_pct": 35.7,
+            "whiff_of_swing": 20.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 4,
+            "label": "MID-IN",
+            "n": 10,
+            "swing_pct": 60.0,
+            "whiff_of_swing": 0.0,
+            "bip": 5,
+            "xwoba_bip": 0.222,
+            "ev_bip": 93.8,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 5,
+            "label": "HEART",
+            "n": 12,
+            "swing_pct": 58.3,
+            "whiff_of_swing": 0.0,
+            "bip": 5,
+            "xwoba_bip": 0.309,
+            "ev_bip": 93.2,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 6,
+            "label": "MID-AWAY",
+            "n": 8,
+            "swing_pct": 62.5,
+            "whiff_of_swing": 0.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 7,
+            "label": "LO-IN",
+            "n": 12,
+            "swing_pct": 75.0,
+            "whiff_of_swing": 0.0,
+            "bip": 6,
+            "xwoba_bip": 0.142,
+            "ev_bip": 91.0,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 8,
+            "label": "LO-MID",
+            "n": 10,
+            "swing_pct": 80.0,
+            "whiff_of_swing": 0.0,
+            "bip": 5,
+            "xwoba_bip": 0.592,
+            "ev_bip": 93.4,
+            "barrel_bip": 20.0
+          },
+          {
+            "zone": 9,
+            "label": "LO-AWAY",
+            "n": 10,
+            "swing_pct": 80.0,
+            "whiff_of_swing": 0.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 11,
+            "label": "OUT-UP-3B",
+            "n": 26,
+            "swing_pct": 15.4,
+            "whiff_of_swing": 50.0,
+            "bip": 1,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          },
+          {
+            "zone": 12,
+            "label": "OUT-UP-1B",
+            "n": 11,
+            "swing_pct": 36.4,
+            "whiff_of_swing": 25.0,
+            "bip": 3,
+            "xwoba_bip": 0.273,
+            "ev_bip": 74.8,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 13,
+            "label": "OUT-DN-3B",
+            "n": 22,
+            "swing_pct": 22.7,
+            "whiff_of_swing": 20.0,
+            "bip": 3,
+            "xwoba_bip": 0.09,
+            "ev_bip": 60.9,
+            "barrel_bip": 0.0
+          },
+          {
+            "zone": 14,
+            "label": "OUT-DN-1B",
+            "n": 21,
+            "swing_pct": 42.9,
+            "whiff_of_swing": 22.2,
+            "bip": 2,
+            "xwoba_bip": NaN,
+            "ev_bip": NaN,
+            "barrel_bip": NaN
+          }
+        ]
+      }
+    }
+  ],
+  "overlaps": {
+    "Chase DeLauter": [
+      {
+        "zone": 6,
+        "label": "MID-AWAY",
+        "pitcher_pct": 7.3,
+        "batter_swing": 75.7,
+        "batter_xwoba": 0.456,
+        "batter_ev": 92.7,
+        "batter_barrel": 10.3,
+        "bip": 29,
+        "overlap_score": 3.33,
+        "risk": "HOT",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "HOT",
+        "recent_risk": "WARM",
+        "recent_xwoba": 0.403,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 5.5,
+        "agreement": "CONFIRM"
+      },
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 10.8,
+        "batter_swing": 10.7,
+        "batter_xwoba": 0.37,
+        "batter_ev": 90.8,
+        "batter_barrel": 8.3,
+        "bip": 12,
+        "overlap_score": 4.0,
+        "risk": "WARM",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 14,
+        "label": "OUT-DN-1B",
+        "pitcher_pct": 10.2,
+        "batter_swing": 18.8,
+        "batter_xwoba": 0.37,
+        "batter_ev": 85.8,
+        "batter_barrel": 8.3,
+        "bip": 12,
+        "overlap_score": 3.78,
+        "risk": "WARM",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 12.7,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 13,
+        "label": "OUT-DN-3B",
+        "pitcher_pct": 14.0,
+        "batter_swing": 23.0,
+        "batter_xwoba": 0.222,
+        "batter_ev": 84.7,
+        "batter_barrel": 0.0,
+        "bip": 22,
+        "overlap_score": 3.11,
+        "risk": "COLD",
+        "sample_flags": [],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.347,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 3,
+        "label": "HI-AWAY (1B)",
+        "pitcher_pct": 6.0,
+        "batter_swing": 94.7,
+        "batter_xwoba": 0.481,
+        "batter_ev": 86.2,
+        "batter_barrel": 7.7,
+        "bip": 13,
+        "overlap_score": 2.91,
+        "risk": "HOT",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 6.4,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 2,
+        "label": "HI-MID",
+        "pitcher_pct": 7.1,
+        "batter_swing": 75.4,
+        "batter_xwoba": 0.397,
+        "batter_ev": 92.2,
+        "batter_barrel": 17.2,
+        "bip": 29,
+        "overlap_score": 2.81,
+        "risk": "WARM",
+        "sample_flags": [],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.398,
+        "recent_bip": 4,
+        "recent_pitcher_pct": 2.7,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 5,
+        "label": "HEART",
+        "pitcher_pct": 8.2,
+        "batter_swing": 82.5,
+        "batter_xwoba": 0.339,
+        "batter_ev": 95.0,
+        "batter_barrel": 4.3,
+        "bip": 46,
+        "overlap_score": 2.77,
+        "risk": "\u2014",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "\u2014",
+        "recent_risk": "WARM",
+        "recent_xwoba": 0.39,
+        "recent_bip": 6,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "RECENT_ONLY"
+      },
+      {
+        "zone": 4,
+        "label": "MID-IN",
+        "pitcher_pct": 6.4,
+        "batter_swing": 56.1,
+        "batter_xwoba": 0.378,
+        "batter_ev": 93.8,
+        "batter_barrel": 0.0,
+        "bip": 29,
+        "overlap_score": 2.42,
+        "risk": "WARM",
+        "sample_flags": [],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 5.5,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 8,
+        "label": "LO-MID",
+        "pitcher_pct": 5.3,
+        "batter_swing": 70.2,
+        "batter_xwoba": 0.427,
+        "batter_ev": 97.2,
+        "batter_barrel": 9.8,
+        "bip": 51,
+        "overlap_score": 2.27,
+        "risk": "WARM",
+        "sample_flags": [],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 4.5,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 12,
+        "label": "OUT-UP-1B",
+        "pitcher_pct": 11.2,
+        "batter_swing": 50.0,
+        "batter_xwoba": 0.2,
+        "batter_ev": 77.1,
+        "batter_barrel": 0.0,
+        "bip": 9,
+        "overlap_score": 2.25,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 10.9,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 1,
+        "label": "HI-IN (3B)",
+        "pitcher_pct": 4.6,
+        "batter_swing": 44.4,
+        "batter_xwoba": 0.428,
+        "batter_ev": 96.3,
+        "batter_barrel": 14.3,
+        "bip": 14,
+        "overlap_score": 1.96,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 9,
+        "label": "LO-AWAY",
+        "pitcher_pct": 4.2,
+        "batter_swing": 60.8,
+        "batter_xwoba": 0.45,
+        "batter_ev": 96.0,
+        "batter_barrel": 13.8,
+        "bip": 29,
+        "overlap_score": 1.9,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 5.5,
+        "agreement": null
+      },
+      {
+        "zone": 7,
+        "label": "LO-IN",
+        "pitcher_pct": 4.6,
+        "batter_swing": 56.0,
+        "batter_xwoba": 0.257,
+        "batter_ev": 91.0,
+        "batter_barrel": 0.0,
+        "bip": 31,
+        "overlap_score": 1.18,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      }
+    ],
+    "Nathaniel Lowe": [
+      {
+        "zone": 13,
+        "label": "OUT-DN-3B",
+        "pitcher_pct": 14.0,
+        "batter_swing": 25.8,
+        "batter_xwoba": 0.373,
+        "batter_ev": 84.7,
+        "batter_barrel": 0.0,
+        "bip": 13,
+        "overlap_score": 5.23,
+        "risk": "WARM",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "WARM",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 5,
+        "label": "HEART",
+        "pitcher_pct": 8.2,
+        "batter_swing": 73.9,
+        "batter_xwoba": 0.596,
+        "batter_ev": 96.7,
+        "batter_barrel": 19.5,
+        "bip": 41,
+        "overlap_score": 4.86,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.29,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 6,
+        "label": "MID-AWAY",
+        "pitcher_pct": 7.3,
+        "batter_swing": 63.9,
+        "batter_xwoba": 0.448,
+        "batter_ev": 87.2,
+        "batter_barrel": 8.6,
+        "bip": 35,
+        "overlap_score": 3.27,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.348,
+        "recent_bip": 6,
+        "recent_pitcher_pct": 5.5,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 4,
+        "label": "MID-IN",
+        "pitcher_pct": 6.4,
+        "batter_swing": 59.8,
+        "batter_xwoba": 0.502,
+        "batter_ev": 95.4,
+        "batter_barrel": 13.6,
+        "bip": 22,
+        "overlap_score": 3.21,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 5.5,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 14,
+        "label": "OUT-DN-1B",
+        "pitcher_pct": 10.2,
+        "batter_swing": 23.0,
+        "batter_xwoba": 0.299,
+        "batter_ev": 89.8,
+        "batter_barrel": 8.3,
+        "bip": 12,
+        "overlap_score": 3.05,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 12.7,
+        "agreement": null
+      },
+      {
+        "zone": 8,
+        "label": "LO-MID",
+        "pitcher_pct": 5.3,
+        "batter_swing": 60.0,
+        "batter_xwoba": 0.464,
+        "batter_ev": 98.2,
+        "batter_barrel": 9.3,
+        "bip": 43,
+        "overlap_score": 2.47,
+        "risk": "WARM",
+        "sample_flags": [],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.361,
+        "recent_bip": 4,
+        "recent_pitcher_pct": 4.5,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 1,
+        "label": "HI-IN (3B)",
+        "pitcher_pct": 4.6,
+        "batter_swing": 62.6,
+        "batter_xwoba": 0.507,
+        "batter_ev": 96.1,
+        "batter_barrel": 11.8,
+        "bip": 17,
+        "overlap_score": 2.33,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 1.8,
+        "agreement": null
+      },
+      {
+        "zone": 2,
+        "label": "HI-MID",
+        "pitcher_pct": 7.1,
+        "batter_swing": 77.5,
+        "batter_xwoba": 0.31,
+        "batter_ev": 88.0,
+        "batter_barrel": 6.5,
+        "bip": 31,
+        "overlap_score": 2.19,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 2.7,
+        "agreement": null
+      },
+      {
+        "zone": 3,
+        "label": "HI-AWAY (1B)",
+        "pitcher_pct": 6.0,
+        "batter_swing": 72.2,
+        "batter_xwoba": 0.356,
+        "batter_ev": 79.4,
+        "batter_barrel": 7.1,
+        "bip": 14,
+        "overlap_score": 2.15,
+        "risk": "WARM",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "WARM",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 9,
+        "label": "LO-AWAY",
+        "pitcher_pct": 4.2,
+        "batter_swing": 59.6,
+        "batter_xwoba": 0.47,
+        "batter_ev": 95.1,
+        "batter_barrel": 13.6,
+        "bip": 22,
+        "overlap_score": 1.99,
+        "risk": "\u2014",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "\u2014",
+        "recent_risk": "WARM",
+        "recent_xwoba": 0.476,
+        "recent_bip": 4,
+        "recent_pitcher_pct": 5.5,
+        "agreement": "RECENT_ONLY"
+      },
+      {
+        "zone": 12,
+        "label": "OUT-UP-1B",
+        "pitcher_pct": 11.2,
+        "batter_swing": 34.2,
+        "batter_xwoba": 0.164,
+        "batter_ev": 63.4,
+        "batter_barrel": 0.0,
+        "bip": 14,
+        "overlap_score": 1.84,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 10.9,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 10.8,
+        "batter_swing": 23.0,
+        "batter_xwoba": 0.135,
+        "batter_ev": 82.0,
+        "batter_barrel": 0.0,
+        "bip": 7,
+        "overlap_score": 1.46,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 7,
+        "label": "LO-IN",
+        "pitcher_pct": 4.6,
+        "batter_swing": 55.4,
+        "batter_xwoba": 0.283,
+        "batter_ev": 90.0,
+        "batter_barrel": 13.3,
+        "bip": 15,
+        "overlap_score": 1.3,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      }
+    ],
+    "Travis Bazzana": [
+      {
+        "zone": 6,
+        "label": "MID-AWAY",
+        "pitcher_pct": 7.3,
+        "batter_swing": 85.7,
+        "batter_xwoba": 0.497,
+        "batter_ev": 94.1,
+        "batter_barrel": 15.8,
+        "bip": 19,
+        "overlap_score": 3.63,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 5,
+        "label": "HEART",
+        "pitcher_pct": 8.2,
+        "batter_swing": 82.9,
+        "batter_xwoba": 0.429,
+        "batter_ev": 96.2,
+        "batter_barrel": 12.0,
+        "bip": 50,
+        "overlap_score": 3.5,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.29,
+        "recent_bip": 8,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 13,
+        "label": "OUT-DN-3B",
+        "pitcher_pct": 14.0,
+        "batter_swing": 26.4,
+        "batter_xwoba": 0.247,
+        "batter_ev": 71.9,
+        "batter_barrel": 0.0,
+        "bip": 15,
+        "overlap_score": 3.46,
+        "risk": "COLD",
+        "sample_flags": [],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 14,
+        "label": "OUT-DN-1B",
+        "pitcher_pct": 10.2,
+        "batter_swing": 41.1,
+        "batter_xwoba": 0.322,
+        "batter_ev": 82.0,
+        "batter_barrel": 0.0,
+        "bip": 13,
+        "overlap_score": 3.29,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 12.7,
+        "agreement": null
+      },
+      {
+        "zone": 2,
+        "label": "HI-MID",
+        "pitcher_pct": 7.1,
+        "batter_swing": 79.2,
+        "batter_xwoba": 0.324,
+        "batter_ev": 91.9,
+        "batter_barrel": 13.0,
+        "bip": 23,
+        "overlap_score": 2.29,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 4,
+        "label": "MID-IN",
+        "pitcher_pct": 6.4,
+        "batter_swing": 51.7,
+        "batter_xwoba": 0.348,
+        "batter_ev": 86.9,
+        "batter_barrel": 6.9,
+        "bip": 29,
+        "overlap_score": 2.23,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 5.5,
+        "agreement": null
+      },
+      {
+        "zone": 1,
+        "label": "HI-IN (3B)",
+        "pitcher_pct": 4.6,
+        "batter_swing": 36.4,
+        "batter_xwoba": 0.43,
+        "batter_ev": 93.2,
+        "batter_barrel": 14.3,
+        "bip": 7,
+        "overlap_score": 1.97,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 1.8,
+        "agreement": null
+      },
+      {
+        "zone": 8,
+        "label": "LO-MID",
+        "pitcher_pct": 5.3,
+        "batter_swing": 72.6,
+        "batter_xwoba": 0.295,
+        "batter_ev": 91.1,
+        "batter_barrel": 2.6,
+        "bip": 39,
+        "overlap_score": 1.57,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 4.5,
+        "agreement": null
+      },
+      {
+        "zone": 3,
+        "label": "HI-AWAY (1B)",
+        "pitcher_pct": 6.0,
+        "batter_swing": 78.1,
+        "batter_xwoba": 0.253,
+        "batter_ev": 86.2,
+        "batter_barrel": 0.0,
+        "bip": 10,
+        "overlap_score": 1.53,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 7,
+        "label": "LO-IN",
+        "pitcher_pct": 4.6,
+        "batter_swing": 52.9,
+        "batter_xwoba": 0.296,
+        "batter_ev": 86.2,
+        "batter_barrel": 0.0,
+        "bip": 25,
+        "overlap_score": 1.36,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.331,
+        "recent_bip": 5,
+        "recent_pitcher_pct": 3.6,
+        "agreement": null
+      },
+      {
+        "zone": 9,
+        "label": "LO-AWAY",
+        "pitcher_pct": 4.2,
+        "batter_swing": 79.7,
+        "batter_xwoba": 0.288,
+        "batter_ev": 89.9,
+        "batter_barrel": 0.0,
+        "bip": 23,
+        "overlap_score": 1.22,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 10.8,
+        "batter_swing": 8.7,
+        "batter_xwoba": 0.192,
+        "batter_ev": 80.1,
+        "batter_barrel": 0.0,
+        "bip": 5,
+        "overlap_score": null,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 12,
+        "label": "OUT-UP-1B",
+        "pitcher_pct": 11.2,
+        "batter_swing": 41.4,
+        "batter_xwoba": 0.53,
+        "batter_ev": 80.2,
+        "batter_barrel": 20.0,
+        "bip": 5,
+        "overlap_score": null,
+        "risk": "HOT",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 10.9,
+        "agreement": "SEASON_ONLY"
+      }
+    ],
+    "Jo Adell": [
+      {
+        "zone": 9,
+        "label": "LO-AWAY",
+        "pitcher_pct": 6.3,
+        "batter_swing": 69.6,
+        "batter_xwoba": 0.403,
+        "batter_ev": 93.0,
+        "batter_barrel": 7.1,
+        "bip": 42,
+        "overlap_score": 2.53,
+        "risk": "HOT",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "HOT",
+        "recent_risk": "WARM",
+        "recent_xwoba": 0.494,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 5.1,
+        "agreement": "CONFIRM"
+      },
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 12.7,
+        "batter_swing": 29.6,
+        "batter_xwoba": 0.2,
+        "batter_ev": 59.9,
+        "batter_barrel": 0.0,
+        "bip": 16,
+        "overlap_score": 2.53,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": "COLD",
+        "recent_xwoba": 0.076,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 12.4,
+        "agreement": "CONFIRM"
+      },
+      {
+        "zone": 6,
+        "label": "MID-AWAY",
+        "pitcher_pct": 5.4,
+        "batter_swing": 74.8,
+        "batter_xwoba": 0.434,
+        "batter_ev": 95.0,
+        "batter_barrel": 13.2,
+        "bip": 38,
+        "overlap_score": 2.33,
+        "risk": "WARM",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "WARM",
+        "recent_risk": "HOT",
+        "recent_xwoba": 0.656,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 7.2,
+        "agreement": "CONFIRM"
+      },
+      {
+        "zone": 14,
+        "label": "OUT-DN-1B",
+        "pitcher_pct": 18.0,
+        "batter_swing": 35.5,
+        "batter_xwoba": 0.34,
+        "batter_ev": 86.9,
+        "batter_barrel": 2.6,
+        "bip": 39,
+        "overlap_score": 6.12,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 20.6,
+        "agreement": null
+      },
+      {
+        "zone": 13,
+        "label": "OUT-DN-3B",
+        "pitcher_pct": 12.1,
+        "batter_swing": 48.1,
+        "batter_xwoba": 0.445,
+        "batter_ev": 88.2,
+        "batter_barrel": 15.4,
+        "bip": 13,
+        "overlap_score": 5.4,
+        "risk": "HOT",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 10.3,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 8,
+        "label": "LO-MID",
+        "pitcher_pct": 6.5,
+        "batter_swing": 76.5,
+        "batter_xwoba": 0.462,
+        "batter_ev": 97.8,
+        "batter_barrel": 11.8,
+        "bip": 34,
+        "overlap_score": 2.98,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 6.2,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 2,
+        "label": "HI-MID",
+        "pitcher_pct": 5.4,
+        "batter_swing": 73.6,
+        "batter_xwoba": 0.43,
+        "batter_ev": 94.7,
+        "batter_barrel": 20.0,
+        "bip": 25,
+        "overlap_score": 2.34,
+        "risk": "WARM",
+        "sample_flags": [],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 5.1,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 5,
+        "label": "HEART",
+        "pitcher_pct": 7.6,
+        "batter_swing": 82.9,
+        "batter_xwoba": 0.306,
+        "batter_ev": 93.3,
+        "batter_barrel": 8.0,
+        "bip": 50,
+        "overlap_score": 2.33,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "COLD",
+        "recent_xwoba": 0.12,
+        "recent_bip": 8,
+        "recent_pitcher_pct": 9.3,
+        "agreement": "RECENT_ONLY"
+      },
+      {
+        "zone": 12,
+        "label": "OUT-UP-1B",
+        "pitcher_pct": 6.1,
+        "batter_swing": 30.7,
+        "batter_xwoba": 0.338,
+        "batter_ev": 89.8,
+        "batter_barrel": 14.3,
+        "bip": 7,
+        "overlap_score": 2.07,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 6.2,
+        "agreement": null
+      },
+      {
+        "zone": 7,
+        "label": "LO-IN",
+        "pitcher_pct": 5.9,
+        "batter_swing": 65.8,
+        "batter_xwoba": 0.331,
+        "batter_ev": 91.6,
+        "batter_barrel": 11.1,
+        "bip": 18,
+        "overlap_score": 1.97,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 1,
+        "label": "HI-IN (3B)",
+        "pitcher_pct": 5.5,
+        "batter_swing": 70.7,
+        "batter_xwoba": 0.312,
+        "batter_ev": 76.6,
+        "batter_barrel": 5.0,
+        "bip": 20,
+        "overlap_score": 1.73,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 4,
+        "label": "MID-IN",
+        "pitcher_pct": 6.2,
+        "batter_swing": 73.3,
+        "batter_xwoba": 0.246,
+        "batter_ev": 81.5,
+        "batter_barrel": 3.0,
+        "bip": 33,
+        "overlap_score": 1.53,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 3,
+        "label": "HI-AWAY (1B)",
+        "pitcher_pct": 2.3,
+        "batter_swing": 72.0,
+        "batter_xwoba": 0.47,
+        "batter_ev": 99.3,
+        "batter_barrel": 0.0,
+        "bip": 15,
+        "overlap_score": 1.06,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 3.1,
+        "agreement": null
+      }
+    ],
+    "Steven Kwan": [
+      {
+        "zone": 13,
+        "label": "OUT-DN-3B",
+        "pitcher_pct": 14.0,
+        "batter_swing": 29.9,
+        "batter_xwoba": 0.275,
+        "batter_ev": 76.8,
+        "batter_barrel": 0.0,
+        "bip": 28,
+        "overlap_score": 3.86,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": "COLD",
+        "recent_xwoba": 0.102,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "CONFIRM"
+      },
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 10.8,
+        "batter_swing": 13.9,
+        "batter_xwoba": 0.242,
+        "batter_ev": 78.1,
+        "batter_barrel": 0.0,
+        "bip": 22,
+        "overlap_score": 2.62,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": "COLD",
+        "recent_xwoba": 0.15,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "CONFIRM"
+      },
+      {
+        "zone": 12,
+        "label": "OUT-UP-1B",
+        "pitcher_pct": 11.2,
+        "batter_swing": 26.2,
+        "batter_xwoba": 0.247,
+        "batter_ev": 72.9,
+        "batter_barrel": 0.0,
+        "bip": 15,
+        "overlap_score": 2.78,
+        "risk": "COLD",
+        "sample_flags": [],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 10.9,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 5,
+        "label": "HEART",
+        "pitcher_pct": 8.2,
+        "batter_swing": 62.7,
+        "batter_xwoba": 0.311,
+        "batter_ev": 87.4,
+        "batter_barrel": 1.8,
+        "bip": 57,
+        "overlap_score": 2.54,
+        "risk": "\u2014",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "\u2014",
+        "recent_risk": "HOT",
+        "recent_xwoba": 0.423,
+        "recent_bip": 6,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "RECENT_ONLY"
+      },
+      {
+        "zone": 2,
+        "label": "HI-MID",
+        "pitcher_pct": 7.1,
+        "batter_swing": 55.3,
+        "batter_xwoba": 0.35,
+        "batter_ev": 82.9,
+        "batter_barrel": 0.0,
+        "bip": 36,
+        "overlap_score": 2.47,
+        "risk": "WARM",
+        "sample_flags": [],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.46,
+        "recent_bip": 4,
+        "recent_pitcher_pct": 2.7,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 14,
+        "label": "OUT-DN-1B",
+        "pitcher_pct": 10.2,
+        "batter_swing": 19.2,
+        "batter_xwoba": 0.208,
+        "batter_ev": 76.2,
+        "batter_barrel": 0.0,
+        "bip": 12,
+        "overlap_score": 2.12,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 12.7,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 4,
+        "label": "MID-IN",
+        "pitcher_pct": 6.4,
+        "batter_swing": 55.5,
+        "batter_xwoba": 0.322,
+        "batter_ev": 80.8,
+        "batter_barrel": 0.0,
+        "bip": 50,
+        "overlap_score": 2.06,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.266,
+        "recent_bip": 5,
+        "recent_pitcher_pct": 5.5,
+        "agreement": null
+      },
+      {
+        "zone": 6,
+        "label": "MID-AWAY",
+        "pitcher_pct": 7.3,
+        "batter_swing": 53.1,
+        "batter_xwoba": 0.27,
+        "batter_ev": 82.3,
+        "batter_barrel": 3.7,
+        "bip": 27,
+        "overlap_score": 1.97,
+        "risk": "COLD",
+        "sample_flags": [],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 5.5,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 8,
+        "label": "LO-MID",
+        "pitcher_pct": 5.3,
+        "batter_swing": 50.0,
+        "batter_xwoba": 0.353,
+        "batter_ev": 89.4,
+        "batter_barrel": 0.0,
+        "bip": 45,
+        "overlap_score": 1.88,
+        "risk": "WARM",
+        "sample_flags": [],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 4.5,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 9,
+        "label": "LO-AWAY",
+        "pitcher_pct": 4.2,
+        "batter_swing": 33.3,
+        "batter_xwoba": 0.439,
+        "batter_ev": 87.5,
+        "batter_barrel": 0.0,
+        "bip": 16,
+        "overlap_score": 1.86,
+        "risk": "\u2014",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "\u2014",
+        "recent_risk": "WARM",
+        "recent_xwoba": 0.38,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 5.5,
+        "agreement": "RECENT_ONLY"
+      },
+      {
+        "zone": 7,
+        "label": "LO-IN",
+        "pitcher_pct": 4.6,
+        "batter_swing": 58.2,
+        "batter_xwoba": 0.345,
+        "batter_ev": 85.1,
+        "batter_barrel": 0.0,
+        "bip": 32,
+        "overlap_score": 1.58,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 3,
+        "label": "HI-AWAY (1B)",
+        "pitcher_pct": 6.0,
+        "batter_swing": 43.8,
+        "batter_xwoba": 0.226,
+        "batter_ev": 79.2,
+        "batter_barrel": 5.3,
+        "bip": 19,
+        "overlap_score": 1.37,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 1,
+        "label": "HI-IN (3B)",
+        "pitcher_pct": 4.6,
+        "batter_swing": 41.6,
+        "batter_xwoba": 0.256,
+        "batter_ev": 84.8,
+        "batter_barrel": 0.0,
+        "bip": 23,
+        "overlap_score": 1.18,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 1.8,
+        "agreement": null
+      }
+    ],
+    "Brayan Rocchio": [
+      {
+        "zone": 13,
+        "label": "OUT-DN-3B",
+        "pitcher_pct": 14.0,
+        "batter_swing": 39.5,
+        "batter_xwoba": 0.299,
+        "batter_ev": 80.9,
+        "batter_barrel": 0.0,
+        "bip": 32,
+        "overlap_score": 4.19,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 13.6,
+        "agreement": null
+      },
+      {
+        "zone": 12,
+        "label": "OUT-UP-1B",
+        "pitcher_pct": 11.2,
+        "batter_swing": 34.7,
+        "batter_xwoba": 0.316,
+        "batter_ev": 71.0,
+        "batter_barrel": 0.0,
+        "bip": 9,
+        "overlap_score": 3.55,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 10.9,
+        "agreement": null
+      },
+      {
+        "zone": 14,
+        "label": "OUT-DN-1B",
+        "pitcher_pct": 10.2,
+        "batter_swing": 35.1,
+        "batter_xwoba": 0.28,
+        "batter_ev": 80.1,
+        "batter_barrel": 5.3,
+        "bip": 19,
+        "overlap_score": 2.86,
+        "risk": "COLD",
+        "sample_flags": [],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 12.7,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 10.8,
+        "batter_swing": 21.0,
+        "batter_xwoba": 0.231,
+        "batter_ev": 82.3,
+        "batter_barrel": 0.0,
+        "bip": 22,
+        "overlap_score": 2.5,
+        "risk": "COLD",
+        "sample_flags": [],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 5,
+        "label": "HEART",
+        "pitcher_pct": 8.2,
+        "batter_swing": 74.3,
+        "batter_xwoba": 0.287,
+        "batter_ev": 91.0,
+        "batter_barrel": 4.9,
+        "bip": 41,
+        "overlap_score": 2.34,
+        "risk": "\u2014",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "\u2014",
+        "recent_risk": "HOT",
+        "recent_xwoba": 0.484,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "RECENT_ONLY"
+      },
+      {
+        "zone": 6,
+        "label": "MID-AWAY",
+        "pitcher_pct": 7.3,
+        "batter_swing": 57.8,
+        "batter_xwoba": 0.311,
+        "batter_ev": 81.9,
+        "batter_barrel": 0.0,
+        "bip": 25,
+        "overlap_score": 2.27,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 2,
+        "label": "HI-MID",
+        "pitcher_pct": 7.1,
+        "batter_swing": 72.9,
+        "batter_xwoba": 0.313,
+        "batter_ev": 88.6,
+        "batter_barrel": 2.8,
+        "bip": 36,
+        "overlap_score": 2.21,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 4,
+        "label": "MID-IN",
+        "pitcher_pct": 6.4,
+        "batter_swing": 67.9,
+        "batter_xwoba": 0.311,
+        "batter_ev": 91.2,
+        "batter_barrel": 0.0,
+        "bip": 46,
+        "overlap_score": 1.99,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.099,
+        "recent_bip": 5,
+        "recent_pitcher_pct": 5.5,
+        "agreement": null
+      },
+      {
+        "zone": 1,
+        "label": "HI-IN (3B)",
+        "pitcher_pct": 4.6,
+        "batter_swing": 64.0,
+        "batter_xwoba": 0.41,
+        "batter_ev": 90.0,
+        "batter_barrel": 5.0,
+        "bip": 20,
+        "overlap_score": 1.88,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 1.8,
+        "agreement": null
+      },
+      {
+        "zone": 8,
+        "label": "LO-MID",
+        "pitcher_pct": 5.3,
+        "batter_swing": 71.3,
+        "batter_xwoba": 0.33,
+        "batter_ev": 95.1,
+        "batter_barrel": 4.8,
+        "bip": 42,
+        "overlap_score": 1.76,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 9,
+        "label": "LO-AWAY",
+        "pitcher_pct": 4.2,
+        "batter_swing": 47.7,
+        "batter_xwoba": 0.33,
+        "batter_ev": 89.5,
+        "batter_barrel": 9.1,
+        "bip": 11,
+        "overlap_score": 1.4,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 7,
+        "label": "LO-IN",
+        "pitcher_pct": 4.6,
+        "batter_swing": 64.0,
+        "batter_xwoba": 0.298,
+        "batter_ev": 90.4,
+        "batter_barrel": 0.0,
+        "bip": 27,
+        "overlap_score": 1.37,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 3,
+        "label": "HI-AWAY (1B)",
+        "pitcher_pct": 6.0,
+        "batter_swing": 75.0,
+        "batter_xwoba": 0.189,
+        "batter_ev": 78.0,
+        "batter_barrel": 0.0,
+        "bip": 14,
+        "overlap_score": 1.14,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      }
+    ],
+    "Patrick Bailey": [
+      {
+        "zone": 4,
+        "label": "MID-IN",
+        "pitcher_pct": 6.4,
+        "batter_swing": 73.8,
+        "batter_xwoba": 0.378,
+        "batter_ev": 90.0,
+        "batter_barrel": 6.1,
+        "bip": 33,
+        "overlap_score": 2.42,
+        "risk": "WARM",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "WARM",
+        "recent_risk": "WARM",
+        "recent_xwoba": 0.769,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 5.5,
+        "agreement": "CONFIRM"
+      },
+      {
+        "zone": 2,
+        "label": "HI-MID",
+        "pitcher_pct": 7.1,
+        "batter_swing": 84.5,
+        "batter_xwoba": 0.645,
+        "batter_ev": 93.7,
+        "batter_barrel": 21.7,
+        "bip": 23,
+        "overlap_score": 4.56,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.743,
+        "recent_bip": 5,
+        "recent_pitcher_pct": 2.7,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 5,
+        "label": "HEART",
+        "pitcher_pct": 8.2,
+        "batter_swing": 72.2,
+        "batter_xwoba": 0.526,
+        "batter_ev": 94.8,
+        "batter_barrel": 19.4,
+        "bip": 36,
+        "overlap_score": 4.29,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 13,
+        "label": "OUT-DN-3B",
+        "pitcher_pct": 14.0,
+        "batter_swing": 27.1,
+        "batter_xwoba": 0.293,
+        "batter_ev": 80.9,
+        "batter_barrel": 5.6,
+        "bip": 18,
+        "overlap_score": 4.11,
+        "risk": "\u2014",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "\u2014",
+        "recent_risk": "HOT",
+        "recent_xwoba": 0.507,
+        "recent_bip": 5,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "RECENT_ONLY"
+      },
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 10.8,
+        "batter_swing": 28.2,
+        "batter_xwoba": 0.373,
+        "batter_ev": 80.4,
+        "batter_barrel": 0.0,
+        "bip": 7,
+        "overlap_score": 4.04,
+        "risk": "WARM",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 0,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 6,
+        "label": "MID-AWAY",
+        "pitcher_pct": 7.3,
+        "batter_swing": 63.6,
+        "batter_xwoba": 0.442,
+        "batter_ev": 91.4,
+        "batter_barrel": 6.2,
+        "bip": 16,
+        "overlap_score": 3.23,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 14,
+        "label": "OUT-DN-1B",
+        "pitcher_pct": 10.2,
+        "batter_swing": 32.9,
+        "batter_xwoba": 0.293,
+        "batter_ev": 81.0,
+        "batter_barrel": 0.0,
+        "bip": 11,
+        "overlap_score": 2.99,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 12.7,
+        "agreement": null
+      },
+      {
+        "zone": 1,
+        "label": "HI-IN (3B)",
+        "pitcher_pct": 4.6,
+        "batter_swing": 71.7,
+        "batter_xwoba": 0.498,
+        "batter_ev": 95.6,
+        "batter_barrel": 0.0,
+        "bip": 11,
+        "overlap_score": 2.29,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 8,
+        "label": "LO-MID",
+        "pitcher_pct": 5.3,
+        "batter_swing": 67.1,
+        "batter_xwoba": 0.355,
+        "batter_ev": 88.3,
+        "batter_barrel": 3.4,
+        "bip": 29,
+        "overlap_score": 1.89,
+        "risk": "WARM",
+        "sample_flags": [],
+        "season_risk": "WARM",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 7,
+        "label": "LO-IN",
+        "pitcher_pct": 4.6,
+        "batter_swing": 64.8,
+        "batter_xwoba": 0.353,
+        "batter_ev": 87.4,
+        "batter_barrel": 4.2,
+        "bip": 24,
+        "overlap_score": 1.62,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 9,
+        "label": "LO-AWAY",
+        "pitcher_pct": 4.2,
+        "batter_swing": 64.2,
+        "batter_xwoba": 0.226,
+        "batter_ev": 86.9,
+        "batter_barrel": 16.7,
+        "bip": 12,
+        "overlap_score": 0.96,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 5.5,
+        "agreement": null
+      },
+      {
+        "zone": 3,
+        "label": "HI-AWAY (1B)",
+        "pitcher_pct": 6.0,
+        "batter_swing": 71.0,
+        "batter_xwoba": NaN,
+        "batter_ev": NaN,
+        "batter_barrel": NaN,
+        "bip": 4,
+        "overlap_score": null,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 12,
+        "label": "OUT-UP-1B",
+        "pitcher_pct": 11.2,
+        "batter_swing": 64.3,
+        "batter_xwoba": 0.234,
+        "batter_ev": 73.4,
+        "batter_barrel": 0.0,
+        "bip": 5,
+        "overlap_score": null,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      }
+    ],
+    "Petey Halpin": [
+      {
+        "zone": 13,
+        "label": "OUT-DN-3B",
+        "pitcher_pct": 14.0,
+        "batter_swing": 50.7,
+        "batter_xwoba": 0.525,
+        "batter_ev": 84.5,
+        "batter_barrel": 6.7,
+        "bip": 15,
+        "overlap_score": 7.36,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": null,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 10.8,
+        "batter_swing": 25.5,
+        "batter_xwoba": 0.533,
+        "batter_ev": 86.2,
+        "batter_barrel": 0.0,
+        "bip": 7,
+        "overlap_score": 5.77,
+        "risk": "HOT",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": null,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 6,
+        "label": "MID-AWAY",
+        "pitcher_pct": 7.3,
+        "batter_swing": 72.7,
+        "batter_xwoba": 0.497,
+        "batter_ev": 85.9,
+        "batter_barrel": 7.7,
+        "bip": 13,
+        "overlap_score": 3.63,
+        "risk": "HOT",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "HOT",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 4,
+        "label": "MID-IN",
+        "pitcher_pct": 6.4,
+        "batter_swing": 86.8,
+        "batter_xwoba": 0.47,
+        "batter_ev": 90.5,
+        "batter_barrel": 22.2,
+        "bip": 9,
+        "overlap_score": 3.01,
+        "risk": "HOT",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "HOT",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 5,
+        "label": "HEART",
+        "pitcher_pct": 8.2,
+        "batter_swing": 86.5,
+        "batter_xwoba": 0.35,
+        "batter_ev": 90.5,
+        "batter_barrel": 8.7,
+        "bip": 23,
+        "overlap_score": 2.86,
+        "risk": "WARM",
+        "sample_flags": [],
+        "season_risk": "WARM",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 14,
+        "label": "OUT-DN-1B",
+        "pitcher_pct": 10.2,
+        "batter_swing": 42.3,
+        "batter_xwoba": 0.211,
+        "batter_ev": 85.1,
+        "batter_barrel": 0.0,
+        "bip": 14,
+        "overlap_score": 2.15,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 7,
+        "label": "LO-IN",
+        "pitcher_pct": 4.6,
+        "batter_swing": 73.5,
+        "batter_xwoba": 0.404,
+        "batter_ev": 87.7,
+        "batter_barrel": 7.1,
+        "bip": 14,
+        "overlap_score": 1.85,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 8,
+        "label": "LO-MID",
+        "pitcher_pct": 5.3,
+        "batter_swing": 78.8,
+        "batter_xwoba": 0.301,
+        "batter_ev": 80.4,
+        "batter_barrel": 0.0,
+        "bip": 11,
+        "overlap_score": 1.6,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 2,
+        "label": "HI-MID",
+        "pitcher_pct": 7.1,
+        "batter_swing": 90.3,
+        "batter_xwoba": 0.175,
+        "batter_ev": 92.3,
+        "batter_barrel": 16.7,
+        "bip": 6,
+        "overlap_score": 1.24,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 9,
+        "label": "LO-AWAY",
+        "pitcher_pct": 4.2,
+        "batter_swing": 81.6,
+        "batter_xwoba": 0.229,
+        "batter_ev": 84.4,
+        "batter_barrel": 6.7,
+        "bip": 15,
+        "overlap_score": 0.97,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 1,
+        "label": "HI-IN (3B)",
+        "pitcher_pct": 4.6,
+        "batter_swing": 79.3,
+        "batter_xwoba": NaN,
+        "batter_ev": NaN,
+        "batter_barrel": NaN,
+        "bip": 3,
+        "overlap_score": null,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 12,
+        "label": "OUT-UP-1B",
+        "pitcher_pct": 11.2,
+        "batter_swing": 53.1,
+        "batter_xwoba": NaN,
+        "batter_ev": NaN,
+        "batter_barrel": NaN,
+        "bip": 4,
+        "overlap_score": null,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      }
+    ],
+    "Jos\u00e9 Ram\u00edrez": [
+      {
+        "zone": 13,
+        "label": "OUT-DN-3B",
+        "pitcher_pct": 14.0,
+        "batter_swing": 36.8,
+        "batter_xwoba": 0.236,
+        "batter_ev": 79.2,
+        "batter_barrel": 0.0,
+        "bip": 38,
+        "overlap_score": 3.31,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": "COLD",
+        "recent_xwoba": 0.09,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "CONFIRM"
+      },
+      {
+        "zone": 12,
+        "label": "OUT-UP-1B",
+        "pitcher_pct": 11.2,
+        "batter_swing": 38.9,
+        "batter_xwoba": 0.25,
+        "batter_ev": 73.7,
+        "batter_barrel": 0.0,
+        "bip": 13,
+        "overlap_score": 2.81,
+        "risk": "COLD",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE",
+          "LOW_SAMPLE_RECENT"
+        ],
+        "season_risk": "COLD",
+        "recent_risk": "COLD",
+        "recent_xwoba": 0.273,
+        "recent_bip": 3,
+        "recent_pitcher_pct": 10.9,
+        "agreement": "CONFIRM"
+      },
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 10.8,
+        "batter_swing": 17.7,
+        "batter_xwoba": 0.484,
+        "batter_ev": 91.8,
+        "batter_barrel": 16.7,
+        "bip": 18,
+        "overlap_score": 5.24,
+        "risk": "HOT",
+        "sample_flags": [],
+        "season_risk": "HOT",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 13.6,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 14,
+        "label": "OUT-DN-1B",
+        "pitcher_pct": 10.2,
+        "batter_swing": 32.5,
+        "batter_xwoba": 0.352,
+        "batter_ev": 80.4,
+        "batter_barrel": 0.0,
+        "bip": 13,
+        "overlap_score": 3.59,
+        "risk": "WARM",
+        "sample_flags": [
+          "LOW_SAMPLE_ZONE"
+        ],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 2,
+        "recent_pitcher_pct": 12.7,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 5,
+        "label": "HEART",
+        "pitcher_pct": 8.2,
+        "batter_swing": 73.6,
+        "batter_xwoba": 0.349,
+        "batter_ev": 90.6,
+        "batter_barrel": 9.1,
+        "bip": 44,
+        "overlap_score": 2.85,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.309,
+        "recent_bip": 5,
+        "recent_pitcher_pct": 13.6,
+        "agreement": null
+      },
+      {
+        "zone": 4,
+        "label": "MID-IN",
+        "pitcher_pct": 6.4,
+        "batter_swing": 56.1,
+        "batter_xwoba": 0.394,
+        "batter_ev": 94.5,
+        "batter_barrel": 2.7,
+        "bip": 37,
+        "overlap_score": 2.52,
+        "risk": "WARM",
+        "sample_flags": [],
+        "season_risk": "WARM",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.222,
+        "recent_bip": 5,
+        "recent_pitcher_pct": 5.5,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 2,
+        "label": "HI-MID",
+        "pitcher_pct": 7.1,
+        "batter_swing": 72.5,
+        "batter_xwoba": 0.317,
+        "batter_ev": 85.4,
+        "batter_barrel": 0.0,
+        "bip": 30,
+        "overlap_score": 2.24,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 8,
+        "label": "LO-MID",
+        "pitcher_pct": 5.3,
+        "batter_swing": 67.2,
+        "batter_xwoba": 0.337,
+        "batter_ev": 90.9,
+        "batter_barrel": 7.3,
+        "bip": 41,
+        "overlap_score": 1.79,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.592,
+        "recent_bip": 5,
+        "recent_pitcher_pct": 4.5,
+        "agreement": null
+      },
+      {
+        "zone": 9,
+        "label": "LO-AWAY",
+        "pitcher_pct": 4.2,
+        "batter_swing": 61.9,
+        "batter_xwoba": 0.4,
+        "batter_ev": 83.6,
+        "batter_barrel": 7.7,
+        "bip": 13,
+        "overlap_score": 1.69,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 5.5,
+        "agreement": null
+      },
+      {
+        "zone": 6,
+        "label": "MID-AWAY",
+        "pitcher_pct": 7.3,
+        "batter_swing": 60.6,
+        "batter_xwoba": 0.23,
+        "batter_ev": 84.5,
+        "batter_barrel": 0.0,
+        "bip": 19,
+        "overlap_score": 1.68,
+        "risk": "COLD",
+        "sample_flags": [],
+        "season_risk": "COLD",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 5.5,
+        "agreement": "SEASON_ONLY"
+      },
+      {
+        "zone": 3,
+        "label": "HI-AWAY (1B)",
+        "pitcher_pct": 6.0,
+        "batter_swing": 63.9,
+        "batter_xwoba": 0.25,
+        "batter_ev": 79.8,
+        "batter_barrel": 7.1,
+        "bip": 14,
+        "overlap_score": 1.51,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": null,
+        "recent_xwoba": null,
+        "recent_bip": null,
+        "recent_pitcher_pct": null,
+        "agreement": null
+      },
+      {
+        "zone": 1,
+        "label": "HI-IN (3B)",
+        "pitcher_pct": 4.6,
+        "batter_swing": 48.4,
+        "batter_xwoba": 0.309,
+        "batter_ev": 94.3,
+        "batter_barrel": 18.2,
+        "bip": 11,
+        "overlap_score": 1.42,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": NaN,
+        "recent_bip": 1,
+        "recent_pitcher_pct": 1.8,
+        "agreement": null
+      },
+      {
+        "zone": 7,
+        "label": "LO-IN",
+        "pitcher_pct": 4.6,
+        "batter_swing": 67.9,
+        "batter_xwoba": 0.274,
+        "batter_ev": 86.9,
+        "batter_barrel": 0.0,
+        "bip": 31,
+        "overlap_score": 1.26,
+        "risk": "\u2014",
+        "sample_flags": [],
+        "season_risk": "\u2014",
+        "recent_risk": "\u2014",
+        "recent_xwoba": 0.142,
+        "recent_bip": 6,
+        "recent_pitcher_pct": 3.6,
+        "agreement": null
+      }
+    ]
+  },
+  "meta": {
+    "recent_days": 30,
+    "as_of": "2026-10-17",
+    "thresholds": {
+      "low_batter_pitches_vs_hand": 450,
+      "low_zone_bip": 15,
+      "low_recent_pitches_vs_hand": 120,
+      "low_recent_zone_bip": 8
+    }
+  }
+}

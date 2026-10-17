@@ -508,18 +508,28 @@ def build_images_from_payload(
         risk_map: dict[int, str] = {}
         notes = []
         pitch_bits = []
+        sample_flags = list(b.get("sample_flags") or [])
         for ov in overlaps.get(name) or []:
             z = int(ov["zone"])
-            if ov.get("risk") in ("HOT", "WARM", "COLD"):
-                risk_map[z] = ov["risk"]
+            # Prefer season risk for outlines; fall back to merged risk.
+            risk = ov.get("season_risk") or ov.get("risk")
+            if risk in ("HOT", "WARM", "COLD"):
+                risk_map[z] = str(risk)
                 mix = zmix.get(z) or []
                 top_pt = mix[0]["pitch"] if mix else "?"
-                if ov["risk"] in ("HOT", "COLD"):
-                    notes.append(f"{ov['risk']} {ov['label']}")
+                if risk in ("HOT", "COLD"):
+                    ag = ov.get("agreement")
+                    tag = f"{risk} {ov['label']}"
+                    if ag == "CONFIRM":
+                        tag = f"CONFIRM {tag}"
+                    elif ag == "CONFLICT":
+                        tag = f"CONFLICT {tag}→{ov.get('recent_risk')}"
+                    notes.append(tag)
                     pitch_bits.append(
-                        f"{ov['risk']} {ov['label']} ← mainly {top_pt} "
-                        f"(W {ov['pitcher_pct']}%)"
+                        f"{tag} ← mainly {top_pt} (W {ov['pitcher_pct']}%)"
                     )
+        if sample_flags:
+            notes.append("+".join(sample_flags[:2]))
 
         import unicodedata
 

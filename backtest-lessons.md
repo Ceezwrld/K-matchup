@@ -668,6 +668,13 @@ Pitch-plan panel first (vs that batter’s hand), then overlap.
 
 Exhibit: `pregame-batter-leans-2026-10-15-nlcs.md` (Teoscar/Ohtani/Mitchell/Turang/Bauers).
 
+### Season + recent heatmaps (locked 10/17)
+`zone_overlap.py` now scores **season** HOTs and a **last-30d** recent window.
+- Prefer leans with **CONFIRM** (season ∩ recent) + hits-board backup.
+- `LOW_SAMPLE_BATTER` / `LOW_SAMPLE_ZONE` / `LOW_SAMPLE_RECENT` = FYI sizing flags (thin MLB or thin BIP) — disclose, don’t auto-kill.
+- `CONFLICT` = season vs recent disagree — pass or size down until board is elite.
+- Pitcher throw% stays season unless recent pitcher n ≥ ~150.
+
 ### Grade rules after heatmaps (locked 10/15 NLCS G4)
 Full grade: `backtest-2026-10-15-nlcs-g4.md` · MIL 6, LAD 4 · Glasnow 6 K / 4.1 IP · Drohan **1.0 IP**.
 

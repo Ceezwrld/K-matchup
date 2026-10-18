@@ -692,6 +692,20 @@ Full grade: `backtest-2026-10-15-nlcs-g4.md` · MIL 6, LAD 4 · Glasnow 6 K / 4.
 2. Keep **BEST = HOT on dump** as primary, but require **board score** backup when playoff hooks make PA count tiny.
 3. Separate **vs-SP results** from **full-game box** when grading heatmaps.
 
+### ALCS G4 grade — TB 7, CLE 3 (locked 10/17–10/18)
+
+Full grade: `backtest-2026-10-17-alcs-g4.md`. Martinez **3 K / 5.1** UNDER_OK HIT · Armstrong opener OK · Griffin **5 K / 3.2** SPIKE confirm (primary bulk; Cantillo 0.2 late).  
+CONFIRMs that cashed: **DeLauter**, **Aranda**, **Yandy/Caminero** vs Griffin LHP. Misses: Lowe/Halpin SEASON_ONLY anchors · Kwan Hits fade · Palacios COLD fade inverse · Bazzana underweighted (2-3 HR).
+
+**Process locks (apply next card)**
+1. **2-man rule:** ≥1 leg must be **CONFIRM** (or elite board + CONFIRM-adjacent). **SEASON_ONLY** = singles / secondary — not A-ticket anchors.
+2. **LOW_SAMPLE_RECENT** → max one small Hits ticket; **no HRR 2-man leg**.
+3. **Primary bulk = first long arm after opener** — grade LHP/RHP bulk leans vs that arm (Griffin), not a late short reliever (Cantillo).
+4. **Fade Hits on contact leadoff (Kwan-types)** only when soft SP *and* you’re fading HRR/power — prefer fade H+R+RBI / HR, not O0.5 Hits.
+5. **COLD fade ≠ automatic** on mid/utility bats (Palacios) — require soft board **and** COLD dump **and** no multi-hit recent form; else pass fade.
+6. Promote **GOOD** mid-order bats with HOT heart/mid vs **UNDER_OK / soft FLY** SPs (Bazzana prototype) onto the lean card, not appendix-only.
+7. Keep opener incomplete grade; keep season∩recent **CONFIRM** as the sizing gate — this night validated it.
+
 ---
 
 ## Ticket lock routine (USE THIS before every card)

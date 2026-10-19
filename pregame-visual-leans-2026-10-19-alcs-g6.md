@@ -1,57 +1,63 @@
-# Visual lean breakdown — ALCS G6 · Mon Oct 19 · PRIOR lineups
+# Visual lean breakdown — ALCS G6 OFF LOCK · Mon Oct 19
 
-**Peralta (TB) vs Armstrong opener (CLE)** · Tropicana · 8:08 ET  
-Full card: `pregame-batter-leans-2026-10-19-alcs-g6.md`
+**Peralta vs Armstrong opener** · Tropicana · 8:08 ET · series TB 3–2  
+Full lock: `pregame-batter-leans-2026-10-19-alcs-g6-off.md`
+
+OFF TB changes: **Hicks 3rd** · **Mesa RF** · **Palacios 2B**
 
 ---
 
-## 1) Peralta plan (what CLE faces)
+## 1) Peralta plan (CLE faces)
 
 <img alt="Peralta pitch plan vs LHB" src="/opt/cursor/artifacts/alcs-g6/visual/00-peralta-plan-vsL.png" />
 
-LHB dumps: **OUT-UP-3B (FF)** + **OUT-DN-3B (CH)**.
+Dumps: **OUT-UP-3B (FF)** + **OUT-DN-3B (CH)**.
 
-### DeLauter Hits O0.5 — CLE #1 board (dump is COLD)
-Mistake / HI-IN lean — not a 2+ stack after G5.
+### #1 DeLauter Hits O0.5 — board #1 (dump COLD → mistake lean)
 
 <img alt="DeLauter vs Peralta" src="/opt/cursor/artifacts/alcs-g6/visual/01-delauter-peralta.png" />
 
-### Adell Hits — CONFIRM WARM MID-AWAY
+### #2 Adell Hits — CONFIRM WARM MID-AWAY
 
 <img alt="Adell vs Peralta" src="/opt/cursor/artifacts/alcs-g6/visual/02-adell-peralta.png" />
 
-### Bailey Hits — CONFIRM WARM MID-IN
+### #3 Bailey Hits — CONFIRM WARM MID-IN
 
 <img alt="Bailey vs Peralta" src="/opt/cursor/artifacts/alcs-g6/visual/03-bailey-peralta.png" />
 
-**CLE 2-man:** DeLauter Hits + Adell Hits
+**CLE 2-man ★:** DeLauter Hits + Adell Hits
 
 ---
 
-## 2) Armstrong opener plan (what TB faces first)
+## 2) Armstrong opener plan (TB faces first)
 
 <img alt="Armstrong pitch plan vs RHB" src="/opt/cursor/artifacts/alcs-g6/visual/10-armstrong-plan-vsR.png" />
 
-RHB dump = **OUT-DN-1B (ST)**. ~1 IP sample.
+RHB dump = **OUT-DN-1B (ST)**. Day-3 appearance → short look.
 
-### Aranda Hits — HOT on sweeper dump ★
+### #1 Aranda Hits — HOT on sweeper dump ★
 
 <img alt="Aranda vs Armstrong" src="/opt/cursor/artifacts/alcs-g6/visual/11-aranda-armstrong.png" />
 
-### Yandy Hits — CONFIRM HOT HEART
+### #2 Yandy Hits — CONFIRM HOT HEART ★
 
 <img alt="Yandy vs Armstrong" src="/opt/cursor/artifacts/alcs-g6/visual/12-yandy-armstrong.png" />
 
-### Caminero — CONFIRM COLD on dump (pass vs opener)
+### #3 Hicks Hits — HOT dump + now batting 3rd (OFF upgrade)
+
+### Mesa — CONFIRM HOT HEART (GOOD add)
+
+### Caminero — CONFIRM COLD on dump → **pass vs opener**
 
 <img alt="Caminero vs Armstrong" src="/opt/cursor/artifacts/alcs-g6/visual/13-caminero-armstrong.png" />
 
-**TB 2-man:** Aranda Hits + Yandy Hits · flip to Caminero+Yandy if **Cantillo LHP** bulk enters
+**TB 2-man ★:** Aranda Hits + Yandy Hits · alt Aranda + Hicks  
+**Live LHP bulk:** Caminero + Yandy
 
 ---
 
-## K one-liners
+## K lock
 | Arm | Call |
 |-----|------|
-| Peralta Exp ~4 UNDER_OK | No chalk soft under (G2 was 6 K) |
-| Armstrong opener | Pass K |
+| Peralta Exp 4.0 UNDER_OK | No chalk soft under (G2 was 6 K) |
+| Armstrong Exp 0.8 opener | Pass K |

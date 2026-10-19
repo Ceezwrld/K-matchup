@@ -706,6 +706,22 @@ CONFIRMs that cashed: **DeLauter**, **Aranda**, **Yandy/Caminero** vs Griffin LH
 6. Promote **GOOD** mid-order bats with HOT heart/mid vs **UNDER_OK / soft FLY** SPs (Bazzana prototype) onto the lean card, not appendix-only.
 7. Keep opener incomplete grade; keep season∩recent **CONFIRM** as the sizing gate — this night validated it.
 
+### ALCS G5 grade — TB 3, CLE 1 (locked 10/18–10/19)
+
+Full grade: `backtest-2026-10-18-alcs-g5.md`. Rasmussen **6 K / 7.0 W** · Messick **3 K / 2.0 L** early exit.  
+Cashed: **Yandy** 3-5 HRR 4 · **Aranda** 2-5 HRR 3 · Rasmussen no-chalk-soft-under process.  
+Misses: DeLauter 2+ / 3+ HRR (1-3, HRR 2) · Adell/Bailey CONFIRM 0-fer · Caminero board sleep · Kwan HRR fade · Hicks fade after Messick exit.  
+User Kalshi 4-man (Yandy 2H+3HRR · DeLauter 2H+3HRR): **2/4**.
+
+**Process locks (apply next card)**
+1. **UNDER_OK + Stuff+≥105 / attack-plate WHIFF** → label only; **never chalk soft under** (Rasmussen 6 K / 7 IP). Prefer batter Hits.
+2. **SP exit ≤2 IP** → opposing batter leans vs that arm = **incomplete**; grade early cashes separate from full-box fades that print vs relievers.
+3. **O1.5 / 2+ Hits ≠ O0.5** — demand multi-hit profile (Yandy-type) or rematch multi tape; CONFIRM HOT alone is an O0.5 lean.
+4. **Same-bat 2+ Hits + 3+ HRR stack** — correlated nuke; only on true multi+RBI engines when you’re OK with one quiet night killing two legs.
+5. **Kwan-types:** fade HR/power; even H+R+RBI fades can miss when they score — size tiny or pass.
+6. **Post-exit bottom-order fades** — void or re-lean when SP hooks early; soft bullpen flips COLD maps.
+7. Keep **CONFIRM 2-man gate**; clean O0.5 pair (DeLauter + Aranda) was still the process ticket — volume stacks are variance.
+
 ---
 
 ## Ticket lock routine (USE THIS before every card)

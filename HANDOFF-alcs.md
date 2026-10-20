@@ -35,7 +35,7 @@
 
 ## Open / next
 1. **G1 OFF card** when probables + lineups post (likely Misi vs Rasmussen/Jax)
-2. Zone overlaps on both G1 SPs (`zone_overlap.py --images`)
+2. Zone overlaps on both G1 SPs (`zone_overlap.py --images`) — 4-panel gallery (throws / **swing** / damage / overlap) + dump-fit table (`TUNNEL`/`MISTAKE`/`CHASE`/`TAKE`/`OFFER`/`COLD`). Display-only; does not retune HOT or Exp K.
 3. If TB names Peralta G1, move the STRONG K game up and re-slot Trop G3
 
 ## Files to @

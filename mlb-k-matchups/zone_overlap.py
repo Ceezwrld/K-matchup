@@ -11,7 +11,9 @@ Also builds a **recent** window (default last 30 days) beside season and tags
 agreement (``CONFIRM`` / ``SEASON_ONLY`` / ``RECENT_ONLY`` / ``CONFLICT``) plus
 honest **low-sample** FYI flags when BIP / pitch counts are thin.
 
-Display / research only — does **not** change ``expected_ks`` or hits scores.
+Also tags **dump-fit** (throw × swing vs LHB/RHB): ``TUNNEL`` / ``MISTAKE`` /
+``CHASE`` / ``TAKE`` / ``OFFER`` / ``COLD``. Display / research only — does
+**not** change ``expected_ks``, hits scores, or HOT/COLD xwOBA.
 
 CLI examples::
 
@@ -70,6 +72,14 @@ SEASON_MIN_ZONE_PITCHES = 15
 RECENT_MIN_ZONE_PITCHES = 8
 SEASON_MIN_BIP_XWOBA = 5
 RECENT_MIN_BIP_XWOBA = 3
+
+# Dump-fit (swing × throw vs L/R). Display-only — does not retune HOT/COLD.
+OUT_ZONES = {11, 12, 13, 14}
+IN_ZONES = set(range(1, 10))
+DUMP_MIN_SHARE = 0.10  # else still keep the #1 zone
+HIGH_SWING = 40.0  # they offer on the tunnel
+LOW_SWING = 28.0  # they take the tunnel
+HIGH_WHIFF = 30.0
 
 # Catcher's view labels for Savant zones 1–9 / 11–14
 ZONE_LABEL = {
@@ -376,6 +386,160 @@ def _risk_from_share_xwoba(share: float, xw: float | None) -> str:
     return "—"
 
 
+def dump_targets_for_stand(block: dict[str, Any]) -> list[dict[str, Any]]:
+    """Pitcher's real tunnels vs this batter hand (top throw zones)."""
+    share = block.get("zone_share") or {}
+    zmix = block.get("zone_pitch_mix") or {}
+    ranked = sorted(share.items(), key=lambda x: -float(x[1]))
+    dumps: list[dict[str, Any]] = []
+    for z, sh in ranked:
+        z = int(z)
+        sh_f = float(sh)
+        if dumps and sh_f < DUMP_MIN_SHARE:
+            break
+        mix = zmix.get(z) or zmix.get(str(z)) or []
+        dumps.append(
+            {
+                "zone": z,
+                "label": ZONE_LABEL.get(z, str(z)),
+                "pitcher_pct": round(100 * sh_f, 1),
+                "out_of_zone": z in OUT_ZONES,
+                "pitches": "+".join(str(m.get("pitch")) for m in mix[:2]),
+            }
+        )
+        if len(dumps) >= 2:
+            break
+    return dumps
+
+
+def _zone_lookup(all_zones: list[dict[str, Any]], zone: int) -> dict[str, Any] | None:
+    for row in all_zones or []:
+        if int(row.get("zone") or -1) == int(zone):
+            return row
+    return None
+
+
+def classify_dump_fit(
+    dumps: list[dict[str, Any]],
+    all_zones: list[dict[str, Any]],
+    overlaps: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Cross the pitcher's #1 dump vs this batter's swing / damage / heart HOTs.
+
+    Tags (ticket use):
+    - **TUNNEL** — they damage his actual dump (BEST location)
+    - **MISTAKE** — dump is take/chase/cold, but they crush in-zone / heart
+    - **CHASE** — they offer on the out-of-zone dump and miss or hit it weak
+    - **TAKE** — they don't swing at the dump (not a Hits lean on that pitch)
+    - **OFFER** — they swing at the dump without real damage (Kwan-type volume)
+    - **COLD** — dump is COLD damage, no in-zone HOT backup
+    """
+    if not dumps:
+        return None
+    dump = dumps[0]
+    z = int(dump["zone"])
+    brow = _zone_lookup(all_zones, z) or {}
+    ov_map = {int(r["zone"]): r for r in (overlaps or []) if r.get("zone") is not None}
+    ov = ov_map.get(z) or {}
+    risk = str(ov.get("season_risk") or ov.get("risk") or "—")
+    swing = brow.get("swing_pct")
+    whiff = brow.get("whiff_of_swing")
+    xw = brow.get("xwoba_bip")
+    inzone_hots = [
+        r
+        for r in (overlaps or [])
+        if int(r.get("zone") or -1) in IN_ZONES
+        and str(r.get("season_risk") or r.get("risk") or "") in ("HOT", "WARM")
+    ]
+
+    fit: str | None = None
+    if risk in ("HOT", "WARM"):
+        fit = "TUNNEL"
+    elif dump.get("out_of_zone"):
+        if swing is not None and float(swing) < LOW_SWING:
+            fit = "TAKE"
+        elif swing is not None and float(swing) >= HIGH_SWING and (
+            (whiff is not None and float(whiff) >= HIGH_WHIFF)
+            or risk == "COLD"
+            or (xw is not None and float(xw) <= 0.280)
+        ):
+            fit = "CHASE"
+        elif swing is not None and float(swing) >= HIGH_SWING:
+            fit = "OFFER"
+        elif risk == "COLD":
+            fit = "COLD"
+    elif risk == "COLD":
+        fit = "COLD"
+
+    if fit != "TUNNEL" and inzone_hots:
+        fit = "MISTAKE"
+
+    if not fit:
+        return None
+
+    why = {
+        "TUNNEL": (
+            f"damages his dump {dump['label']} "
+            f"(W {dump['pitcher_pct']}% {dump.get('pitches') or ''})".strip()
+        ),
+        "MISTAKE": (
+            "COLD/take on dump "
+            f"{dump['label']}; HOT in-zone "
+            + "/".join(str(r.get("label")) for r in inzone_hots[:2])
+        ),
+        "CHASE": (
+            f"offers on dump {dump['label']} "
+            f"(swing {swing}%, whiff {whiff}%) — K/weak, not Hits"
+        ),
+        "TAKE": (
+            f"takes dump {dump['label']} (swing {swing}%) — not a Hits lean on that pitch"
+        ),
+        "OFFER": (
+            f"swings dump {dump['label']} without damage — volume/singles, fade power"
+        ),
+        "COLD": f"COLD on dump {dump['label']} — pass Hits vs this tunnel",
+    }.get(fit, fit)
+
+    return {
+        "fit": fit,
+        "dump_zone": z,
+        "dump_label": dump["label"],
+        "dump_out_of_zone": bool(dump.get("out_of_zone")),
+        "pitcher_pct": dump["pitcher_pct"],
+        "pitches": dump.get("pitches") or "",
+        "swing_pct": swing,
+        "whiff_of_swing": whiff,
+        "xwoba": xw,
+        "risk": risk,
+        "mistake_zones": [str(r.get("label")) for r in inzone_hots[:3]],
+        "why": why,
+    }
+
+
+def attach_dump_fits(payload: dict[str, Any]) -> dict[str, Any]:
+    """Annotate payload with vs-L / vs-R dump targets + per-batter dump_fit.
+
+    Safe on already-written JSON (``--from-json``). Does not change HOT/COLD.
+    """
+    pitcher = payload.get("pitcher") or {}
+    by_stand = pitcher.get("by_stand") or {}
+    targets: dict[str, list[dict[str, Any]]] = {}
+    for stand, block in by_stand.items():
+        targets[str(stand)] = dump_targets_for_stand(block or {})
+    payload["dump_targets"] = targets
+    overlaps = payload.get("overlaps") or {}
+    for b in payload.get("batters") or []:
+        stand = str(b.get("stand") or "R")
+        dumps = targets.get(stand) or []
+        fit = classify_dump_fit(
+            dumps,
+            list(b.get("all_zones") or []),
+            list(overlaps.get(str(b.get("name"))) or []),
+        )
+        b["dump_fit"] = fit
+    return payload
+
+
 def overlap_rows(
     batter: dict[str, Any],
     pitcher_stand_block: dict[str, Any],
@@ -406,6 +570,7 @@ def overlap_rows(
                 "label": ZONE_LABEL.get(z, str(z)),
                 "pitcher_pct": round(100 * float(share), 1),
                 "batter_swing": b.get("swing_pct"),
+                "batter_whiff": b.get("whiff_of_swing"),
                 "batter_xwoba": xw,
                 "batter_ev": b.get("ev_bip"),
                 "batter_barrel": b.get("barrel_bip"),
@@ -590,7 +755,8 @@ def render_markdown(
     lines.append("")
     lines.append(
         "Catcher’s view. Display-only — does not change Exp K or hits scores. "
-        "HOT/WARM/COLD use **season** pitcher location × batter damage; "
+        "HOT/WARM/COLD use **season** pitcher location × batter **damage**; "
+        "**dump fit** adds where they **swing** on his LHB/RHB tunnel. "
         "**recent** confirms or flags conflict. "
         "`LOW_SAMPLE_*` = FYI — size down, don’t veto automatically."
     )
@@ -653,6 +819,52 @@ def render_markdown(
                 )
             if bits:
                 lines.append("- **Zone → pitch mix:** " + "; ".join(bits))
+        dumps = dump_targets_for_stand(block)
+        if dumps:
+            lines.append(
+                "- **Dump (ticket tunnel):** "
+                + "; ".join(
+                    f"{d['label']} {d['pitcher_pct']}%"
+                    + (f" {d['pitches']}" if d.get("pitches") else "")
+                    + (" · chase" if d.get("out_of_zone") else " · in-zone")
+                    for d in dumps
+                )
+            )
+        lines.append("")
+
+    # One-glance: dump × swing for every batter, split by stand
+    dump_rows = [
+        b for b in batters if b.get("dump_fit")
+    ]
+    if dump_rows:
+        lines.append("## Dump × swing (vs LHB / RHB)")
+        lines.append("")
+        lines.append(
+            "Pitcher’s #1 throw pocket vs that batter’s hand, crossed with "
+            "whether they **swing** there. TUNNEL = Hits location. "
+            "MISTAKE = hunt middle, not the dump. CHASE/TAKE = not a Hits lean "
+            "on the tunnel (K / take)."
+        )
+        lines.append("")
+        lines.append(
+            "| Batter | Stand | Dump | Throw | Swing | Whiff | xwOBA | Fit |"
+        )
+        lines.append(
+            "|--------|-------|------|-------|-------|-------|-------|-----|"
+        )
+        for b in dump_rows:
+            d = b["dump_fit"]
+            sw = d.get("swing_pct")
+            wh = d.get("whiff_of_swing")
+            xw = d.get("xwoba")
+            lines.append(
+                f"| {b['name']} | {b.get('stand')} | {d.get('dump_label')} | "
+                f"{d.get('pitcher_pct')}% {d.get('pitches') or ''} | "
+                f"{'—' if sw is None else sw} | "
+                f"{'—' if wh is None else wh} | "
+                f"{'—' if xw is None else xw} | "
+                f"**{d.get('fit')}** |"
+            )
         lines.append("")
 
     lines.append("## Batter heat vs opposing hand → overlap")
@@ -673,6 +885,13 @@ def render_markdown(
                 "- **FYI sample:** "
                 + ", ".join(flags)
                 + " — thin MLB / recent sample; inform size, don’t auto-fade"
+            )
+        df = b.get("dump_fit") or {}
+        if df:
+            lines.append(
+                f"- **Dump fit `{df.get('fit')}`** — {df.get('why')} "
+                f"(swing {df.get('swing_pct')}% · whiff {df.get('whiff_of_swing')}% "
+                f"· xwOBA {df.get('xwoba')})"
             )
         lines.append(
             f"- Swing {b.get('swing_pct')}% · whiff/swing {b.get('whiff_of_swing')}%"
@@ -779,8 +998,8 @@ def render_markdown(
 
     lines.append(
         "*Generated by `mlb-k-matchups/zone_overlap.py` — re-run on future "
-        "slates with `--hits` + `--pitcher`. Prefer CONFIRM HOTs; treat "
-        "`LOW_SAMPLE_*` as sizing FYI.*"
+        "slates with `--hits` + `--pitcher`. Prefer CONFIRM **TUNNEL** HOTs; "
+        "MISTAKE = heart/in-zone, not the dump. Treat `LOW_SAMPLE_*` as sizing FYI.*"
     )
     return "\n".join(lines) + "\n"
 
@@ -858,8 +1077,9 @@ def zone_note_for_batter(
     ov: list[dict[str, Any]],
     *,
     sample_flags: list[str] | None = None,
+    dump_fit: dict[str, Any] | None = None,
 ) -> str:
-    """Compact note for hits-board table: risk + agreement + sample FYI."""
+    """Compact note for hits-board table: dump fit + risk + agreement + sample FYI."""
     def _season_risk(r: dict[str, Any]) -> str:
         return str(r.get("season_risk") or r.get("risk") or "—")
 
@@ -868,6 +1088,10 @@ def zone_note_for_batter(
     cold = [r for r in ov if _season_risk(r) == "COLD"]
     confirm = [r for r in ov if r.get("agreement") == "CONFIRM"]
     bits: list[str] = []
+    if dump_fit and dump_fit.get("fit"):
+        bits.append(
+            f"{dump_fit['fit']} {dump_fit.get('dump_label') or ''}".strip()
+        )
     if confirm:
         bits.append(
             "CONFIRM "
@@ -992,7 +1216,7 @@ def run_overlap(
             "used_for_throw_pct": p_recent_sum is not None,
             "as_of": (as_of or date.today()).isoformat(),
         }
-    return {
+    payload = {
         "pitcher": {
             "name": pitcher_name,
             "id": pitcher_id,
@@ -1014,6 +1238,7 @@ def run_overlap(
             },
         },
     }
+    return attach_dump_fits(payload)
 
 
 def parse_batter_arg(raw: str) -> list[dict[str, Any]]:
@@ -1122,6 +1347,7 @@ def main(argv: list[str] | None = None) -> None:
     # Rebuild images / notes from a prior JSON (no Statcast re-pull)
     if args.from_json:
         payload = json.loads(Path(args.from_json).read_text())
+        payload = attach_dump_fits(payload)
         pitcher = payload.get("pitcher") or {}
         pid = int(pitcher.get("id") or 0)
         hand = str(pitcher.get("hand") or "R")
@@ -1220,8 +1446,11 @@ def main(argv: list[str] | None = None) -> None:
         batter_by_name = {b["name"]: b for b in payload.get("batters") or []}
         for row in hits_rows:
             ov = payload["overlaps"].get(row["batter"]) or []
-            flags = (batter_by_name.get(row["batter"]) or {}).get("sample_flags")
-            row["zone_note"] = zone_note_for_batter(ov, sample_flags=flags)
+            bat = batter_by_name.get(row["batter"]) or {}
+            flags = bat.get("sample_flags")
+            row["zone_note"] = zone_note_for_batter(
+                ov, sample_flags=flags, dump_fit=bat.get("dump_fit")
+            )
 
     # Default output prefix
     date_bit = ""

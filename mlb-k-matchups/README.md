@@ -80,6 +80,19 @@ Statcast pitch-level location (`zone` / `plate_x`/`plate_z`) for a starter vs ea
 - `SEASON_ONLY` / `RECENT_ONLY` — one window only
 - `CONFLICT` — season HOT/WARM vs recent COLD (or reverse)
 
+**Dump-fit (throw × swing vs LHB / RHB)** — display-only; does **not** retune HOT/COLD or `expected_ks`. Crosses the pitcher’s real dump vs that batter hand with whether they **swing** there:
+
+| Tag | Meaning | Ticket use |
+|-----|---------|------------|
+| `TUNNEL` | They damage his actual dump | Hits location |
+| `MISTAKE` | Dump is take/chase/cold; they crush in-zone / heart | Hunt middle, not the tunnel |
+| `CHASE` | Offer on the out-of-zone dump and miss or hit it weak | K / weak — not Hits on that pitch |
+| `TAKE` | They don’t swing at the dump | Not a Hits lean on that pitch |
+| `OFFER` | Swing the dump without real damage | Volume / singles; fade power |
+| `COLD` | COLD dump, no in-zone HOT backup | Pass Hits vs this tunnel |
+
+Gallery is four plates: **throws %** · **swing %** · **damage xwOBA** · **overlap**. Purple outline = his dump vs that hand.
+
 **Low-sample FYI flags** (do not auto-veto — inform sizing):
 - `LOW_SAMPLE_BATTER` — thin season pitches vs that hand
 - `LOW_SAMPLE_ZONE` — HOT/WARM/COLD zone with &lt;~15 BIP
@@ -109,12 +122,12 @@ python3 mlb-k-matchups/zone_overlap.py \
 ```
 
 Writes:
-- `zone-overlap-<pitcher>-<date>.md` + `.json` — HOT/WARM/COLD + recent agreement + sample flags
-- `zone-maps/<pitcher>-<date>/` — **PNG heatmaps** (pitcher throw %, batter damage xwOBA, overlap) + `index.html` gallery
+- `zone-overlap-<pitcher>-<date>.md` + `.json` — HOT/WARM/COLD + dump-fit (`TUNNEL`/`MISTAKE`/`CHASE`/`TAKE`/`OFFER`/`COLD`) + recent agreement + sample flags
+- `zone-maps/<pitcher>-<date>/` — **PNG heatmaps** (pitcher throw %, batter swing %, batter damage xwOBA, overlap) + `index.html` gallery
 
 Catcher’s-view plates:
 - **Pitch plan panels** — where each pitch type (FF/SL/KC/…) lands vs **LHB and RHB** separately  
-- Blue overall throw % · green/red batter BIP damage · overlap cells show **`W% + primary pitch`** · red/blue outlines = HOT/COLD  
+- Blue overall throw % · yellow/red batter **swing %** · green/red batter BIP damage · overlap cells show **`W% + primary pitch`** · red/blue outlines = HOT/COLD · purple outline = pitcher dump vs that hand
 
 Display-only — does not change Exp K or hits scores. Needs network to Baseball Savant on first pull (~1–2 min per pitcher+lineup); `matplotlib` required for PNGs. Prefer **CONFIRM** HOTs with board backup; treat `LOW_SAMPLE_*` as sizing FYI.
 

@@ -1159,6 +1159,24 @@
             "barrel_bip": NaN
           }
         ]
+      },
+      "dump_fit": {
+        "fit": "TUNNEL",
+        "dump_zone": 11,
+        "dump_label": "OUT-UP-3B",
+        "dump_out_of_zone": true,
+        "pitcher_pct": 23.2,
+        "pitches": "FF+CH",
+        "swing_pct": 10.6,
+        "whiff_of_swing": 10.0,
+        "xwoba": 0.37,
+        "risk": "WARM",
+        "mistake_zones": [
+          "HI-IN (3B)",
+          "MID-IN",
+          "LO-MID"
+        ],
+        "why": "damages his dump OUT-UP-3B (W 23.2% FF+CH)"
       }
     },
     {
@@ -1553,6 +1571,24 @@
             "barrel_bip": NaN
           }
         ]
+      },
+      "dump_fit": {
+        "fit": "MISTAKE",
+        "dump_zone": 11,
+        "dump_label": "OUT-UP-3B",
+        "dump_out_of_zone": true,
+        "pitcher_pct": 23.2,
+        "pitches": "FF+CH",
+        "swing_pct": 23.2,
+        "whiff_of_swing": 59.3,
+        "xwoba": 0.135,
+        "risk": "COLD",
+        "mistake_zones": [
+          "HEART",
+          "MID-IN",
+          "HI-IN (3B)"
+        ],
+        "why": "COLD/take on dump OUT-UP-3B; HOT in-zone HEART/MID-IN"
       }
     },
     {
@@ -1945,6 +1981,23 @@
             "barrel_bip": NaN
           }
         ]
+      },
+      "dump_fit": {
+        "fit": "MISTAKE",
+        "dump_zone": 11,
+        "dump_label": "OUT-UP-3B",
+        "dump_out_of_zone": true,
+        "pitcher_pct": 23.2,
+        "pitches": "FF+CH",
+        "swing_pct": 9.6,
+        "whiff_of_swing": 23.1,
+        "xwoba": 0.161,
+        "risk": "COLD",
+        "mistake_zones": [
+          "HEART",
+          "HI-IN (3B)"
+        ],
+        "why": "COLD/take on dump OUT-UP-3B; HOT in-zone HEART/HI-IN (3B)"
       }
     },
     {
@@ -2340,6 +2393,24 @@
             "barrel_bip": NaN
           }
         ]
+      },
+      "dump_fit": {
+        "fit": "MISTAKE",
+        "dump_zone": 14,
+        "dump_label": "OUT-DN-1B",
+        "dump_out_of_zone": true,
+        "pitcher_pct": 21.7,
+        "pitches": "ST+CH",
+        "swing_pct": 35.2,
+        "whiff_of_swing": 55.9,
+        "xwoba": 0.34,
+        "risk": "\u2014",
+        "mistake_zones": [
+          "MID-AWAY",
+          "HI-MID",
+          "LO-MID"
+        ],
+        "why": "COLD/take on dump OUT-DN-1B; HOT in-zone MID-AWAY/HI-MID"
       }
     },
     {
@@ -2773,6 +2844,20 @@
             "barrel_bip": NaN
           }
         ]
+      },
+      "dump_fit": {
+        "fit": "TAKE",
+        "dump_zone": 11,
+        "dump_label": "OUT-UP-3B",
+        "dump_out_of_zone": true,
+        "pitcher_pct": 23.2,
+        "pitches": "FF+CH",
+        "swing_pct": 13.8,
+        "whiff_of_swing": 3.3,
+        "xwoba": 0.242,
+        "risk": "COLD",
+        "mistake_zones": [],
+        "why": "takes dump OUT-UP-3B (swing 13.8%) \u2014 not a Hits lean on that pitch"
       }
     },
     {
@@ -3129,6 +3214,22 @@
             "barrel_bip": NaN
           }
         ]
+      },
+      "dump_fit": {
+        "fit": "MISTAKE",
+        "dump_zone": 11,
+        "dump_label": "OUT-UP-3B",
+        "dump_out_of_zone": true,
+        "pitcher_pct": 23.2,
+        "pitches": "FF+CH",
+        "swing_pct": 21.0,
+        "whiff_of_swing": 23.2,
+        "xwoba": 0.231,
+        "risk": "COLD",
+        "mistake_zones": [
+          "HI-IN (3B)"
+        ],
+        "why": "COLD/take on dump OUT-UP-3B; HOT in-zone HI-IN (3B)"
       }
     },
     {
@@ -3493,6 +3594,24 @@
             "barrel_bip": NaN
           }
         ]
+      },
+      "dump_fit": {
+        "fit": "TUNNEL",
+        "dump_zone": 11,
+        "dump_label": "OUT-UP-3B",
+        "dump_out_of_zone": true,
+        "pitcher_pct": 23.2,
+        "pitches": "FF+CH",
+        "swing_pct": 28.0,
+        "whiff_of_swing": 35.0,
+        "xwoba": 0.373,
+        "risk": "WARM",
+        "mistake_zones": [
+          "MID-IN",
+          "LO-IN",
+          "HEART"
+        ],
+        "why": "damages his dump OUT-UP-3B (W 23.2% FF+CH)"
       }
     },
     {
@@ -3777,6 +3896,23 @@
             "barrel_bip": null
           }
         ]
+      },
+      "dump_fit": {
+        "fit": "TUNNEL",
+        "dump_zone": 11,
+        "dump_label": "OUT-UP-3B",
+        "dump_out_of_zone": true,
+        "pitcher_pct": 23.2,
+        "pitches": "FF+CH",
+        "swing_pct": 25.5,
+        "whiff_of_swing": 44.7,
+        "xwoba": 0.533,
+        "risk": "HOT",
+        "mistake_zones": [
+          "MID-IN",
+          "LO-IN"
+        ],
+        "why": "damages his dump OUT-UP-3B (W 23.2% FF+CH)"
       }
     },
     {
@@ -4218,6 +4354,23 @@
             "barrel_bip": NaN
           }
         ]
+      },
+      "dump_fit": {
+        "fit": "TUNNEL",
+        "dump_zone": 11,
+        "dump_label": "OUT-UP-3B",
+        "dump_out_of_zone": true,
+        "pitcher_pct": 23.2,
+        "pitches": "FF+CH",
+        "swing_pct": 17.7,
+        "whiff_of_swing": 39.7,
+        "xwoba": 0.484,
+        "risk": "HOT",
+        "mistake_zones": [
+          "HEART",
+          "MID-IN"
+        ],
+        "why": "damages his dump OUT-UP-3B (W 23.2% FF+CH)"
       }
     }
   ],
@@ -6530,5 +6683,39 @@
       "low_recent_pitches_vs_hand": 120,
       "low_recent_zone_bip": 8
     }
+  },
+  "dump_targets": {
+    "L": [
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 23.2,
+        "out_of_zone": true,
+        "pitches": "FF+CH"
+      },
+      {
+        "zone": 13,
+        "label": "OUT-DN-3B",
+        "pitcher_pct": 21.1,
+        "out_of_zone": true,
+        "pitches": "CH+CU"
+      }
+    ],
+    "R": [
+      {
+        "zone": 14,
+        "label": "OUT-DN-1B",
+        "pitcher_pct": 21.7,
+        "out_of_zone": true,
+        "pitches": "ST+CH"
+      },
+      {
+        "zone": 11,
+        "label": "OUT-UP-3B",
+        "pitcher_pct": 15.2,
+        "out_of_zone": true,
+        "pitches": "FF+CH"
+      }
+    ]
   }
 }

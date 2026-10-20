@@ -663,10 +663,24 @@ Also check: **Official** vs Prior · projected IP · outing risk · vs-team hist
 | **FADE** | COLD on real tunnel + soft/mid board |
 
 ### Reading reminder (for the card)
-Overlap: green = damage · `W% + pitch` = frequency + primary pitch · red outline = HOT · blue = COLD.  
-Pitch-plan panel first (vs that batter’s hand), then overlap.
+Overlap: green = damage · `W% + pitch` = frequency + primary pitch · red outline = HOT · blue = COLD · purple = pitcher dump vs that hand.  
+Pitch-plan panel first (vs that batter’s hand), then **throws / swing / damage / overlap**. Swing map = where they offer vs that hand.
 
 Exhibit: `pregame-batter-leans-2026-10-15-nlcs.md` (Teoscar/Ohtani/Mitchell/Turang/Bauers).
+
+### Dump-fit (throw × swing vs L/R) — display-only 10/20
+Not a card lock and **does not retune HOT/COLD xwOBA or `expected_ks`**. Heatmaps now tag the pitcher’s real dump vs that batter’s swing:
+
+| Tag | Use |
+|-----|-----|
+| **TUNNEL** | They damage his actual dump — Hits location |
+| **MISTAKE** | Dump is take/chase/cold; they crush in-zone/heart — hunt middle |
+| **CHASE** | Offer on out-of-zone dump, miss or weak — K, not Hits on the tunnel |
+| **TAKE** | They don’t swing at the dump — not a Hits lean on that pitch |
+| **OFFER** | Swing dump without damage — Kwan-type volume; fade power |
+| **COLD** | COLD dump, no in-zone HOT backup — pass Hits vs this tunnel |
+
+BEST still requires HOT on dump **or** elite board + ≥3–4 HOTs. Dump-fit is the why-sentence (tunnel vs mistake vs chase), not a new score.
 
 ### Season + recent heatmaps (locked 10/17)
 `zone_overlap.py` now scores **season** HOTs and a **last-30d** recent window.

@@ -95,7 +95,12 @@ def _draw_plate_grid(
         vmax=vmax if vmax is not None else float(np.nanmax(grid)),
     )
 
-    risk_colors = {"HOT": "#c62828", "WARM": "#ef6c00", "COLD": "#1565c0"}
+    risk_colors = {
+        "HOT": "#c62828",
+        "WARM": "#ef6c00",
+        "COLD": "#1565c0",
+        "DUMP": "#6a1b9a",
+    }
 
     for z, (c, r) in ZONE_POS.items():
         val = grid[r, c]
@@ -170,10 +175,12 @@ def render_pitcher_location_png(
     title: str,
     path: Path,
     stand_label: str = "",
+    dump_zones: list[int] | None = None,
 ) -> Path:
     """zone_share values are fractions (0–1)."""
     vals = {int(k): float(v) * 100 for k, v in zone_share.items()}
     grid = _values_to_grid(vals)
+    dump_outline = {int(z): "DUMP" for z in (dump_zones or [])}
     fig, ax = plt.subplots(figsize=(4.2, 6.2), dpi=140)
     _draw_plate_grid(
         ax,
@@ -183,6 +190,7 @@ def render_pitcher_location_png(
         vmax=max(35.0, float(np.nanmax(grid)) if np.isfinite(grid).any() else 20),
         title=f"{title}\nthrows % {stand_label}".strip(),
         fmt="{:.0f}%",
+        risk_outline=dump_outline or None,
     )
     fig.tight_layout()
     path = Path(path)
@@ -216,6 +224,39 @@ def render_batter_damage_png(
         fmt="{:.3f}",
         annotations=ann,
         risk_outline=risk_outline,
+    )
+    fig.tight_layout()
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    return path
+
+
+def render_batter_swing_png(
+    zone_swing: dict[int, float],
+    *,
+    title: str,
+    path: Path,
+    dump_zones: list[int] | None = None,
+    risk_outline: dict[int, str] | None = None,
+) -> Path:
+    """Swing% by zone vs that pitcher hand. Purple outline = his dump."""
+    vals = {int(k): float(v) for k, v in zone_swing.items()}
+    grid = _values_to_grid(vals)
+    outline = dict(risk_outline or {})
+    for z in dump_zones or []:
+        outline[int(z)] = "DUMP"  # dump wins on the swing plate
+    fig, ax = plt.subplots(figsize=(4.2, 6.2), dpi=140)
+    _draw_plate_grid(
+        ax,
+        grid,
+        cmap="YlOrRd",
+        vmin=15.0,
+        vmax=55.0,
+        title=f"{title}\nswing % vs this hand",
+        fmt="{:.0f}%",
+        risk_outline=outline or None,
     )
     fig.tight_layout()
     path = Path(path)
@@ -350,13 +391,15 @@ def write_gallery_html(
         ".pitch{font-size:0.82rem;color:#9ed0ff;margin-top:6px}",
         ".legend span{display:inline-block;margin-right:12px;font-size:0.8rem}",
         ".hot{color:#ef5350}.warm{color:#ffa726}.cold{color:#42a5f5}",
+        ".fit{color:#ce93d8;font-weight:600}.dump{color:#ce93d8}",
         "ul.plan{margin:8px 0 0;padding-left:18px;color:#c5d0da;font-size:0.85rem}",
         "</style></head><body>",
         f"<h1>Zone heatmaps — {html.escape(pitcher_name)}</h1>",
-        f"<p class='sub'>{html.escape(game or '')} · catcher view · red outline=HOT · blue=COLD"
-        " · overlap labels show W% + primary pitch in that zone</p>",
+        f"<p class='sub'>{html.escape(game or '')} · catcher view · red=HOT damage · blue=COLD"
+        " · purple=pitcher dump vs that hand · overlap labels = W% + primary pitch</p>",
         "<p class='legend'><span class='hot'>HOT</span><span class='warm'>WARM</span>"
-        "<span class='cold'>COLD</span> · color on batter/overlap = xwOBA damage</p>",
+        "<span class='cold'>COLD</span><span class='dump'>DUMP</span> · "
+        "swing map = where they offer vs this hand · damage = BIP xwOBA</p>",
     ]
     if pitch_plan:
         parts.append("<div class='card'>")
@@ -390,6 +433,7 @@ def write_gallery_html(
         parts.append("<div class='imgs'>")
         for key, cap in (
             ("pitcher_img", "Pitcher throws %"),
+            ("swing_img", "Batter swing %"),
             ("batter_img", "Batter damage"),
             ("overlap_img", "Overlap (+ pitch)"),
         ):
@@ -399,6 +443,10 @@ def write_gallery_html(
                     f"<figcaption>{cap}</figcaption></figure>"
                 )
         parts.append("</div>")
+        if c.get("dump_fit"):
+            parts.append(
+                f"<p class='pitch'><span class='fit'>{html.escape(c['dump_fit'])}</span></p>"
+            )
         if c.get("pitch_note"):
             parts.append(f"<p class='pitch'>{html.escape(c['pitch_note'])}</p>")
         if c.get("note"):
@@ -450,6 +498,9 @@ def build_images_from_payload(
     out_dir: Path,
 ) -> dict[str, Any]:
     """Render PNGs + gallery from a zone_overlap JSON payload."""
+    from zone_overlap import attach_dump_fits
+
+    payload = attach_dump_fits(payload)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     pitcher = payload.get("pitcher") or {}
@@ -457,6 +508,7 @@ def build_images_from_payload(
     game = pitcher.get("game")
     by_stand = pitcher.get("by_stand") or {}
     overlaps = payload.get("overlaps") or {}
+    dump_targets = payload.get("dump_targets") or {}
     cards: list[dict[str, str]] = []
     manifest: list[dict[str, Any]] = []
 
@@ -470,6 +522,8 @@ def build_images_from_payload(
         }
         # Back-compat: synthesize from pitch_loc labels if needed
         if not loc_z and block.get("pitch_loc"):
+            from zone_overlap import ZONE_LABEL
+
             rev = {v: k for k, v in ZONE_LABEL.items()}
             for pt, locs in (block.get("pitch_loc") or {}).items():
                 loc_z[pt] = {
@@ -497,6 +551,9 @@ def build_images_from_payload(
         share = {int(k): float(v) for k, v in (block.get("zone_share") or {}).items()}
         zmix_raw = block.get("zone_pitch_mix") or {}
         zmix = {int(k): v for k, v in zmix_raw.items()}
+        dumps = dump_targets.get(stand) or []
+        dump_zones = [int(d["zone"]) for d in dumps if d.get("zone") is not None]
+        dump_fit = b.get("dump_fit") or {}
         zone_xw: dict[int, float] = {}
         swing: dict[int, float] = {}
         for row in b.get("all_zones") or []:
@@ -538,6 +595,7 @@ def build_images_from_payload(
         slug = "".join(ch if ch.isalnum() else "-" for ch in folded).strip("-")
         slug = "-".join(p for p in slug.split("-") if p)
         p_img = out_dir / f"{slug}-pitcher-vs{stand}.png"
+        s_img = out_dir / f"{slug}-batter-swing.png"
         b_img = out_dir / f"{slug}-batter-damage.png"
         o_img = out_dir / f"{slug}-overlap.png"
 
@@ -546,7 +604,16 @@ def build_images_from_payload(
             title=f"{pname}",
             path=p_img,
             stand_label=f"vs {stand}HB",
+            dump_zones=dump_zones,
         )
+        if swing:
+            render_batter_swing_png(
+                swing,
+                title=name,
+                path=s_img,
+                dump_zones=dump_zones,
+                risk_outline=risk_map,
+            )
         render_batter_damage_png(
             zone_xw,
             title=name,
@@ -564,14 +631,23 @@ def build_images_from_payload(
         )
         note = " · ".join(notes[:4]) if notes else ""
         pitch_note = " · ".join(pitch_bits[:4]) if pitch_bits else ""
+        fit_line = ""
+        if dump_fit.get("fit"):
+            fit_line = (
+                f"{dump_fit['fit']} on {dump_fit.get('dump_label')} "
+                f"(W {dump_fit.get('pitcher_pct')}% · swing {dump_fit.get('swing_pct')}%)"
+                + (f" — {dump_fit['why']}" if dump_fit.get("why") else "")
+            )
         cards.append(
             {
                 "batter": name,
                 "pitcher_img": p_img.name,
+                "swing_img": s_img.name if swing else "",
                 "batter_img": b_img.name,
                 "overlap_img": o_img.name,
                 "note": note,
                 "pitch_note": pitch_note,
+                "dump_fit": fit_line,
             }
         )
         manifest.append(
@@ -579,10 +655,12 @@ def build_images_from_payload(
                 "batter": name,
                 "stand": stand,
                 "pitcher_img": str(p_img),
+                "swing_img": str(s_img) if swing else "",
                 "batter_img": str(b_img),
                 "overlap_img": str(o_img),
                 "note": note,
                 "pitch_note": pitch_note,
+                "dump_fit": fit_line,
             }
         )
 

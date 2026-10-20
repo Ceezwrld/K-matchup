@@ -722,6 +722,23 @@ User Kalshi 4-man (Yandy 2H+3HRR · DeLauter 2H+3HRR): **2/4**.
 6. **Post-exit bottom-order fades** — void or re-lean when SP hooks early; soft bullpen flips COLD maps.
 7. Keep **CONFIRM 2-man gate**; clean O0.5 pair (DeLauter + Aranda) was still the process ticket — volume stacks are variance.
 
+### ALCS G6 grade — TB 7, CLE 3 · TB wins series 4–2 (locked 10/19–10/20)
+
+Full grade: `backtest-2026-10-19-alcs-g6.md`. Peralta **3 K / 5.1 W** (Exp 3.98) · Armstrong **0 K / 1.0 L** · **Cantillo 1.2 LHP primary bulk**.  
+Cashed: **DeLauter** 2-5 HRR 4 · **Adell** 1-4 2B · **Yandy** O0.5 + 3+ HRR (1-4 HR) · **Hicks** 1-4 · **Caminero** live LHP/full box 2-3 HRR 6 · Palacios **pass fade** 2-4 2B 2 RBI · Kwan HRR fade.  
+Misses: **Aranda** 0-4 dump-HOT opener · Yandy **2+** · Bailey CONFIRM 0-3 (2nd straight) · Mesa CONFIRM 0-3.  
+User dual same-bat nuke (Yandy+Aranda 2H+3HRR): **1/4**. Process 2-man **DeLauter+Adell 2/2**. No G7.
+
+**Process locks (apply next card)**
+1. **Opener dump-HOT ≠ 2-man A-ticket.** One PA vs a 1-IP opener (Aranda POP vs Armstrong) is a lottery even when G4 printed. Tiny O0.5 vs *that arm only*; after the opener exits the dump lean is **incomplete** unless bulk shares the tunnel. Full-game 2-man anchor = CONFIRM / multi (Yandy-type), not the opener dump.
+2. **1-hit HR nights split 2+ Hits vs 3+ HRR.** Yandy 1-4 HR → O1.5 miss / 3+ HRR hit. Same-bat 2H+3HRR is correlated, not identical.
+3. **Caminero-types COLD on opener dump:** still **don’t fire Hits vs opener** (pass, even if a knock sneaks). **Do** fire when the first long LHP is in. Grade the live swap vs the remaining box (HR can print vs a later RHP).
+4. **Bailey-type WARM-mid CONFIRM** without elite board — two 0-fers vs length TB SPs (G5 Rasmussen, G6 Peralta) → **tiny / secondary**, not a 2-man leg.
+5. Keep **Palacios COLD pass-fade** (G4 inverse + G6 2-4 2 RBI). Do not auto-fade mid/utility COLD.
+6. Keep **Kwan-type: fade power/HRR, not O0.5 Hits** (tonight HRR fade held; he still singled).
+7. Keep **UNDER_OK + Stuff+≥105 / WHIFF → no chalk soft under**. Peralta Stuff+**97** is below that veto — U5.5+ was legal and cashed; do **not** loosen the 105 gate because 3 K also cashed a skinny U4.5.
+8. **CONFIRM 2-man gate** still the process pair (DeLauter+Adell **2/2**). Aranda+Yandy died on the opener-dump leg.
+
 ---
 
 ## Ticket lock routine (USE THIS before every card)

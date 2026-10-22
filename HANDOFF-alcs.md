@@ -40,3 +40,5 @@
 
 ## Files to @
 `@HANDOFF-alcs.md` `@backtest-lessons.md` `@pregame-world-series-2026-tb-mil.md` `@backtest-2026-10-19-alcs-g6.md` `@mlb-k-matchups/README.md`
+
+Opus 5.5 second-reader paste: `@HANDOFF-second-reader.md`

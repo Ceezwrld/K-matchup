@@ -537,6 +537,19 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "hits_score": _json_safe(b.get("hits_score")),
                     "hr_rbi_score": _json_safe(b.get("hr_rbi_score")),
                     "hits_thin_sample": bool(b.get("hits_thin_sample")),
+                    "bb_pct": _json_safe(b.get("bb_pct")),
+                    "pa_vs_sp": _json_safe(b.get("pa_vs_sp")),
+                    "p_hit": _json_safe(b.get("p_hit")),
+                    "expected_hits": _json_safe(b.get("expected_hits")),
+                    "p_ge_1": _json_safe(b.get("p_ge_1")),
+                    "p_ge_2": _json_safe(b.get("p_ge_2")),
+                    "hits_share": _json_safe(b.get("hits_share")),
+                    "traffic_obp": _json_safe(b.get("traffic_obp")),
+                    "p_man_on": _json_safe(b.get("p_man_on")),
+                    "rbi_spot": b.get("rbi_spot"),
+                    "rbi_spot_score": _json_safe(b.get("rbi_spot_score")),
+                    "expected_rbi": _json_safe(b.get("expected_rbi")),
+                    "hits_env": b.get("hits_env"),
                     "pitches": pitches,
                 }
             )
@@ -1106,11 +1119,23 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
         hits = b.get("hits_score")
         hits_html = ""
         if hits is not None:
+            exp_h = b.get("expected_hits")
+            p1 = b.get("p_ge_1")
+            rbi = b.get("rbi_spot")
+            pa = b.get("pa_vs_sp")
+            bits = [f"hits {_fmt(hits, 0)}"]
+            if exp_h is not None:
+                bits.append(f"expH {_fmt(exp_h, 2)}")
+            if p1 is not None:
+                bits.append(f"P1 {_fmt(100 * float(p1), 0)}%")
+            if pa is not None:
+                bits.append(f"PA {_fmt(pa, 0)}")
+            if rbi:
+                bits.append(f"RBI {rbi}")
             hits_html = (
-                f"<span class='hits-meta' title='Hits prop score (not used in expected Ks)'>"
-                f"hits {_fmt(hits, 0)}"
-                f"{'' if b.get('barrel_pct') is None else ' · brl ' + _fmt(b.get('barrel_pct'), 1) + '%'}"
-                f"{'' if b.get('hard_hit_pct') is None else ' · hh ' + _fmt(b.get('hard_hit_pct'), 1) + '%'}"
+                f"<span class='hits-meta' title='Hits talent + order-walk expected hits / "
+                f"RBI traffic (not used in expected Ks)'>"
+                f"{' · '.join(bits)}"
                 f"</span>"
             )
         tip = (
@@ -1134,8 +1159,8 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
         "starter — <strong>green</strong> helps the pitcher, "
         "<strong class='hint-amber'>amber</strong> medium, "
         "<strong class='hint-red'>red</strong> helps the batters. "
-        "Hits / barrel / hard-hit scores are a separate Hits-prop layer and "
-        "<strong>do not</strong> change expected strikeouts.</p>"
+        "Hits talent, order-walk expected hits, and RBI-spot are a separate "
+        "Hits-prop layer and <strong>do not</strong> change expected strikeouts.</p>"
     )
 
 
@@ -1149,6 +1174,9 @@ def _render_hits_board(hits_board: list[dict[str, Any]] | None) -> str:
         )
     rows = []
     for r in hits_board[:15]:
+        p1 = r.get("p_ge_1")
+        p1_s = "—" if p1 is None else f"{100 * float(p1):.0f}%"
+        spot = r.get("rbi_spot") or "—"
         rows.append(
             "<div class='hits-row'>"
             f"<span class='rk'>{_esc(r.get('rank'))}</span>"
@@ -1156,20 +1184,21 @@ def _render_hits_board(hits_board: list[dict[str, Any]] | None) -> str:
             f"<span class='vs'>vs {_esc(r.get('pitcher') or '—')} "
             f"({_esc(r.get('pitch_hand') or '?')}HP)</span>"
             f"<span class='num'>{_fmt(r.get('hits_score'), 0)}</span>"
+            f"<span class='num'>{_fmt(r.get('expected_hits'), 2)}</span>"
+            f"<span class='num'>{_esc(p1_s)}</span>"
             f"<span class='num'>{_fmt(r.get('hr_rbi_score'), 0)}</span>"
-            f"<span class='num'>{_fmt(r.get('barrel_pct'), 1)}</span>"
-            f"<span class='num'>{_fmt(r.get('hard_hit_pct'), 1)}</span>"
-            f"<span class='num'>{_fmt(r.get('avg_vs_hand'), 3)}</span>"
+            f"<span class='spot {_esc(spot)}'>{_esc(spot)}</span>"
             "</div>"
         )
     return (
         "<section class='hits-board' id='hitsBoard'>"
         "<h2>Hits board <span>(display-only)</span></h2>"
-        "<p class='hits-lede'>Barrel%, hard-hit%, xwOBA, and AVG vs pitcher hand — "
-        "ranked for Hits / H+R+RBI props. This board never feeds the strikeout model.</p>"
+        "<p class='hits-lede'>Talent rank plus order-walk expected hits, P(1+ hit), "
+        "and RBI-spot (traffic in front × slot × power). Never feeds the strikeout model. "
+        "Dump-fit still gates fire/pass.</p>"
         "<div class='hits-colhead'>"
         "<div>#</div><div>Batter</div><div>Matchup</div>"
-        "<div>Hits</div><div>H+R+RBI</div><div>Brl%</div><div>HH%</div><div>AVG vs</div>"
+        "<div>Hits</div><div>Exp H</div><div>P(1+)</div><div>H+R+RBI</div><div>RBI spot</div>"
         "</div>"
         f"<div class='hits-list'>{''.join(rows)}</div>"
         "</section>"
@@ -3672,13 +3701,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .hits-row .name { font-weight: 650; }
   .hits-row .vs { color: var(--muted); font-size: 0.75rem; }
   .hits-row .num { font-variant-numeric: tabular-nums; text-align: right; }
+  .hits-row .spot { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; text-align: right; }
+  .hits-row .spot.prime { color: var(--ok); }
+  .hits-row .spot.good { color: var(--warn, #b7791f); }
+  .hits-row .spot.thin { color: var(--muted); }
   @media (max-width: 720px) {
     .hits-colhead, .hits-row {
       grid-template-columns: 1.6rem minmax(5rem,1fr) repeat(3, 2.6rem);
     }
     .hits-colhead div:nth-child(3), .hits-row .vs,
-    .hits-colhead div:nth-child(7), .hits-colhead div:nth-child(8),
-    .hits-row .num:nth-child(7), .hits-row .num:nth-child(8) { display: none; }
+    .hits-colhead div:nth-child(7),
+    .hits-row .num:nth-child(7) { display: none; }
   }
   .empty { padding: 1.2rem; text-align: center; color: var(--muted); }
   .footnote { margin-top: 1rem; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }

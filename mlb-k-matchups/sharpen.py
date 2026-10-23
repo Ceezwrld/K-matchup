@@ -17,8 +17,9 @@
 11. Opponent-adjusted recent form — L3 K/9 scaled by league K% /
     mean opponent-team K% faced (hot L3 vs juiced K clubs gets haircut).
 
-Hits-prop helpers (barrel / hard-hit / xwOBA) live here too but are
-display-only — they never modify expected_ks.
+Hits-prop helpers (barrel / hard-hit / xwOBA plus order-walk expected
+hits / RBI traffic) live here too but are display-only — they never
+modify expected_ks.
 
 12. Advanced confirm layer — FIP/SIERA/xERA, Savant xBA/xSLG/xwOBA,
     FanGraphs Stuff+/Location+/Pitching+, and per-pitch run value.
@@ -27,6 +28,7 @@ display-only — they never modify expected_ks.
 
 from __future__ import annotations
 
+import math
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import StringIO
@@ -230,6 +232,26 @@ HITS_AVG_WEIGHT = 0.40
 HITS_CONTACT_WEIGHT = 0.35
 HITS_EXPECTED_WEIGHT = 0.25
 MIN_BIP_CONTACT = 20
+# Order-walk expected hits / RBI traffic (display-only; never touches expected_ks).
+HITS_BATTER_AVG_WEIGHT = 0.70
+HITS_PITCHER_AVG_WEIGHT = 0.30
+P_HIT_MIN = 0.08
+P_HIT_MAX = 0.40
+AB_PA_FLOOR = 0.40
+AB_PA_CEIL = 0.92
+BATTER_BB_RECENT_PA = 15.0
+# Slot 3–5 are RBI engines; 1-hole is Hits volume, not RBI.
+SLOT_RBI_WEIGHT = {
+    1: 0.50,
+    2: 0.90,
+    3: 1.15,
+    4: 1.20,
+    5: 1.10,
+    6: 0.85,
+    7: 0.70,
+    8: 0.55,
+    9: 0.50,
+}
 
 K_EVENTS = {"strikeout", "strikeout_double_play"}
 
@@ -2541,6 +2563,16 @@ def score_batter_hits_props(
         avg_vs_hand = float(cq["ba"])
         avg_source = "savant_ba"
 
+    bb_pct = None
+    bb_source = None
+    recent_pa = float(off.get("recent_pa") or 0.0)
+    if off.get("recent_bb_pct") is not None and recent_pa >= BATTER_BB_RECENT_PA:
+        bb_pct = float(off["recent_bb_pct"])
+        bb_source = "recent"
+    elif off.get("season_bb_pct") is not None:
+        bb_pct = float(off["season_bb_pct"])
+        bb_source = "season"
+
     barrel = cq.get("barrel_pct")
     hard_hit = cq.get("hard_hit_pct")
     xwoba = cq.get("xwoba")
@@ -2604,6 +2636,8 @@ def score_batter_hits_props(
         "xba": None if xba is None else float(xba),
         "avg_vs_hand": avg_vs_hand,
         "avg_vs_hand_source": avg_source,
+        "bb_pct": bb_pct,
+        "bb_source": bb_source,
         "bip": bip,
         "hits_score": hits_score,
         "hr_rbi_score": hr_rbi_score,
@@ -2641,6 +2675,185 @@ def enrich_lineup_hits_props(
     return batter_detail
 
 
+def _hits_float(val: Any) -> float | None:
+    if val is None:
+        return None
+    try:
+        f = float(val)
+    except (TypeError, ValueError):
+        return None
+    if pd.isna(f):
+        return None
+    return f
+
+
+def _hits_slot(val: Any) -> int:
+    try:
+        n = int(val)
+    except (TypeError, ValueError):
+        return 9
+    return n if 1 <= n <= 9 else 9
+
+
+def _binomial_p_ge(n: int, p: float, k: int) -> float:
+    """P(X >= k) for X ~ Binomial(n, p)."""
+    if n <= 0 or k > n:
+        return 0.0
+    if k <= 0:
+        return 1.0
+    p = min(1.0, max(0.0, float(p)))
+    q = 1.0 - p
+    cdf = 0.0
+    for i in range(int(k)):
+        cdf += math.comb(n, i) * (p**i) * (q ** (n - i))
+    return max(0.0, min(1.0, 1.0 - cdf))
+
+
+def _hits_env_from_style(pitcher_style: str | None) -> str:
+    style = str(pitcher_style or "").lower()
+    if "whiff" in style:
+        return "k_arm"
+    if "fly" in style or "popup" in style or "gb" in style or "contact" in style:
+        return "bip_arm"
+    return "neutral"
+
+
+def pa_hit_probability(
+    *,
+    expected_k_pct: float | None,
+    bb_pct: float | None,
+    batter_avg: float | None,
+    batter_xba: float | None,
+    pitcher_xba: float | None,
+    pitcher_ba_against: float | None,
+) -> float:
+    """P(hit | PA) ≈ (AB/PA) × blended AVG. Does not use expected_ks."""
+    k = (_hits_float(expected_k_pct) or LEAGUE_K_PCT) / 100.0
+    bb = (_hits_float(bb_pct) or LEAGUE_BB_PCT) / 100.0
+    ab_pa = min(AB_PA_CEIL, max(AB_PA_FLOOR, 1.0 - k - bb))
+    batter = _hits_float(batter_avg)
+    if batter is None:
+        batter = _hits_float(batter_xba)
+    if batter is None:
+        batter = LEAGUE_AVG
+    pitcher = _hits_float(pitcher_xba)
+    if pitcher is None:
+        pitcher = _hits_float(pitcher_ba_against)
+    if pitcher is None:
+        pitcher = LEAGUE_XBA
+    contact = HITS_BATTER_AVG_WEIGHT * batter + HITS_PITCHER_AVG_WEIGHT * pitcher
+    return min(P_HIT_MAX, max(P_HIT_MIN, ab_pa * contact))
+
+
+def rbi_spot_label(score: float | None) -> str | None:
+    if score is None:
+        return None
+    if score >= 60.0:
+        return "prime"
+    if score >= 50.0:
+        return "good"
+    return "thin"
+
+
+def attach_lineup_expected_hits(
+    batter_detail: list[dict[str, Any]],
+    *,
+    projected_bf: float | int | None,
+    pitcher_xba: float | None = None,
+    pitcher_ba_against: float | None = None,
+    pitcher_style: str | None = None,
+) -> list[dict[str, Any]]:
+    """Walk the nine for projected BF → expected_hits / P(1+) / RBI traffic.
+
+    Display-only. Never writes expected_ks, expected_k_pct, HOT, or hits_score.
+    """
+    if not batter_detail:
+        return batter_detail
+    ordered = sorted(batter_detail, key=lambda b: _hits_slot(b.get("slot")))
+    n_lineup = len(ordered)
+    hits_env = _hits_env_from_style(pitcher_style)
+
+    for b in ordered:
+        p_hit = pa_hit_probability(
+            expected_k_pct=_hits_float(b.get("expected_k_pct")),
+            bb_pct=_hits_float(b.get("bb_pct")),
+            batter_avg=_hits_float(b.get("avg_vs_hand")),
+            batter_xba=_hits_float(b.get("xba")),
+            pitcher_xba=pitcher_xba,
+            pitcher_ba_against=pitcher_ba_against,
+        )
+        bb = (_hits_float(b.get("bb_pct")) or LEAGUE_BB_PCT) / 100.0
+        b["p_hit"] = p_hit
+        b["obp_proxy"] = min(0.55, max(0.20, p_hit + bb))
+        b["hits_env"] = hits_env
+        b["pa_vs_sp"] = 0
+        b["expected_hits"] = 0.0
+
+    try:
+        bf_n = max(0, int(round(float(projected_bf or 0))))
+    except (TypeError, ValueError):
+        bf_n = 0
+    for i in range(bf_n):
+        b = ordered[i % n_lineup]
+        b["pa_vs_sp"] = int(b.get("pa_vs_sp") or 0) + 1
+        b["expected_hits"] = float(b.get("expected_hits") or 0.0) + float(b["p_hit"])
+
+    lineup_hits = sum(float(b.get("expected_hits") or 0.0) for b in ordered)
+
+    for idx, b in enumerate(ordered):
+        prev1 = ordered[(idx - 1) % n_lineup]
+        prev2 = ordered[(idx - 2) % n_lineup]
+        o1 = float(prev1.get("obp_proxy") or 0.32)
+        o2 = float(prev2.get("obp_proxy") or 0.32)
+        p_on = 1.0 - (1.0 - o1) * (1.0 - o2)
+        slot = _hits_slot(b.get("slot"))
+        pa = int(b.get("pa_vs_sp") or 0)
+        p_hit = float(b.get("p_hit") or 0.0)
+        b["traffic_obp"] = (o1 + o2) / 2.0
+        b["p_man_on"] = p_on
+        b["p_ge_1"] = _binomial_p_ge(pa, p_hit, 1)
+        b["p_ge_2"] = _binomial_p_ge(pa, p_hit, 2)
+        if lineup_hits > 0:
+            b["hits_share"] = 100.0 * float(b.get("expected_hits") or 0.0) / lineup_hits
+        else:
+            b["hits_share"] = None
+        slot_w = SLOT_RBI_WEIGHT.get(slot, 0.80)
+        hrr = _hits_float(b.get("hr_rbi_score")) or 50.0
+        volume = (pa / 2.5) if pa else 0.0
+        raw = 50.0 + 40.0 * (p_on * slot_w * volume - 0.38) + 0.40 * (hrr - 50.0)
+        score = min(95.0, max(15.0, raw))
+        b["rbi_spot_score"] = score
+        b["rbi_spot"] = rbi_spot_label(score)
+        barrel = (_hits_float(b.get("barrel_pct")) or LEAGUE_BARREL_PCT) / 100.0
+        rib_rate = 0.10 + 0.35 * barrel
+        b["expected_rbi"] = float(pa) * p_on * rib_rate * slot_w
+    return batter_detail
+
+
+def enrich_dataframe_expected_hits(df: pd.DataFrame) -> pd.DataFrame:
+    """Attach order-walk hits / RBI traffic onto batter_detail (display-only)."""
+    if df is None or df.empty:
+        return df
+    out = df.copy()
+    if "lineup_expected_hits" not in out.columns:
+        out["lineup_expected_hits"] = pd.NA
+    for i, row in out.iterrows():
+        detail = row.get("batter_detail")
+        if not isinstance(detail, list) or not detail:
+            continue
+        attach_lineup_expected_hits(
+            detail,
+            projected_bf=row.get("projected_bf") or row.get("batters_faced_assumed"),
+            pitcher_xba=_hits_float(row.get("xba")),
+            pitcher_ba_against=_hits_float(row.get("ba_against")),
+            pitcher_style=row.get("pitcher_style"),
+        )
+        out.at[i, "batter_detail"] = detail
+        total = sum(float(b.get("expected_hits") or 0.0) for b in detail)
+        out.at[i, "lineup_expected_hits"] = total
+    return out
+
+
 def build_hits_board(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Flat slate of batters ranked by hits_score (separate from pitcher K board)."""
     board: list[dict[str, Any]] = []
@@ -2669,11 +2882,24 @@ def build_hits_board(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "hard_hit_pct": b.get("hard_hit_pct"),
                     "xwoba": b.get("xwoba"),
                     "xba": b.get("xba"),
+                    "bb_pct": b.get("bb_pct"),
                     "hits_score": b.get("hits_score"),
                     "hr_rbi_score": b.get("hr_rbi_score"),
                     "hits_thin_sample": b.get("hits_thin_sample"),
                     # K% shown for context only — not an input to hits_score blend beyond display.
                     "expected_k_pct": b.get("expected_k_pct"),
+                    "pa_vs_sp": b.get("pa_vs_sp"),
+                    "p_hit": b.get("p_hit"),
+                    "expected_hits": b.get("expected_hits"),
+                    "p_ge_1": b.get("p_ge_1"),
+                    "p_ge_2": b.get("p_ge_2"),
+                    "hits_share": b.get("hits_share"),
+                    "traffic_obp": b.get("traffic_obp"),
+                    "p_man_on": b.get("p_man_on"),
+                    "rbi_spot": b.get("rbi_spot"),
+                    "rbi_spot_score": b.get("rbi_spot_score"),
+                    "expected_rbi": b.get("expected_rbi"),
+                    "hits_env": b.get("hits_env"),
                 }
             )
     board.sort(

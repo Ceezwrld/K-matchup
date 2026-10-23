@@ -682,6 +682,18 @@ Not a card lock and **does not retune HOT/COLD xwOBA or `expected_ks`**. Heatmap
 
 BEST still requires HOT on dump **or** elite board + ≥3–4 HOTs. Dump-fit is the why-sentence (tunnel vs mistake vs chase), not a new score.
 
+### Order-walk expected hits / RBI traffic (locked 10/23)
+Display-only. Walk projected BF like `expected_ks`. Does **not** retune HOT, dump-fit, `hits_score`, or `expected_ks`.
+
+| Field | Use |
+|-------|-----|
+| `expected_hits` / `p_ge_1` | Who is actually more likely to record a hit vs this SP (slot × p_hit) |
+| `p_ge_2` | 2+ Hits — still needs a Yandy-type multi profile, not 3 PA alone |
+| `rbi_spot` (prime/good/thin) | HRR / RBI props — traffic of the two bats in front × cleanup weight |
+| `hits_share` | Offense distribution across the nine |
+
+**Ticket use:** size O0.5 vs 2+ and whether a slot is an RBI spot. **Dump-fit still gates fire/pass** (Caminero COLD dump stays a pass even with board rank #1). Leadoff volume ≠ cleanup RBI.
+
 ### Season + recent heatmaps (locked 10/17)
 `zone_overlap.py` now scores **season** HOTs and a **last-30d** recent window.
 - Prefer leans with **CONFIRM** (season ∩ recent) + hits-board backup.

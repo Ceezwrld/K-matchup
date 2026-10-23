@@ -29,6 +29,7 @@ from sharpen import (  # noqa: E402
     build_savant_pitcher_stuff,
     classify_outing_risk,
     effective_bat_side,
+    enrich_dataframe_expected_hits,
     enrich_lineup_hits_props,
     fetch_batter_contact_quality,
     fetch_batter_hand_k_rates,
@@ -1243,6 +1244,14 @@ def format_batter_detail(row: dict[str, Any]) -> str:
         side_s = f" ({side}HB)" if side else ""
         hits = b.get("hits_score")
         hits_s = f" hits={float(hits):.0f}" if hits is not None else ""
+        exp_h = b.get("expected_hits")
+        exp_s = f" expH={float(exp_h):.2f}" if exp_h is not None else ""
+        p1 = b.get("p_ge_1")
+        p1_s = f" P1={100 * float(p1):.0f}%" if p1 is not None else ""
+        rbi = b.get("rbi_spot")
+        rbi_s = f" rbi={rbi}" if rbi else ""
+        pa = b.get("pa_vs_sp")
+        pa_s = f" PA={int(pa)}" if pa is not None else ""
         brl = b.get("barrel_pct")
         hh = b.get("hard_hit_pct")
         contact_s = ""
@@ -1253,7 +1262,7 @@ def format_batter_detail(row: dict[str, Any]) -> str:
             )
         lines.append(
             f"    {b.get('slot'):>2}. {b.get('batter')}{side_s:<6} "
-            f"{k_s}{hits_s}{contact_s}  {b.get('status')}"
+            f"{k_s}{hits_s}{exp_s}{p1_s}{pa_s}{rbi_s}{contact_s}  {b.get('status')}"
         )
     return "\n".join(lines)
 
@@ -1358,8 +1367,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--hits-output",
         metavar="PATH",
         help=(
-            "Write Hits-prop board CSV (barrel/hard-hit/xwOBA scores). "
-            "Does not affect expected_ks. Default: beside -o as hits-YYYY-MM-DD.csv"
+            "Write Hits-prop board CSV (talent scores + order-walk expected hits / "
+            "RBI traffic). Does not affect expected_ks. Default: beside -o as "
+            "hits-YYYY-MM-DD.csv"
         ),
     )
     p.add_argument(
@@ -1870,6 +1880,13 @@ def main(argv: list[str] | None = None) -> int:
     # Soft-contact FILLER gated by opposing lineup arsenal rank on this slate.
     out = apply_ticket_outlook(out)
 
+    # Order-walk expected hits / RBI traffic — after pitcher xBA + STYLE land.
+    # Display-only; never writes expected_ks.
+    try:
+        out = enrich_dataframe_expected_hits(out)
+    except Exception as exc:  # pragma: no cover
+        log(True, f"expected-hits walk skipped: {exc}")
+
     # Career + recent pitcher-vs-opposing-team history (home/away in game logs).
     try:
         out = enrich_dataframe_vs_team_history(out)
@@ -2087,31 +2104,33 @@ def main(argv: list[str] | None = None) -> int:
         print("\nHits board (display-only; does not affect expected_ks)")
         print(
             f"{'rk':>3} {'batter':22} {'vs':3} {'pitcher':18} "
-            f"{'hits':>5} {'hrbi':>5} {'avgH':>5} {'brl':>5} {'hh':>5}"
+            f"{'hits':>5} {'expH':>5} {'P1':>4} {'PA':>3} {'hrbi':>5} {'rbi':>6}"
         )
         for r in hits_rows[:8]:
-            avg_s = (
+            exp_s = (
                 ""
-                if r.get("avg_vs_hand") is None
-                else f"{float(r['avg_vs_hand']):.3f}"
+                if r.get("expected_hits") is None
+                else f"{float(r['expected_hits']):.2f}"
             )
-            brl_s = (
+            p1_s = (
                 ""
-                if r.get("barrel_pct") is None
-                else f"{float(r['barrel_pct']):.1f}"
+                if r.get("p_ge_1") is None
+                else f"{100 * float(r['p_ge_1']):.0f}%"
             )
-            hh_s = (
+            pa_s = (
                 ""
-                if r.get("hard_hit_pct") is None
-                else f"{float(r['hard_hit_pct']):.1f}"
+                if r.get("pa_vs_sp") is None
+                else str(int(r["pa_vs_sp"]))
             )
+            rbi_s = str(r.get("rbi_spot") or "")
             print(
                 f"{r['rank']:>3} {str(r.get('batter') or '')[:22]:22} "
                 f"{str(r.get('pitch_hand') or '?'):>3} "
                 f"{str(r.get('pitcher') or '')[:18]:18} "
                 f"{float(r['hits_score']):5.1f} "
+                f"{exp_s:>5} {p1_s:>4} {pa_s:>3} "
                 f"{float(r['hr_rbi_score'] or 0):5.1f} "
-                f"{avg_s:>5} {brl_s:>5} {hh_s:>5}"
+                f"{rbi_s:>6}"
             )
 
     if args.output:

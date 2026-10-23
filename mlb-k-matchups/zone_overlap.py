@@ -980,19 +980,24 @@ def render_markdown(
         lines.append("## Hits / H+R+RBI board (same slate)")
         lines.append("")
         lines.append(
-            "| Slot | Batter | Hits | HR/RBI | AVG vs hand | Barrel | HH | Zone note |"
+            "| Slot | Batter | Hits | Exp H | P(1+) | PA | RBI | HR/RBI | Zone note |"
         )
         lines.append(
-            "|------|--------|------|--------|-------------|--------|----|-----------|"
+            "|------|--------|------|-------|-------|----|-----|--------|-----------|"
         )
         for r in hits_rows:
             note = r.get("zone_note") or "—"
+            exp_h = r.get("expected_hits")
+            exp_s = "—" if exp_h is None or (isinstance(exp_h, float) and pd.isna(exp_h)) else f"{float(exp_h):.2f}"
+            p1 = r.get("p_ge_1")
+            p1_s = "—" if p1 is None or (isinstance(p1, float) and pd.isna(p1)) else f"{100 * float(p1):.0f}%"
+            pa = r.get("pa_vs_sp")
+            pa_s = "—" if pa is None or (isinstance(pa, float) and pd.isna(pa)) else str(int(pa))
+            rbi = r.get("rbi_spot") or "—"
             lines.append(
                 f"| {r.get('slot','')} | {r['batter']} | "
-                f"{r['hits_score']:.1f} | {r['hr_rbi_score']:.1f} | "
-                f"{r.get('avg_vs_hand', float('nan')):.3f} | "
-                f"{r.get('barrel_pct', float('nan')):.1f}% | "
-                f"{r.get('hard_hit_pct', float('nan')):.1f}% | {note} |"
+                f"{r['hits_score']:.1f} | {exp_s} | {p1_s} | {pa_s} | {rbi} | "
+                f"{r['hr_rbi_score']:.1f} | {note} |"
             )
         lines.append("")
 
@@ -1409,6 +1414,10 @@ def main(argv: list[str] | None = None) -> None:
                     "avg_vs_hand": float(r["avg_vs_hand"]) if pd.notna(r.get("avg_vs_hand")) else float("nan"),
                     "barrel_pct": float(r["barrel_pct"]) if pd.notna(r.get("barrel_pct")) else float("nan"),
                     "hard_hit_pct": float(r["hard_hit_pct"]) if pd.notna(r.get("hard_hit_pct")) else float("nan"),
+                    "expected_hits": float(r["expected_hits"]) if "expected_hits" in r.index and pd.notna(r.get("expected_hits")) else None,
+                    "p_ge_1": float(r["p_ge_1"]) if "p_ge_1" in r.index and pd.notna(r.get("p_ge_1")) else None,
+                    "pa_vs_sp": int(r["pa_vs_sp"]) if "pa_vs_sp" in r.index and pd.notna(r.get("pa_vs_sp")) else None,
+                    "rbi_spot": str(r["rbi_spot"]) if "rbi_spot" in r.index and pd.notna(r.get("rbi_spot")) else None,
                 }
             )
     else:

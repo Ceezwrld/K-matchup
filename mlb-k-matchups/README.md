@@ -71,6 +71,26 @@ Mindset: sportsbooks are often sharper on public info — `k_edge` is a **questi
 
 Barrel%, hard-hit% (EV95%), xwOBA/xBA from Savant plus AVG vs pitcher hand feed `hits_score` / `hr_rbi_score` on each batter. Written to `hits-YYYY-MM-DD.csv` beside rankings and shown in the HTML Hits board / lineup panel for Hits and H+R+RBI tickets only.
 
+**Order-walk expected hits / RBI traffic (display-only)** — same batting-order walk as `expected_ks`, for Hits / HRR tickets only. Per PA:
+
+```
+p_hit ≈ (1 − matchup K% − BB%) × (0.70 × batter AVG-vs-hand + 0.30 × pitcher xBA allowed)
+```
+
+Then walk projected BF:
+
+| Field | Meaning | Ticket use |
+|-------|---------|------------|
+| `pa_vs_sp` | PAs vs this starter | 1-hole vs 6-hole volume |
+| `expected_hits` | outing mean hits | who actually gets the knocks |
+| `p_ge_1` / `p_ge_2` | P(1+ hit) / P(2+) | O0.5 vs 2+ Hits |
+| `hits_share` | % of lineup expected hits | offense distribution |
+| `p_man_on` / `traffic_obp` | OBP of the two bats in front | RBI opportunity |
+| `rbi_spot` | prime / good / thin | HRR / RBI props |
+| `expected_rbi` | rough RBI mean | cleanup vs leadoff |
+
+Does **not** retune HOT xwOBA, dump-fit, `hits_score`, or `expected_ks`. Dump-fit still gates fire/pass; this layer sizes O0.5 vs 2+ and whether the slot is an RBI spot.
+
 **Zone overlap / heat maps (optional companion — does not change scores)**
 
 Statcast pitch-level location (`zone` / `plate_x`/`plate_z`) for a starter vs each opposing batter’s swing% and BIP damage (xwOBA / EV / barrel). Flags **HOT** (he throws there + they crush it), **WARM**, and **COLD** (his tunnel, their weak pocket). Use after the hits board to confirm Hits / H+R+RBI leans.

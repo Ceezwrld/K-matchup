@@ -46,8 +46,8 @@ Pitcher’s #1 throw pocket vs that batter’s hand, crossed with whether they *
 | Liam Hicks | L | OUT-UP-3B | 21.2% FF+CU | 20.3 | 11.3 | 0.206 | **MISTAKE** |
 | Victor Mesa Jr. | L | OUT-UP-3B | 21.2% FF+CU | 21.5 | 56.2 | nan | **MISTAKE** |
 | Chandler Simpson | L | OUT-UP-3B | 21.2% FF+CU | 24.3 | 3.8 | 0.211 | **TAKE** |
-| Richie Palacios | L | OUT-UP-3B | 21.2% FF+CU | 21.3 | 17.5 | 0.343 | **MISTAKE** |
 | Jonny DeLuca | R | OUT-DN-1B | 21.6% FF+SL | 34.1 | 48.7 | 0.221 | **MISTAKE** |
+| Ben Williamson | R | OUT-DN-1B | 21.6% FF+SL | 20.8 | 45.5 | 0.232 | **MISTAKE** |
 | Taylor Walls | L | OUT-UP-3B | 21.2% FF+CU | 23.2 | 29.3 | 0.343 | **MISTAKE** |
 
 ## Batter heat vs opposing hand → overlap
@@ -108,15 +108,6 @@ Pitcher’s #1 throw pocket vs that batter’s hand, crossed with whether they *
 - **COLD vs his tunnel:** OUT-UP-3B (W 21.2%, xwOBA 0.211, recent COLD · CONFIRM); HI-MID (W 7.8%, xwOBA 0.262 · SEASON_ONLY); OUT-UP-1B (W 9.6%, xwOBA 0.197, recent — · SEASON_ONLY)
 - **Season ∩ recent CONFIRM:** COLD OUT-UP-3B
 
-### Richie Palacios (stand L, vs RHP, season n=1427, recent n=85)
-- **FYI sample:** LOW_SAMPLE_RECENT — thin MLB / recent sample; inform size, don’t auto-fade
-- **Dump fit `MISTAKE`** — COLD/take on dump OUT-UP-3B; HOT in-zone MID-AWAY (swing 21.3% · whiff 17.5% · xwOBA 0.343)
-- Swing 46.0% · whiff/swing 17.8%
-- **Top swing (season):** HI-MID 78.2%; HEART 74.4%; MID-AWAY 73.4%; HI-AWAY (1B) 69.7%
-- **Top damage season (xwOBA BIP):** LO-IN 0.395 (EV 89.3, brl 0.0%, BIP 17); MID-AWAY 0.382 (EV 83.8, brl 0.0%, BIP 21); LO-MID 0.348 (EV 82.5, brl 5.3%, BIP 19); HI-IN (3B) 0.343 (EV 92.4, brl 0.0%, BIP 19)
-- **HOT/WARM overlap:** WARM MID-AWAY (W 6.2%, xwOBA 0.382 · SEASON_ONLY)
-- **COLD vs his tunnel:** OUT-DN-1B (W 14.8%, xwOBA 0.263, recent — · SEASON_ONLY); OUT-UP-1B (W 9.6%, xwOBA 0.244 · SEASON_ONLY)
-
 ### Jonny DeLuca (stand R, vs RHP, season n=927, recent n=119)
 - **FYI sample:** LOW_SAMPLE_RECENT — thin MLB / recent sample; inform size, don’t auto-fade
 - **Dump fit `MISTAKE`** — COLD/take on dump OUT-DN-1B; HOT in-zone HI-MID (swing 34.1% · whiff 48.7% · xwOBA 0.221)
@@ -126,6 +117,15 @@ Pitcher’s #1 throw pocket vs that batter’s hand, crossed with whether they *
 - **Top damage recent (30d):** MID-AWAY 0.299 (BIP 6); HEART 0.267 (BIP 6); LO-AWAY 0.263 (BIP 6)
 - **HOT/WARM overlap:** HOT HI-MID (W 6.8%, xwOBA 0.497, recent — xwOBA nan BIP 2 · SEASON_ONLY)
 - **COLD vs his tunnel:** OUT-DN-1B (W 21.6%, xwOBA 0.221, recent — · SEASON_ONLY); OUT-UP-1B (W 12.3%, xwOBA 0.259, recent — · SEASON_ONLY); HI-AWAY (1B) (W 7.4%, xwOBA 0.224 · SEASON_ONLY)
+
+### Ben Williamson (stand R, vs RHP, season n=729, recent n=13)
+- **FYI sample:** LOW_SAMPLE_RECENT — thin MLB / recent sample; inform size, don’t auto-fade
+- **Dump fit `MISTAKE`** — COLD/take on dump OUT-DN-1B; HOT in-zone HI-MID/HEART (swing 20.8% · whiff 45.5% · xwOBA 0.232)
+- Swing 40.3% · whiff/swing 15.0%
+- **Top swing (season):** HI-IN (3B) 71.8%; HEART 67.3%; HI-MID 63.9%; MID-IN 57.1%
+- **Top damage season (xwOBA BIP):** HI-MID 0.444 (EV 97.2, brl 8.3%, BIP 12); HEART 0.375 (EV 94.8, brl 5.0%, BIP 20); LO-MID 0.328 (EV 93.5, brl 0.0%, BIP 15); OUT-UP-3B 0.322 (EV 75.4, brl 0.0%, BIP 19)
+- **HOT/WARM overlap:** HOT HI-MID (W 6.8%, xwOBA 0.444 · SEASON_ONLY) [LOW_SAMPLE_ZONE]; WARM HEART (W 7.3%, xwOBA 0.375 · SEASON_ONLY)
+- **COLD vs his tunnel:** OUT-DN-1B (W 21.6%, xwOBA 0.232 · SEASON_ONLY); MID-AWAY (W 7.8%, xwOBA 0.266 · SEASON_ONLY)
 
 ### Taylor Walls (stand L, vs RHP, season n=1243, recent n=94)
 - **FYI sample:** LOW_SAMPLE_RECENT — thin MLB / recent sample; inform size, don’t auto-fade
@@ -143,11 +143,11 @@ Pitcher’s #1 throw pocket vs that batter’s hand, crossed with whether they *
 | 4 | Junior Caminero | 59.5 | 0.35 | 32% | 2 | good | 60.3 | MISTAKE OUT-DN-1B; CONFIRM COLD OUT-DN-1B/WARM MID-AWAY; COLD OUT-DN-1B |
 | 1 | Yandy Díaz | 59.0 | 0.53 | 44% | 3 | thin | 57.1 | MISTAKE OUT-DN-1B; HOT HEART/HI-AWAY (1B); COLD OUT-DN-1B |
 | 2 | Jonathan Aranda | 57.0 | 0.48 | 41% | 3 | good | 56.1 | MISTAKE OUT-UP-3B; HOT OUT-DN-1B/HI-MID; COLD OUT-UP-1B; CONFLICT HI-MID |
-| 3 | Liam Hicks | 52.1 | 0.62 | 50% | 3 | good | 47.6 | MISTAKE OUT-UP-3B; CONFIRM WARM HEART; COLD OUT-UP-3B; LOW_SAMPLE_RECENT |
-| 6 | Victor Mesa Jr. | 51.0 | 0.30 | 28% | 2 | thin | 52.2 | MISTAKE OUT-UP-3B; CONFIRM HOT HEART; LOW_SAMPLE_RECENT |
-| 5 | Chandler Simpson | 46.2 | 0.47 | 42% | 2 | thin | 39.2 | TAKE OUT-UP-3B; CONFIRM COLD OUT-UP-3B; COLD OUT-UP-3B; LOW_SAMPLE_RECENT |
-| 8 | Richie Palacios | 45.6 | 0.34 | 31% | 2 | thin | 43.8 | MISTAKE OUT-UP-3B; WARM MID-AWAY; COLD OUT-DN-1B; LOW_SAMPLE_RECENT |
-| 7 | Jonny DeLuca | 45.3 | 0.37 | 33% | 2 | thin | 41.9 | MISTAKE OUT-DN-1B; HOT HI-MID; COLD OUT-DN-1B; LOW_SAMPLE_RECENT |
+| 5 | Liam Hicks | 52.1 | 0.42 | 37% | 2 | good | 47.6 | MISTAKE OUT-UP-3B; CONFIRM WARM HEART; COLD OUT-UP-3B; LOW_SAMPLE_RECENT |
+| 7 | Victor Mesa Jr. | 51.0 | 0.30 | 28% | 2 | thin | 52.2 | MISTAKE OUT-UP-3B; CONFIRM HOT HEART; LOW_SAMPLE_RECENT |
+| 3 | Chandler Simpson | 46.2 | 0.71 | 56% | 3 | good | 39.2 | TAKE OUT-UP-3B; CONFIRM COLD OUT-UP-3B; COLD OUT-UP-3B; LOW_SAMPLE_RECENT |
+| 6 | Jonny DeLuca | 45.3 | 0.37 | 33% | 2 | thin | 41.9 | MISTAKE OUT-DN-1B; HOT HI-MID; COLD OUT-DN-1B; LOW_SAMPLE_RECENT |
+| 8 | Ben Williamson | 44.7 | 0.37 | 34% | 2 | thin | 42.7 | MISTAKE OUT-DN-1B; HOT HI-MID; COLD OUT-DN-1B; LOW_SAMPLE_RECENT |
 | 9 | Taylor Walls | 38.1 | 0.26 | 24% | 2 | thin | 35.1 | MISTAKE OUT-UP-3B; WARM HI-IN (3B)/MID-AWAY; COLD OUT-DN-1B; LOW_SAMPLE_RECENT |
 
 *Generated by `mlb-k-matchups/zone_overlap.py` — re-run on future slates with `--hits` + `--pitcher`. Prefer CONFIRM **TUNNEL** HOTs; MISTAKE = heart/in-zone, not the dump. Treat `LOW_SAMPLE_*` as sizing FYI.*

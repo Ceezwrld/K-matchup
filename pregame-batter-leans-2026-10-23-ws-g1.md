@@ -1,179 +1,166 @@
-# World Series G1 — EARLY · TB @ MIL · Fri Oct 23 · 7:00 CT · American Family Field
+# World Series G1 — OFF · TB @ MIL · Fri Oct 23 · 7:00 CT · American Family Field
 
-**Probables locked:** **Nick Martinez (R)** vs **Jacob Misiorowski (R)** · `pk=849805`.  
-**Lineups: PRIOR** — TB ALCS G6 (10/19) · MIL NLCS G4 (10/15). **Not an OFF lock.** Re-run `--require-official-lineup` + maps when nines post.
+**Probables:** **Nick Martinez (R)** vs **Jacob Misiorowski (R)** · `pk=849805`.  
+**Lineups: OFFICIAL.** Pre-Game. Both nines posted.
 
 Board: `rankings-2026-10-23.csv` · `hits-2026-10-23.csv`  
-Maps: `zone-overlap-jacob-misiorowski-2026-10-23.md` · `zone-overlap-nick-martinez-2026-10-23.md`  
-Galleries: `zone-maps/jacob-misiorowski-2026-10-23/` · `zone-maps/nick-martinez-2026-10-23/`
+Maps: `zone-overlap-jacob-misiorowski-2026-10-23.md` · `zone-overlap-nick-martinez-2026-10-23.md`
 
-Honor G4–G6: dump vs **that batter’s hand** · opener/short dump-HOT ≠ 2-man A · SEASON_ONLY = singles · O1.5 ≠ O0.5 · Caminero COLD on RHP dump → pass vs that arm · Palacios pass-fade · Kwan-type fade power not Hits · SPIKE / Stuff+≥105 no chalk soft under.  
-**New:** order-walk `expected_hits` / `p_ge_1` / `rbi_spot` size volume and HRR. Dump-fit still gates fire/pass.
+Honor: dump vs **that batter’s hand** · O1.5 ≠ O0.5 · Caminero COLD on RHP dump → pass vs that arm · Kwan-type fade power not Hits · Palacios-type pass-fade · SPIKE no chalk soft under · **expected_hits / rbi_spot size, dump-fit gates**.
+
+---
+
+## Official nines (what moved)
+
+**TB:** Yandy DH · Aranda 1B · **Simpson LF** · Caminero 3B · Hicks C · DeLuca CF · Mesa Jr. RF · **Williamson 2B** · Walls SS  
+vs prior: Simpson **up to 3** · Hicks down to 5 · Palacios **out** · Williamson **in** 8.
+
+**MIL:** Chourio LF · **Bauers 1B** · **Yelich DH** · **Contreras C** · Turang 2B · Mitchell CF · Pratt SS · Frelick RF · Hamilton 3B  
+vs prior: Bauers **up to 2** · Yelich **up to 3** · Contreras **cleanup 4** · Turang **down to 5**.
 
 ---
 
 ## Slate
 
-| | Arm | Hand | Exp K | Solo | STYLE | Stuff | Chip | Lineup | Lineup Exp H |
-|--|-----|------|-------|------|-------|-------|------|--------|--------------|
-| **MIL** | **Jacob Misiorowski** | R | **4.38** | SOFT 17.9% | **WHIFF** | **elite** · FF 100.6 · whiff 37% | **SPIKE** | TB prior 10/19 · BIP 70 · K% 20.5 · neutral | **3.73** · k_arm |
-| **TB** | **Nick Martinez** | R | **4.20** | SOFT 17.7% | **FLY** | soft · K9 5.5 | **UNDER_OK** | MIL prior 10/15 · BIP 60 · K% 27.4 · **whiff_prone** · three_true | **4.21** · bip_arm |
+| | Arm | Exp K | STYLE | Chip | Lineup Exp H | BF |
+|--|-----|-------|-------|------|--------------|----|
+| **MIL** | **Misiorowski** | **4.37** | **WHIFF** · FF 100.6 · stuff elite | **SPIKE** | **3.79** k_arm | 21 |
+| **TB** | **Martinez** | **4.20** | **FLY** · K9 5.5 | **FILLER** | **4.17** bip_arm | 22 |
 
-NLCS tape: Misi **5 K / 4.1** (94p). Martinez ALCS G4 **3 K / 5.1** UNDER_OK vs CLE. Refresh lands Exp **4.20** so the chip flips to **UNDER_OK** (FLY + Exp ≤4.2). Hits is still the lane vs this K-prone nine — do not chalk a skinny under.
-
-**PRIOR nines (expect similar)**  
-TB: Yandy · Aranda · Hicks · Caminero · Simpson · Mesa Jr. · DeLuca · Palacios · Walls  
-MIL: Chourio · Turang · Contreras · Bauers · Yelich · Mitchell · Pratt · Frelick · Hamilton
+Misi NLCS: 5 K / 4.1 · 94p. Martinez ALCS G4: 3 K / 5.1. MIL nine is still **whiff_prone** (BIP 60 · K% 27.4) — FILLER on Ks, Hits/HRR is the lane. Exp 4.20 is the UNDER_OK knife-edge; only 1/2 confirms (FLY, not Exp < 4.2). **Pass juiced unders.**
 
 ---
 
 ## Pitcher K lanes
 
-### Jacob Misiorowski — SPIKE, never chalk soft under
-| Metric | Value | Read |
-|--------|-------|------|
-| Exp K / IP / BF | **4.38** / 5.6 / 21 | Soft mean vs a juiced name |
-| Arsenal vs TB | **17.9% SOFT** | Mix is not the story |
-| STYLE / Stuff | **WHIFF** · Stuff elite · FF **100.6** | Ceiling is real |
-| Lineup Exp H | **3.73** | Contact is scarce |
+**Misiorowski — SPIKE.** Exp 4.37 / 5.6 IP / 21 BF. Solo SOFT 17.8% vs a WHIFF ceiling. **No U5.5 / no soft U6.** U6.5+ or pass. Prefer TB Hits after the dump. Hook ≤2 IP → vs-SP incomplete; re-lean first long arm.
 
-**Ticket:** Pass juiced overs (O5.5/O6.5). **No U5.5 / no soft U6.** Only **U6.5+ or pass**. Prefer **TB Hits after you respect the dump**. If he hooks ≤2 IP → TB vs-SP grades **incomplete**; re-lean the first long arm (May / Hall / Romero).
-
-### Nick Martinez — UNDER_OK on the number, prefer MIL Hits
-| Metric | Value | Read |
-|--------|-------|------|
-| Exp K / IP / BF | **4.20** / 5.5 / 22 | Soft mean, knife-edge UNDER_OK |
-| Arsenal vs MIL | **17.7% SOFT** | Mix loses to a K-prone nine |
-| STYLE | **FLY/popup** | BIP outs, not Ks |
-| Lineup Exp H | **4.21** | More offense than Misi’s night |
-
-**Ticket:** **Pass K overs.** UNDER_OK is a wide U6.5+ if you need a K number — not a juiced under. The lane is **MIL Hits / HRR**.
+**Martinez — FILLER.** Exp 4.20 / 5.5 IP / 22 BF. FLY/popup vs a K-prone nine. **Pass K overs.** Wide U6.5+ only if you need a K number. Lane is **MIL Hits / HRR**.
 
 ---
 
 ## Plans (dump vs that hand)
 
-**Misi vs LHB:** OUT-UP-3B **21% FF+CU** · OUT-DN-1B 15% CU+FC.  
-**Misi vs RHB:** OUT-DN-1B **22% FF+SL** · OUT-UP-3B 13% FF+SL.
-
-**Martinez vs LHB:** OUT-DN-3B **14% CH+SL** · OUT-UP-1B 12% SI+FC.  
-**Martinez vs RHB:** OUT-DN-1B **18% FC+CH** · OUT-UP-3B 13% SI+FF.
-
-Heart is ~7–8% for both. Hits are **mistake-middle**, not chase dumps.
+**Misi vs LHB:** OUT-UP-3B **21% FF+CU**. **vs RHB:** OUT-DN-1B **22% FF+SL**.  
+**Martinez vs LHB:** OUT-DN-3B **14% CH+SL**. **vs RHB:** OUT-DN-1B **18% FC+CH**.  
+Heart ~7–8%. Hits are **mistake-middle**.
 
 ---
 
-## Volume / RBI spot (order-walk)
+## Volume / RBI (official walk)
 
-Misi **21 BF** → slots 1–3 get **3 PA**, 4–9 get **2**. Martinez **22 BF** → slots 1–4 get **3 PA**. `p_ge_2` maxes at **12%** (Contreras/Turang/Hicks). Nobody is a 2+ Hits play vs these SPs.
+Misi 21 BF: slots 1–3 get **3 PA**. Martinez 22 BF: slots 1–4 get **3 PA**. `P(2+)` max **14%** (Simpson) / **12%** (Contreras). Still no 2+ Hits tickets vs these SPs.
 
-### TB vs Misi (k_arm)
-| Slot | Batter | Talent | Exp H | P(1+) | P(2+) | PA | RBI spot | Share |
-|------|--------|--------|-------|-------|-------|----|----------|-------|
-| 1 | Yandy | 59.0 | **0.53** | **44%** | 8% | 3 | thin | 14% |
+### TB vs Misi
+| Slot | Batter | Talent | Exp H | P(1+) | P(2+) | PA | RBI | Share |
+|------|--------|--------|-------|-------|-------|----|-----|-------|
+| 1 | Yandy | 59.0 | 0.53 | 44% | 8% | 3 | thin | 14% |
 | 2 | Aranda | 57.0 | 0.48 | 41% | 7% | 3 | good | 13% |
-| 3 | Hicks | 52.1 | **0.62** | **50%** | 11% | 3 | good | **17%** |
-| 4 | Caminero | **59.5** | 0.35 | 32% | 3% | 2 | good | 9% |
-| 5 | Simpson | 46.2 | 0.47 | 42% | 6% | 2 | thin | 13% |
+| 3 | **Simpson** | 46.2 | **0.71** | **56%** | 14% | 3 | good | **19%** |
+| 4 | Caminero | 59.5 | 0.35 | 32% | 3% | 2 | good | 9% |
+| 5 | Hicks | 52.1 | 0.42 | 37% | 4% | 2 | good | 11% |
 
-Yandy wins O0.5 on volume + board. Caminero is talent #1 and **volume 9%** — dump COLD plus 2 PA. Hicks is the contact-volume bat (8.7% K); still tiny because LOW_SAMPLE_RECENT. Simpson volume is the Kwan-type reminder: fade power, not Hits. Aranda PA 3 + RBI good does **not** clear dump COLD.
+Simpson is now the TB volume leader. That is a **Hits O0.5** number, not HRR (0 barrel, TAKE dump). Caminero is still talent #1 and volume 9%.
 
-### MIL vs Martinez (bip_arm)
-| Slot | Batter | Talent | Exp H | P(1+) | P(2+) | PA | RBI spot | Share |
-|------|--------|--------|-------|-------|-------|----|----------|-------|
+### MIL vs Martinez
+| Slot | Batter | Talent | Exp H | P(1+) | P(2+) | PA | RBI | Share |
+|------|--------|--------|-------|-------|-------|----|-----|-------|
 | 1 | Chourio | 57.7 | 0.51 | 43% | 8% | 3 | thin | 12% |
-| 2 | Turang | 55.8 | **0.63** | **51%** | 12% | 3 | good | 15% |
-| 3 | Contreras | 54.4 | **0.64** | **51%** | 12% | 3 | **prime** | **15%** |
-| 4 | Bauers | **59.4** | 0.50 | 42% | 8% | 3 | **prime** | 12% |
+| 2 | **Bauers** | 59.4 | 0.50 | 42% | 7% | 3 | good | 12% |
+| 3 | **Yelich** | 50.2 | 0.51 | 43% | 8% | 3 | **prime** | 12% |
+| 4 | **Contreras** | 54.4 | **0.64** | **51%** | 12% | 3 | **prime** | **15%** |
+| 5 | Turang | 55.8 | 0.42 | 38% | 4% | 2 | good | 10% |
 | 6 | Mitchell | 58.7 | 0.32 | 30% | 3% | 2 | good | 8% |
 
-Contreras is the RBI engine (low K 10.7% + cleanup traffic). Turang is the Hits-volume leader. Bauers is the only bat with **CONFIRM HOT + 3 PA + prime RBI**. Mitchell stays a dump-fit CONFIRM, not a volume bat.
+The 2-3-4 is the offense. Contreras is the RBI engine. Bauers keeps 3 PA and the only CONFIRM HOT. Yelich inherits prime RBI. Turang lost a PA when he dropped to 5.
 
 ---
 
 ## TB vs Misiorowski
 
-| Tier | Batter | H / HRR | Vol | Dump vs **his** hand | Fit | Prop | Why |
-|------|--------|---------|-----|----------------------|-----|------|-----|
-| **BEST** | **Yandy** | **59.0 / 57.1** | ExpH **0.53** · P1 **44%** · PA 3 · RBI **thin** | OUT-DN-1B FF+SL 22% · **COLD** | **MISTAKE** | **Hits O0.5** (not 2+) | Elite board + HOT HEART. Volume agrees. RBI thin (leadoff). P(2+) 8% kills 2+. |
-| **GOOD tiny** | **Hicks** | 52.1 / 47.6 | ExpH **0.62** · P1 **50%** · PA 3 · RBI good | OUT-UP-3B FF+CU 21% · **COLD** | **MISTAKE** | Hits O0.5 tiny | Highest TB share (17%). **CONFIRM WARM HEART**. LOW_SAMPLE_RECENT — not 2-man A, not HRR. |
-| **GOOD tiny** | **Mesa Jr.** | 51.0 / 52.2 | ExpH 0.30 · P1 28% · PA 2 · RBI thin | OUT-UP-3B · FOGS (whiff 56%) | **MISTAKE** | Hits O0.5 tiny | **CONFIRM HOT HEART**. Volume is weak — keep tiny. |
-| **Tiny** | **Aranda** | 57.0 / 56.1 | ExpH 0.48 · P1 41% · PA 3 · RBI good | **OUT-UP-3B FF** · **COLD .130** | **MISTAKE** | Hits O0.5 **tiny only** | Volume/RBI look playable. Dump vs **his** hand is still COLD. Not 1★. |
-| **Pass vs this arm** | **Caminero** | **59.5 / 60.3** | ExpH 0.35 · P1 **32%** · PA 2 | OUT-DN-1B FF+SL · **CONFIRM COLD** | **MISTAKE** | **Pass Hits vs Misi** | Talent #1, volume 9%, CONFIRM COLD dump. Pass vs this arm. Live vs bulk if Misi hooks. |
-| **FADE HRR** | Simpson | 46.2 / 39.2 | ExpH 0.47 · P1 42% · PA 2 | TAKE + **CONFIRM COLD** dump | **TAKE** | Fade power, **not** O0.5 Hits | Volume says Hits is live; 0 barrel kills HRR. |
-| **Pass fade** | Palacios | 45.6 | ExpH 0.34 · P1 31% | COLD/take dump | **MISTAKE** | **Pass hard fade** | Soft board, not all three fade gates |
-| Pass | DeLuca / Walls | soft | thin | COLD dumps | — | — | |
+| Tier | Batter | Vol | Dump vs **his** hand | Fit | Prop | Why |
+|------|--------|-----|----------------------|-----|------|-----|
+| **BEST** | **Yandy** | P1 44% · PA 3 · RBI thin | OUT-DN-1B FF+SL · **COLD** | **MISTAKE** | **Hits O0.5** (not 2+ / not HRR) | Elite board + HOT HEART. Volume agrees. Leadoff RBI is thin. P(2+) 8%. |
+| **GOOD vol** | **Simpson** | P1 **56%** · PA 3 · RBI good | OUT-UP-3B FF · **TAKE** / CONFIRM COLD | **TAKE** | **Hits O0.5** · **fade HRR** | Highest P(1+) on TB. 0 barrel. Kwan-type: fire the knock, never the power. Not 2-man A (no CONFIRM HOT). |
+| **Tiny** | **Aranda** | P1 41% · PA 3 · RBI good | **OUT-UP-3B FF** · **COLD .130** | **MISTAKE** | Hits O0.5 **tiny only** | Volume looks playable. Real LHB dump is still COLD. Not 1★. |
+| **Tiny** | **Hicks** | P1 37% · PA **2** | OUT-UP-3B · COLD | **MISTAKE** | Hits tiny | CONFIRM WARM HEART. Slot drop killed the volume case. LOW_SAMPLE_RECENT. |
+| **Pass vs this arm** | **Caminero** | P1 **32%** · PA 2 | OUT-DN-1B · **CONFIRM COLD** | **MISTAKE** | **Pass Hits vs Misi** | Talent #1. Dump + 2 PA both say no. Live vs bulk if Misi hooks. |
+| Tiny | Mesa Jr. | P1 28% · PA 2 | CONFIRM HOT HEART | **MISTAKE** | Tiny | Volume dead in the 7-hole. |
+| Pass | Williamson | P1 34% · PA 2 · RBI thin | COLD dump · SEASON_ONLY HOTs | **MISTAKE** | Pass | Soft 44.7 · LOW_SAMPLE_RECENT 13 pitches. Palacios replacement, not a ticket. |
+| Pass | DeLuca / Walls | thin | COLD dumps | — | — | |
 
 ### TB tickets
 | Priority | Ticket |
 |----------|--------|
 | **1★** | **Yandy Hits O0.5** |
-| **2** | Hicks Hits tiny (volume, not HRR / not 2-man A) |
-| **3** | Aranda Hits **tiny** — never 2-man A |
-| **Live** | Caminero if first long arm after a short Misi hook |
-| Avoid | Caminero vs Misi dump · Aranda 1★ / 2-man · Yandy 2+ / HRR · Palacios hard fade · Simpson Hits fade |
+| **2** | **Simpson Hits O0.5** (fade HRR / fade 2+) |
+| **3** | Aranda Hits tiny — never 2-man A |
+| **Live** | Caminero vs first long arm if Misi ≤2 IP |
+| Avoid | Caminero vs Misi · Aranda 1★ · Yandy 2+ / HRR · Simpson HRR · Williamson |
 
 ---
 
 ## MIL vs Martinez
 
-| Tier | Batter | H / HRR | Vol | Dump vs **his** hand | Fit | Prop | Why |
-|------|--------|---------|-----|----------------------|-----|------|-----|
-| **BEST** | **Bauers** | **59.4 / 60.7** | ExpH 0.50 · P1 42% · PA **3** · RBI **prime** | OUT-DN-3B CH 14% · **COLD** (whiff 63%) | **MISTAKE** | **Hits / HRR O0.5** | Only bat with CONFIRM HOT + 3 PA + prime RBI. Hunt middle/up, not the change. |
-| **BEST vol** | **Turang** | 55.8 / 54.0 | ExpH **0.63** · P1 **51%** · PA 3 · RBI good | CH dump COLD | **MISTAKE** | **Hits O0.5** | Hits-volume leader. **CONFIRM WARM LO-MID / MID-IN**. Not HRR 1★ (RBI good, not prime). |
-| **GOOD RBI** | **Contreras** | 54.4 / 53.8 | ExpH **0.64** · P1 **51%** · PA 3 · RBI **prime** | FC+CH dump · CONFLICT | **MISTAKE** | **Hits / HRR O0.5** | Best RBI spot on the slate. Dump recent flipped — size off 1★, still fire Hits/HRR. |
-| **GOOD** | **Mitchell** | **58.7 / 59.3** | ExpH 0.32 · P1 **30%** · PA **2** · RBI good | OUT-DN-3B CH · **COLD** | **MISTAKE** | **Hits O0.5** (not HRR) | **CONFIRM HOT MID-IN**. Dump-fit 2-man A. Volume is the weak leg — not 2+, not HRR. |
-| **GOOD** | **Chourio** | 57.7 / 57.8 | ExpH 0.51 · P1 43% · PA 3 · RBI **thin** | OUT-DN-1B FC+CH · COLD | **MISTAKE** | Hits O0.5 | Leadoff volume, not RBI. HEART SEASON_ONLY. Single only. |
-| Tiny | Yelich | 50.2 / 50.3 | ExpH 0.34 · P1 31% · RBI good | CH dump COLD | **MISTAKE** | Tiny | CONFIRM WARM LO-MID · 2 PA |
-| Tiny | Pratt | 51.5 / 47.2 | ExpH 0.47 · P1 41% · RBI thin | TUNNEL WARM dump SEASON_ONLY | **TUNNEL** | Tiny | HEART CONFLICT · not BEST |
-| **FADE** | **Frelick** | 42.3 / 40.3 | ExpH 0.40 · P1 36% · RBI thin | **COLD** CH dump | **COLD** | Fade Hits | Soft board + COLD dump + thin RBI |
-| Pass | Hamilton | 43.5 | thin | COLD dumps | — | — | |
+| Tier | Batter | Vol | Dump vs **his** hand | Fit | Prop | Why |
+|------|--------|-----|----------------------|-----|------|-----|
+| **BEST** | **Bauers** | P1 42% · PA **3** · RBI good | OUT-DN-3B CH · **COLD** | **MISTAKE** | **Hits O0.5** (HRR live, not 1★ HRR) | Only CONFIRM HOT HEART + 3 PA. 2-hole traffic is good not prime — Hits first. Hunt middle/up, not the change. |
+| **BEST vol** | **Contreras** | P1 **51%** · PA 3 · RBI **prime** | FC+CH dump · **CONFLICT** | **MISTAKE** | **Hits / HRR O0.5** | Best RBI spot + best Exp H. Dump recent flipped COLD→HOT — size off 1★, still fire. |
+| **GOOD** | **Yelich** | P1 43% · PA **3** · RBI **prime** | CH dump COLD | **MISTAKE** | **Hits / HRR O0.5** | Official-nine mover. CONFIRM WARM LO-MID. Mid board 50.2 · LOW_SAMPLE_RECENT — GOOD, not BEST. |
+| **GOOD** | **Turang** | P1 38% · PA **2** | CH dump COLD | **MISTAKE** | Hits O0.5 | CONFIRM WARM LO-MID / MID-IN. Lost a PA in the 5-hole. |
+| **GOOD** | **Mitchell** | P1 30% · PA 2 | CH dump COLD | **MISTAKE** | **Hits O0.5** (not HRR) | CONFIRM HOT MID-IN. Dump-fit 2-man A. Volume is the weak leg. |
+| **GOOD** | **Chourio** | P1 43% · PA 3 · RBI **thin** | FC+CH dump COLD | **MISTAKE** | Hits O0.5 | Leadoff volume, not RBI. HEART SEASON_ONLY. Single only. |
+| Tiny | Pratt | P1 41% · PA 2 | **TUNNEL** WARM dump | **TUNNEL** | Tiny | HEART CONFLICT · not BEST |
+| **FADE** | **Frelick** | P1 36% · RBI thin | **COLD** CH dump | **COLD** | Fade Hits | Soft board + COLD dump |
+| Pass | Hamilton | thin | COLD | — | — | |
 
 ### MIL tickets
 | Priority | Ticket |
 |----------|--------|
-| **1★** | **Bauers Hits O0.5** (HRR O0.5 also live — prime RBI) |
-| **2★** | **Turang Hits O0.5** (volume) |
-| **3** | **Contreras Hits / HRR O0.5** (prime RBI, dump CONFLICT) |
-| **4** | Mitchell Hits O0.5 (CONFIRM, 2 PA) |
+| **1★** | **Bauers Hits O0.5** |
+| **2★** | **Contreras Hits / HRR O0.5** |
+| **3** | **Yelich Hits / HRR O0.5** |
+| **4** | Turang Hits · Mitchell Hits (CONFIRM) · Chourio Hits |
 | **2-man A★** | **Bauers Hits + Mitchell Hits** (both CONFIRM) |
-| **2-man vol** | **Bauers Hits + Turang Hits** |
-| Avoid | Frelick · Chourio 2+ / HRR · Pratt TUNNEL as 1★ · Mitchell 2+ / HRR |
+| **2-man vol** | **Bauers Hits + Contreras Hits** (CONFIRM leg = Bauers) |
+| **2-man RBI** | Contreras HRR + Yelich HRR — correlated 3-4; size down |
+| Avoid | Frelick · Chourio 2+ / HRR · Pratt as 1★ · Mitchell 2+ / HRR · Bauers 2+ |
 
 ---
 
-## Locked-for-early fire order (PRIOR nines)
+## Locked fire order (OFF)
 
-1. **Bauers Hits O0.5** — CONFIRM heart + 3 PA + **prime RBI**  
-2. **Turang Hits O0.5** — volume leader vs Martinez  
-3. **Yandy Hits O0.5** — volume vs Misi (not 2+, RBI thin)  
-4. **Contreras Hits / HRR O0.5** — prime RBI, not 1★  
-5. **2-man dump-fit:** Bauers + Mitchell  
-6. **2-man volume:** Bauers + Turang  
-7. **Cross:** Yandy + Bauers (CONFIRM leg = Bauers)  
-8. Live: Caminero only if Misi hooks and a long arm is in  
+1. **Bauers Hits O0.5** — CONFIRM heart + 3 PA in the 2-hole  
+2. **Contreras Hits / HRR O0.5** — prime cleanup, dump CONFLICT  
+3. **Yandy Hits O0.5** — 3 PA, not 2+, RBI thin  
+4. **Yelich Hits / HRR O0.5** — 3-hole prime RBI, CONFIRM WARM  
+5. **Simpson Hits O0.5** — P(1+) 56%, fade power  
+6. **2-man dump-fit:** Bauers + Mitchell  
+7. **2-man volume:** Bauers + Contreras  
+8. **Cross:** Yandy + Bauers  
+9. Live: Caminero only if Misi hooks and a long arm is in  
 
-**Pass list:** Misi chalk under / juiced over · Martinez juiced K over / juiced under · Caminero Hits vs Misi · Aranda as 1★ or 2-man A · Yandy 2+ / HRR · Mitchell 2+ / HRR · Frelick · Palacios hard fade · same-bat 2H+3HRR nuke
+**Pass list:** Misi chalk under / juiced over · Martinez any K · Caminero Hits vs Misi · Aranda 1★ / 2-man A · Yandy 2+ / HRR · Simpson HRR · Mitchell 2+ / HRR · Frelick · Williamson · same-bat 2H+3HRR nuke
 
 ---
 
-## Second-reader (ran on this draft)
+## Why this nine, not the prior card
 
-- Dump vs **stand**: Aranda/Hicks/Mesa/Bauers/Mitchell/Turang use **LHB** plans. Caminero/Yandy/Chourio/Contreras use **RHB** dumps.
-- Volume does **not** clear Caminero (32% P1, 2 PA) or Aranda (COLD on real LHB dump).
-- `p_ge_2` ≤12% on this slate — O0.5 ≠ 2+ is now a number, not only a lock.
-- Bauers is the unique CONFIRM + 3 PA + prime RBI stack. Mitchell stays 2-man A on dump-fit, not on volume.
-- Contreras RBI prime is the new HRR lean; dump CONFLICT keeps him off 1★.
-- K chips: Misi SPIKE; Martinez UNDER_OK on the 4.20 knife-edge — Hits still preferred.
+- **Simpson to 3** is the TB volume story. Hits O0.5 comes on; HRR stays faded.
+- **Hicks to 5** kills the earlier volume tiny.
+- **Palacios out / Williamson in** — pass the new 8-hole.
+- **Bauers to 2** keeps 3 PA and CONFIRM; RBI drops from prime to good.
+- **Yelich to 3 / Contreras to 4** is the MIL RBI cluster. That is the HRR lane.
+- **Turang to 5** loses a PA — Hits still playable, no longer the volume 2★.
 
 ---
 
 ## Live checklist
 
-1. Official nines → re-score + re-map. Hicks/Mesa/Palacios/Pratt/Hamilton are the likely OFF movers. Volume/RBI will move with slot.  
-2. Misi pitch count — 94p / 4.1 last time. Hook ≤2 IP → void vs-SP fades; Caminero/Yandy vs **first long arm**.  
-3. Martinez CH on OUT-DN-3B vs LHB — if he’s landing it, Bauers/Mitchell dump-COLD holds; they need the heart/mid miss.  
-4. Do not fire this sheet as a lock until OFF.
+1. Misi pitch count — 94p / 4.1 last time. Hook ≤2 IP → void vs-SP fades; Caminero/Yandy vs **first long arm**.  
+2. Martinez CH on OUT-DN-3B vs LHB — if he’s landing it, Bauers/Mitchell/Yelich need the heart/mid miss.  
+3. Simpson is a contact 3-hole vs a WHIFF arm — O0.5 Hits is the ticket, not a stack.  
+4. Grade vs-SP separate from the full box if either starter hooks early.
 
 ---
 
@@ -181,16 +168,16 @@ Contreras is the RBI engine (low K 10.7% + cleanup traffic). Turang is the Hits-
 
 | Stack | Call |
 |-------|------|
-| Misi SPIKE + 4.4 Exp + 3.73 lineup H | Pass juiced K · no soft U6 · TB Hits |
-| Martinez UNDER_OK + 4.21 lineup H | Pass juiced K · **MIL Hits / HRR** |
-| Yandy vs Misi | **O0.5 BEST** · 3 PA · P1 44% · RBI thin |
-| Caminero vs Misi | **Pass** (CONFIRM COLD + 2 PA / P1 32%) |
-| Aranda vs Misi | **Tiny** (volume OK, dump COLD) |
-| Bauers vs Martinez | **Hits + HRR** · CONFIRM + prime RBI |
-| Turang vs Martinez | **Hits volume** · P1 51% |
-| Contreras vs Martinez | **HRR / Hits** · prime RBI · dump CONFLICT |
-| Mitchell vs Martinez | CONFIRM 2-man A · **not** volume / HRR |
-| Frelick | FADE |
-| Palacios | Pass fade |
+| Misi SPIKE 4.37 · lineup H 3.79 | Pass juiced K · no soft U6 · TB Hits |
+| Martinez FILLER 4.20 · lineup H 4.17 | Pass K · **MIL Hits / HRR** |
+| Yandy | **Hits O0.5 BEST** · RBI thin |
+| Simpson | **Hits O0.5** · fade HRR |
+| Caminero | **Pass** (COLD dump + 2 PA) |
+| Aranda | **Tiny** (dump COLD) |
+| Bauers | **Hits 1★** · CONFIRM + 3 PA |
+| Contreras | **Hits/HRR** · prime RBI |
+| Yelich | **Hits/HRR GOOD** · 3-hole prime |
+| Mitchell | CONFIRM 2-man A · not volume |
+| Frelick / Williamson | FADE / pass |
 
-*Re-lock when official lineups post.*
+*OFF lock. Re-lean live if Misi hooks ≤2 IP.*

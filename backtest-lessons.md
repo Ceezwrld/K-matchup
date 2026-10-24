@@ -765,6 +765,21 @@ User dual same-bat nuke (Yandy+Aranda 2H+3HRR): **1/4**. Process 2-man **DeLaute
 7. Keep **UNDER_OK + Stuff+≥105 / WHIFF → no chalk soft under**. Peralta Stuff+**97** is below that veto — U5.5+ was legal and cashed; do **not** loosen the 105 gate because 3 K also cashed a skinny U4.5.
 8. **CONFIRM 2-man gate** still the process pair (DeLauter+Adell **2/2**). Aranda+Yandy died on the opener-dump leg.
 
+### WS G1 grade — MIL 3, TB 2 (locked 10/24)
+
+Full grade: `backtest-2026-10-23-ws-g1.md`. Misi **3 K / 5.0 W** SPIKE · Martinez **5 K / 5.0 L** FILLER · Megill SV.  
+Cashed: **Bauers** 1-4 · **Contreras** 2-3 HRR 3 · **Yelich** 1-4 3B HRR 3 · **Simpson** 2-4 · 2-man **A** Bauers+Contreras · 2-man **C** Contreras+Yelich HRR.  
+Misses: **Yandy** 0-4 · 2-man **B** Yandy+Contreras.  
+User Kalshi 5-leg cashed at **$21** (ride = $0; Yandy 0-1 vs Megill). Aranda 3-3 was tiny, not locked.
+
+**Process locks (apply G2)**
+1. **Last-leg combo vs closer:** cash when 4/5 are in and leftover is 1 PA vs the 9th-inning arm, if offer ≥ ~fair 1-PA (~$15+). G1 $21 is the exhibit.
+2. Keep **dump-fit 1★ gate** (Aranda 3-3 does not promote COLD LHB dump).
+3. Keep **Caminero-type pass vs RHP dump** (he doubled; do not flip).
+4. Keep **one 1★ bat on one 2-man only**.
+5. Keep **SPIKE no chalk soft under** (Misi 3 K).
+6. Keep **Kwan-type Hits, not power** (Simpson 2-4, 0 extra).
+
 ---
 
 ## Ticket lock routine (USE THIS before every card)

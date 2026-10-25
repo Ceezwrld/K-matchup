@@ -5,13 +5,13 @@
 
 ## Paste this into a new Grok 4.6 chat (with @ files below)
 
-> Continue from `@HANDOFF-alcs.md`. Honor locks in `@backtest-lessons.md`. World Series **G2 is OFF**: `@pregame-batter-leans-2026-10-24-ws-g2.md`. Rasmussen vs Henderson, official nines. Next: live if Henderson hooks ≤2 IP; then G3 Mon 10/26. Tools under `mlb-k-matchups/`.
+> Continue from `@HANDOFF-alcs.md`. Honor locks in `@backtest-lessons.md`. World Series **G2 is graded**: `@backtest-2026-10-24-ws-g2.md` (MIL 5–4). Next: G3 Mon 10/26 at the Trop — wait official nines. Tools under `mlb-k-matchups/`.
 
 ## Done
 - ALCS G3–G6 graded; series TB **4–2**
 - Order-walk expected hits / RBI traffic
 - **WS G1** locked + graded (MIL 3–2): `@backtest-2026-10-23-ws-g1.md`
-- **WS G2 OFF** locked (2026-10-24): Rasmussen vs Henderson, official nines
+- **WS G2** locked + graded (MIL 5–4): `@backtest-2026-10-24-ws-g2.md`
 
 ## Process locks (do not re-learn)
 1. 2-man: ≥1 leg **CONFIRM** (SEASON_ONLY = singles only)
@@ -27,21 +27,19 @@
 11. **Dump vs that batter’s hand**
 12. **expected_hits / rbi_spot size, dump-fit gates**
 13. **Kalshi last-leg combo:** 4/5 in + 1 PA vs closer → cash ≥ ~$15. G1 $21 vs Yandy/Megill ($0 if ride).
-14. **One anchor bat on one 2-man only** (G1 Bauers: A HIT, B died on Yandy).
+14. **One anchor bat on one 2-man only** (G1/G2 Bauers A HIT, Yandy B MISS both nights).
+15. **O0.5 ≠ 2+** — G2 Yelich/Yandy both HRR 1. Process 0.5 HIT; user 2+ MISS.
+16. **SP hook ~3 IP** → later box is vs bulk. Grade vs-SP separate from the full box.
 
-## G2 OFF snapshot
-- **Rasmussen** Exp **4.66** · Stuff+ **110 WHIFF** · lineup Exp H **3.95** · pass juiced K · no chalk under · MIL Hits O0.5
-- **Henderson** Exp **4.04 SPIKE** · lineup Exp H **3.99** · pass K · TB Hits
-- TB: Palacios back 6 (pass) · Williamson out · Mesa to 8 · Aranda 1★ (Henderson dump is MISTAKE, not G1 COLD) · Simpson COLD dump (tiny) · Caminero pass (CONFIRM COLD)
-- MIL: same 2–3–4 · Bauers Hits 1★ · Contreras Hits/HRR · Yelich Hits/HRR GOOD
-- Fire: Aranda Hits · Bauers Hits · Contreras Hits/HRR · Yandy Hits · Yelich Hits/HRR
-- 2-man: Bauers+Contreras · Yandy+Contreras (no second Bauers/Aranda pair)
-- Pass: Caminero vs Henderson · Palacios · Simpson lock · Frelick · Henderson K under · Ras chalk under
+## G2 grade snapshot (MIL 5–4)
+- Process solos **4/5 HIT**: Aranda 1-4 2B · Bauers 1-3 · Contreras 2-5 HRR 3 · Yelich 1-4. **Yandy 0-5 MISS** (run makes HRR 0.5 a HIT).
+- 2-man **A HIT** · **B MISS** (Yandy) · 3-man **HIT**. User 2+/3+ slip **1/3** (Contreras only); ride **$0**.
+- Passes: Palacios 0-3 HIT · Simpson tiny printed 1-4 HRR 3 · Caminero pass result-miss (1-4 RBI vs Henderson; do not flip) · Frelick fade miss vs Seymour, not vs Ras.
+- Both SPs hooked ~3 IP. Henderson 4 K / 3.0 would cash a soft under — SPIKE veto stands.
 
 ## Open / next
-1. Live re-lean if Henderson hooks ≤2 IP
-2. Grade G2 after final
-3. G3 Mon 10/26 at Trop — likely Peralta vs Gasser (LHP Caminero window)
+1. G3 Mon 10/26 at Trop — likely Peralta vs Gasser (LHP Caminero/Mesa window). **Do not lock** until official nines.
+2. Yandy Hits lean stays Hits-not-HRR; do not 1★ him until he prints (0-4, 0-5).
 
 ## Files to @
-`@HANDOFF-alcs.md` `@backtest-lessons.md` `@pregame-batter-leans-2026-10-24-ws-g2.md` `@backtest-2026-10-23-ws-g1.md` `@zone-overlap-drew-rasmussen-2026-10-24.md` `@zone-overlap-logan-henderson-2026-10-24.md` `@mlb-k-matchups/README.md`
+`@HANDOFF-alcs.md` `@backtest-lessons.md` `@backtest-2026-10-24-ws-g2.md` `@pregame-batter-leans-2026-10-24-ws-g2.md` `@backtest-2026-10-23-ws-g1.md` `@mlb-k-matchups/README.md`

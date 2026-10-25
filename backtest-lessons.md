@@ -780,6 +780,20 @@ User Kalshi 5-leg cashed at **$21** (ride = $0; Yandy 0-1 vs Megill). Aranda 3-3
 5. Keep **SPIKE no chalk soft under** (Misi 3 K).
 6. Keep **Kwan-type Hits, not power** (Simpson 2-4, 0 extra).
 
+### WS G2 grade — MIL 5, TB 4 (locked 10/24)
+
+Full grade: `backtest-2026-10-24-ws-g2.md`. Henderson **4 K / 3.0** SPIKE (hook, 4 R / 3 ER) · Ras **4 K / 3.2** WHIFF Stuff+110 · Uribe W · Ashby SV.  
+Cashed: **Aranda** 1-4 2B · **Bauers** 1-3 HRR 2 · **Contreras** 2-5 HRR 3 · **Yelich** 1-4 HRR 1 · 2-man **A** Bauers+Contreras · **3-man** Aranda+Bauers+Contreras.  
+Misses: **Yandy** 0-5, 1 R, 3 K · 2-man **B** Yandy+Contreras. User 2+/3+ slip (Yelich 2+ / Contreras 3+ / Yandy 2+) = Contreras only; ride **$0**.
+
+**Process locks (apply G3)**
+1. Keep **O0.5 ≠ 2+**. Yelich and Yandy both finished HRR **1** — process 0.5 HIT / user 2+ MISS.
+2. Keep **Caminero-type pass vs RHP dump** (1-4, RBI 1st vs Henderson; do not flip).
+3. Keep **one 1★ bat on one 2-man only** (A cashed, B died on Yandy again).
+4. **SP hook ~3 IP** → later box is vs bulk. Grade vs-SP separate (Bauers/Contreras 1st vs Ras still count; Aranda 2B vs May; Frelick HR vs Seymour).
+5. Keep **SPIKE / Stuff+110 no chalk soft under** (Henderson 4 K / 3.0 would cash U5.5; veto stands).
+6. 2+/3+ live slips are **not** the O0.5 card. G1 cash rule stays: 4/5 in + 1 PA vs closer → cash ≥ ~$15. A 1/3-cashed multi-HRR combo is a different ticket.
+
 ---
 
 ## Ticket lock routine (USE THIS before every card)

@@ -1,18 +1,18 @@
 # Handoff — MLB K-matchup / World Series
 
-**Branch:** `cursor/ws-g3-early-fe0c`  
+**Branch:** `cursor/ws-g3-off-fe0c`  
 **Goal:** Daily OFF batter leans + zone heatmaps + pitcher K lanes + postgame grades; keep process locks current.
 
 ## Paste this into a new Grok 4.6 chat (with @ files below)
 
-> Continue from `@HANDOFF-alcs.md`. Honor locks in `@backtest-lessons.md`. World Series **G3 is EARLY**: `@pregame-batter-leans-2026-10-26-ws-g3.md`. Gasser (L) vs Peralta (R) at the Trop, prior G2 nines. **Do not lock Kalshi until OFF.** Tools under `mlb-k-matchups/`.
+> Continue from `@HANDOFF-alcs.md`. Honor locks in `@backtest-lessons.md`. World Series **G3 is OFF**: `@pregame-batter-leans-2026-10-26-ws-g3.md`. Gasser (L) vs Peralta (R) at the Trop, official nines. Next: live if either SP hooks ≤2 IP; then grade G3. Tools under `mlb-k-matchups/`.
 
 ## Done
 - ALCS G3–G6 graded; series TB **4–2**
 - Order-walk expected hits / RBI traffic
 - **WS G1** locked + graded (MIL 3–2): `@backtest-2026-10-23-ws-g1.md`
 - **WS G2** locked + graded (MIL 5–4): `@backtest-2026-10-24-ws-g2.md`
-- **WS G3 EARLY** scored (2026-10-26): Gasser vs Peralta, prior G2 nines. `@pregame-batter-leans-2026-10-26-ws-g3.md`
+- **WS G3 OFF** locked (2026-10-26): Gasser vs Peralta, official nines. `@pregame-batter-leans-2026-10-26-ws-g3.md`
 
 ## Process locks (do not re-learn)
 1. 2-man: ≥1 leg **CONFIRM** (SEASON_ONLY = singles only)
@@ -35,19 +35,21 @@
 ## G2 grade snapshot (MIL 5–4)
 - Process solos **4/5 HIT**: Aranda 1-4 2B · Bauers 1-3 · Contreras 2-5 HRR 3 · Yelich 1-4. **Yandy 0-5 MISS** (run makes HRR 0.5 a HIT).
 - 2-man **A HIT** · **B MISS** (Yandy) · 3-man **HIT**. User 2+/3+ slip **1/3** (Contreras only); ride **$0**.
-- Passes: Palacios 0-3 HIT · Simpson tiny printed 1-4 HRR 3 · Caminero pass result-miss (1-4 RBI vs Henderson; do not flip) · Frelick fade miss vs Seymour, not vs Ras.
-- Both SPs hooked ~3 IP. Henderson 4 K / 3.0 would cash a soft under — SPIKE veto stands.
 
-## G3 EARLY snapshot (prior G2 nines)
-- **Peralta** Exp **5.51 STRONG** · STYLE **BAL** · Stuff+ **97** · O4.5 floor · no juiced O6 · MIL Hits O0.5
-- **Gasser** Exp **3.77 SOFT FLY** · Stuff+ **106** · **UNDER_OK** U5.5+ · TB Hits vs LHP
-- TB: **Caminero TUNNEL HOT** vs L (the flip from G1/G2 RHP pass) · Yandy TUNNEL Hits not 1★ (0-for-9) · Mesa talent #1 vs L stuck in **8-hole 2 PA** · Aranda 1★ does not copy (K% 28 vs L) · Palacios pass
-- MIL: Contreras prime volume · Bauers talent, SEASON_ONLY vs Peralta · Turang 3 PA · Frelick still fade
-- EARLY 2-man: Caminero + Contreras. Wait OFF for Mesa slot.
+## G3 OFF snapshot
+- **Peralta** Exp **5.51 STRONG** · STYLE **BAL** · Stuff+ **97** · O4.5 floor · no juiced O6 · MIL Hits O0.5 · lineup Exp H **3.86**
+- **Gasser** Exp **3.83 SOFT FLY** · Stuff+ **106** · **UNDER_OK** U5.5+ · TB Hits vs LHP · lineup Exp H **4.48**
+- TB OFF: Aranda/Hicks/Palacios **out** · **Vilade 2-hole TUNNEL** · Williamson 5 · Mesa **7** (still 2 PA, tiny) · Fortes 8 · **Caminero 1★** LHP TUNNEL
+- MIL: same 2–3–4 · Contreras Hits/HRR · Bauers Hits (not auto-1★ vs Peralta) · Yelich GOOD · Frelick fade
+- Fire: Caminero Hits/HRR · Contreras Hits/HRR · Vilade Hits · Yandy Hits · Bauers Hits · Yelich Hits/HRR
+- 2-man: Caminero+Contreras · Yandy+Contreras (no second Caminero)
+- Pass: Mesa 1★ in 7-hole · Williamson lock · Gasser U3.5 · Peralta juiced O6 · Frelick · Yandy 2+/HRR
+- **G3 win lean:** TB slightly (Peralta STRONG + TB Exp H 4.48 vs Gasser FLY). Not a hammer — MIL pen / 2–3–4 still print.
 
 ## Open / next
-1. **G3 OFF lock** when both nines post — especially TB 6–8 vs LHP (Mesa up / Palacios out).
-2. Yandy Hits lean stays Hits-not-HRR; do not 1★ him until he prints (0-4, 0-5).
+1. Live re-lean if either SP hooks ≤2 IP
+2. Grade G3 after final
+3. G4 Tue 10/27 at Trop — likely Drohan (L) / leftover TB arm. Caminero LHP window can repeat if Drohan starts; 1 IP Drohan → incomplete.
 
 ## Files to @
 `@HANDOFF-alcs.md` `@backtest-lessons.md` `@pregame-batter-leans-2026-10-26-ws-g3.md` `@backtest-2026-10-24-ws-g2.md` `@zone-overlap-freddy-peralta-2026-10-26.md` `@zone-overlap-robert-gasser-2026-10-26.md` `@mlb-k-matchups/README.md`

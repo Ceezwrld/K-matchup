@@ -1,11 +1,11 @@
 # Handoff — MLB K-matchup / World Series
 
-**Branch:** `cursor/ws-g3-grade-fe0c`  
+**Branch:** `cursor/ws-g4-early-fe0c`  
 **Goal:** Daily OFF batter leans + zone heatmaps + pitcher K lanes + postgame grades; keep process locks current.
 
 ## Paste this into a new Grok 4.6 chat (with @ files below)
 
-> Continue from `@HANDOFF-alcs.md`. Honor locks in `@backtest-lessons.md`. World Series **G3 is graded**: `@backtest-2026-10-26-ws-g3.md` (MIL 10–1). Next: G4 Tue 10/27 at the Trop — wait official nines. Tools under `mlb-k-matchups/`.
+> Continue from `@HANDOFF-alcs.md`. Honor locks in `@backtest-lessons.md`. World Series **G4 is EARLY**: `@pregame-batter-leans-2026-10-27-ws-g4-early.md`. Jax (R) confirmed vs MIL unnamed (Drohan L leftover). MIL leads 3–0. Next: lock when MIL names the arm and both nines post. Tools under `mlb-k-matchups/`.
 
 ## Done
 - ALCS G3–G6 graded; series TB **4–2**
@@ -13,6 +13,7 @@
 - **WS G1** locked + graded (MIL 3–2): `@backtest-2026-10-23-ws-g1.md`
 - **WS G2** locked + graded (MIL 5–4): `@backtest-2026-10-24-ws-g2.md`
 - **WS G3** locked + graded (MIL 10–1): `@backtest-2026-10-26-ws-g3.md`
+- **WS G4 EARLY** (2026-10-27): Jax vs Drohan-leftover on G3 prior nines. `@pregame-batter-leans-2026-10-27-ws-g4-early.md`
 
 ## Process locks (do not re-learn)
 1. 2-man: ≥1 leg **CONFIRM** (SEASON_ONLY = singles only)
@@ -33,16 +34,18 @@
 16. **SP hook ~3–4.2 IP** → later box is vs bulk. Grade vs-SP separate from the full box.
 17. **ML slight leans are not process locks.** G3 TB ML died on Gasser’s 1-hitter.
 
-## G3 grade snapshot (MIL 10–1)
-- Process solos **3/6 HIT**: Contreras 3-5 HRR 5 · Yelich 2-3 HRR 4 · Yandy 2-4. **Caminero 0-3 MISS** (1★) · Vilade 0-2 · Bauers 0-4 Hits (HRR 0.5 would HIT).
-- 2-man **A MISS** (Caminero) · **B HIT** (Yandy+Contreras). **TB ML MISS**.
-- Gasser **6.0 IP, 1 H, 0 R, 3 K** (Exp 3.83, Exp H 4.48). Peralta **4.2 IP, 5 ER, 4 K** then Booser 0.0 IP 4 R.
-- Passes: Mesa 0-2 HIT · Simpson 0-3 HIT · Williamson 0-3 HIT · Frelick fade miss vs Booser, not vs Peralta.
-- Yandy Hits finally printed (0-for-9 then 2-4). Still not 1★ / not 2+.
+## G4 EARLY snapshot
+- **Jax** Exp **4.28 AVG** · STYLE **WHIFF** · stuff **elite / SPIKE** · **4.3 IP / 18 BF** · MIL Exp H **3.19**. Last start ALCS G3 **2 K / 4.0**. No O5.5+ · no U4.5. MIL Hits are 2-PA vs him, then a fried TB pen.
+- **Drohan** Exp **4.10 SOFT BAL** · model 5.4 IP / 23 BF · **NLCS G4 was 1.0 IP**. 1/2 UNDER_OK. Pass juiced K. TB Hits vs L only if he lasts.
+- MIL vs Jax: almost all **MISTAKE**. **Contreras** is the engine (WS HRR 3/3/5). Frelick **COLD**. Pratt only TUNNEL (7-hole tiny).
+- TB vs Drohan: **Caminero TUNNEL 1★** if he starts. Yandy TUNNEL Hits not 1★. Vilade TUNNEL not 1★ (G3 0-2). Mesa 7-hole MISTAKE tiny.
+- **Win lean: Milwaukee** (clincher, fresh pen, Jax length into a wrecked TB pen). Not a hammer.
+- **Do not lock** until MIL names the arm + official nines.
 
 ## Open / next
-1. **G4 OFF lock** when both nines post. Tue 10/27 Trop. Likely Drohan (L) vs leftover TB. Drohan NLCS **1.0 IP** → vs-SP incomplete if that repeats; re-lean first long arm.
-2. Keep Caminero vs LHP if Drohan/Gasser-shape starts. Do not pass from the G3 0-fer.
+1. **G4 OFF lock** when MIL probable + both nines post. If not Drohan, throw out the LHP TB card (Aranda/Hicks likely back).
+2. If Drohan hooks ≤2 IP, void vs-SP; re-lean May / Hall / Romero.
+3. Keep Caminero vs LHP if Drohan/Gasser-shape lasts. Do not pass from the G3 0-fer.
 
 ## Files to @
-`@HANDOFF-alcs.md` `@backtest-lessons.md` `@backtest-2026-10-26-ws-g3.md` `@pregame-batter-leans-2026-10-26-ws-g3.md` `@mlb-k-matchups/README.md`
+`@HANDOFF-alcs.md` `@backtest-lessons.md` `@pregame-batter-leans-2026-10-27-ws-g4-early.md` `@backtest-2026-10-26-ws-g3.md` `@zone-overlap-griffin-jax-2026-10-27.md` `@zone-overlap-shane-drohan-2026-10-27.md` `@mlb-k-matchups/README.md`

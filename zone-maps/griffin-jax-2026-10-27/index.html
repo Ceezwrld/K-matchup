@@ -1,0 +1,163 @@
+<!DOCTYPE html><html><head><meta charset='utf-8'/>
+<title>Zone maps — Griffin Jax</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0f1419;color:#e7ecf1;margin:0;padding:24px}
+h1{font-size:1.4rem;margin:0 0 4px} .sub{color:#9aa7b5;margin:0 0 20px}
+.grid{display:grid;gap:20px}
+.card{background:#1a222c;border-radius:12px;padding:16px}
+.card h2{margin:0 0 10px;font-size:1.05rem}
+.imgs{display:flex;flex-wrap:wrap;gap:12px}
+.imgs figure{margin:0;text-align:center}
+.imgs img{max-width:220px;width:100%;border-radius:8px;background:#fff}
+.imgs.plan img{max-width:100%;width:min(900px,100%)}
+.imgs figcaption{font-size:0.75rem;color:#9aa7b5;margin-top:4px}
+.note{font-size:0.85rem;color:#c5d0da;margin-top:10px}
+.pitch{font-size:0.82rem;color:#9ed0ff;margin-top:6px}
+.legend span{display:inline-block;margin-right:12px;font-size:0.8rem}
+.hot{color:#ef5350}.warm{color:#ffa726}.cold{color:#42a5f5}
+.fit{color:#ce93d8;font-weight:600}.dump{color:#ce93d8}
+ul.plan{margin:8px 0 0;padding-left:18px;color:#c5d0da;font-size:0.85rem}
+</style></head><body>
+<h1>Zone heatmaps — Griffin Jax</h1>
+<p class='sub'>MIL@TB · catcher view · red=HOT damage · blue=COLD · purple=pitcher dump vs that hand · overlap labels = W% + primary pitch</p>
+<p class='legend'><span class='hot'>HOT</span><span class='warm'>WARM</span><span class='cold'>COLD</span><span class='dump'>DUMP</span> · swing map = where they offer vs this hand · damage = BIP xwOBA</p>
+<div class='card'>
+<h2>Pitch plan by batter hand</h2>
+<p class='note'>Where each pitch type lands vs LHB / RHB (darker = more often). Read this first, then batter overlaps.</p>
+<div class='imgs plan'>
+<figure><img src='pitch-plan-vsL.png' alt='vs LHB — pitch locations'/><figcaption>vs LHB — pitch locations</figcaption></figure>
+<figure><img src='pitch-plan-vsR.png' alt='vs RHB — pitch locations'/><figcaption>vs RHB — pitch locations</figcaption></figure>
+</div>
+<p class='pitch'><strong>vs LHB</strong></p><ul class='plan'>
+<li>Usage: CH 30%, FF 20%, ST 17%, SI 16%, CU 12%, FC 4%</li>
+<li>CH lands: OUT-DN-3B 49%, LO-IN 12%, OUT-UP-3B 10%</li>
+<li>CU lands: OUT-DN-1B 32%, OUT-DN-3B 24%, LO-MID 9%</li>
+<li>FC lands: OUT-DN-1B 35%, HEART 15%, LO-AWAY 10%</li>
+<li>FF lands: OUT-UP-3B 32%, OUT-UP-1B 12%, HI-MID 12%</li>
+<li>SI lands: HEART 13%, OUT-UP-3B 12%, OUT-DN-1B 11%</li>
+<li>ST lands: OUT-DN-1B 36%, HEART 11%, LO-MID 10%</li>
+<li>OUT-DN-3B (20% of throws) built by CH 74% + CU 15%</li>
+<li>OUT-DN-1B (16% of throws) built by ST 38% + CU 25%</li>
+<li>OUT-UP-3B (14% of throws) built by FF 49% + CH 22%</li>
+</ul>
+<p class='pitch'><strong>vs RHB</strong></p><ul class='plan'>
+<li>Usage: ST 39%, SI 35%, FF 13%, CH 11%, CU 2%, FC 0%</li>
+<li>CH lands: OUT-DN-3B 40%, OUT-DN-1B 26%, MID-IN 10%</li>
+<li>FF lands: OUT-UP-1B 33%, OUT-DN-1B 13%, HI-MID 12%</li>
+<li>SI lands: OUT-DN-3B 22%, OUT-UP-3B 19%, LO-IN 13%</li>
+<li>ST lands: OUT-DN-1B 49%, LO-AWAY 9%, HEART 8%</li>
+<li>OUT-DN-1B (27% of throws) built by ST 71% + CH 10%</li>
+<li>OUT-DN-3B (13% of throws) built by SI 59% + CH 33%</li>
+<li>OUT-UP-3B (10% of throws) built by SI 67% + ST 19%</li>
+</ul>
+</div>
+<div class='grid'>
+<div class='card'>
+<h2>Jake Bauers</h2>
+<div class='imgs'>
+<figure><img src='jake-bauers-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
+<figure><img src='jake-bauers-batter-swing.png' alt='Batter swing %'/><figcaption>Batter swing %</figcaption></figure>
+<figure><img src='jake-bauers-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
+<figure><img src='jake-bauers-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
+</div>
+<p class='pitch'><span class='fit'>MISTAKE on OUT-DN-3B (W 19.7% · swing 20.8%) — COLD/take on dump OUT-DN-3B; HOT in-zone MID-IN/HI-MID</span></p>
+<p class='pitch'>CONFIRM HOT MID-IN ← mainly CH (W 6.1%) · COLD OUT-DN-3B ← mainly CH (W 19.7%) · HOT LO-MID ← mainly CH (W 6.7%) · HOT HEART ← mainly SI (W 7.2%)</p>
+<p class='note'>CONFIRM HOT MID-IN · COLD OUT-DN-3B · HOT LO-MID · HOT HEART</p>
+</div>
+<div class='card'>
+<h2>Garrett Mitchell</h2>
+<div class='imgs'>
+<figure><img src='garrett-mitchell-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
+<figure><img src='garrett-mitchell-batter-swing.png' alt='Batter swing %'/><figcaption>Batter swing %</figcaption></figure>
+<figure><img src='garrett-mitchell-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
+<figure><img src='garrett-mitchell-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
+</div>
+<p class='pitch'><span class='fit'>MISTAKE on OUT-DN-3B (W 19.7% · swing 34.2%) — COLD/take on dump OUT-DN-3B; HOT in-zone HEART/MID-IN</span></p>
+<p class='pitch'>HOT OUT-DN-1B ← mainly ST (W 16.2%) · HOT HEART ← mainly SI (W 7.2%) · COLD OUT-DN-3B ← mainly CH (W 19.7%) · HOT MID-IN ← mainly CH (W 6.1%)</p>
+<p class='note'>HOT OUT-DN-1B · HOT HEART · COLD OUT-DN-3B · HOT MID-IN</p>
+</div>
+<div class='card'>
+<h2>Jackson Chourio</h2>
+<div class='imgs'>
+<figure><img src='jackson-chourio-pitcher-vsR.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
+<figure><img src='jackson-chourio-batter-swing.png' alt='Batter swing %'/><figcaption>Batter swing %</figcaption></figure>
+<figure><img src='jackson-chourio-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
+<figure><img src='jackson-chourio-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
+</div>
+<p class='pitch'><span class='fit'>MISTAKE on OUT-DN-1B (W 27.2% · swing 26.7%) — COLD/take on dump OUT-DN-1B; HOT in-zone HEART/LO-MID</span></p>
+<p class='pitch'>CONFIRM HOT HEART ← mainly SI (W 7.2%) · COLD OUT-DN-1B ← mainly ST (W 27.2%) · COLD OUT-DN-3B ← mainly SI (W 12.7%)</p>
+<p class='note'>CONFIRM HOT HEART · COLD OUT-DN-1B · COLD OUT-DN-3B</p>
+</div>
+<div class='card'>
+<h2>Brice Turang</h2>
+<div class='imgs'>
+<figure><img src='brice-turang-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
+<figure><img src='brice-turang-batter-swing.png' alt='Batter swing %'/><figcaption>Batter swing %</figcaption></figure>
+<figure><img src='brice-turang-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
+<figure><img src='brice-turang-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
+</div>
+<p class='pitch'><span class='fit'>MISTAKE on OUT-DN-3B (W 19.7% · swing 30.9%) — COLD/take on dump OUT-DN-3B; HOT in-zone HEART/LO-MID</span></p>
+<p class='pitch'>HOT OUT-DN-1B ← mainly ST (W 16.2%) · HOT HEART ← mainly SI (W 7.2%) · HOT LO-MID ← mainly CH (W 6.7%) · COLD OUT-UP-3B ← mainly FF (W 13.6%)</p>
+<p class='note'>HOT OUT-DN-1B · HOT HEART · HOT LO-MID · COLD OUT-UP-3B</p>
+</div>
+<div class='card'>
+<h2>William Contreras</h2>
+<div class='imgs'>
+<figure><img src='william-contreras-pitcher-vsR.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
+<figure><img src='william-contreras-batter-swing.png' alt='Batter swing %'/><figcaption>Batter swing %</figcaption></figure>
+<figure><img src='william-contreras-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
+<figure><img src='william-contreras-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
+</div>
+<p class='pitch'><span class='fit'>MISTAKE on OUT-DN-1B (W 27.2% · swing 22.7%) — COLD/take on dump OUT-DN-1B; HOT in-zone LO-AWAY/HEART</span></p>
+<p class='pitch'>CONFIRM COLD OUT-DN-1B ← mainly ST (W 27.2%) · HOT OUT-DN-3B ← mainly SI (W 12.7%) · HOT LO-AWAY ← mainly ST (W 6.8%) · HOT OUT-UP-1B ← mainly FF (W 6.5%)</p>
+<p class='note'>CONFIRM COLD OUT-DN-1B · HOT OUT-DN-3B · HOT LO-AWAY · HOT OUT-UP-1B</p>
+</div>
+<div class='card'>
+<h2>Cooper Pratt</h2>
+<div class='imgs'>
+<figure><img src='cooper-pratt-pitcher-vsR.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
+<figure><img src='cooper-pratt-batter-swing.png' alt='Batter swing %'/><figcaption>Batter swing %</figcaption></figure>
+<figure><img src='cooper-pratt-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
+<figure><img src='cooper-pratt-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
+</div>
+<p class='pitch'><span class='fit'>TUNNEL on OUT-DN-1B (W 27.2% · swing 27.3%) — damages his dump OUT-DN-1B (W 27.2% ST+CH)</span></p>
+<p class='pitch'>COLD OUT-DN-3B ← mainly SI (W 12.7%) · HOT OUT-UP-3B ← mainly SI (W 9.8%)</p>
+<p class='note'>COLD OUT-DN-3B · HOT OUT-UP-3B</p>
+</div>
+<div class='card'>
+<h2>Christian Yelich</h2>
+<div class='imgs'>
+<figure><img src='christian-yelich-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
+<figure><img src='christian-yelich-batter-swing.png' alt='Batter swing %'/><figcaption>Batter swing %</figcaption></figure>
+<figure><img src='christian-yelich-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
+<figure><img src='christian-yelich-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
+</div>
+<p class='pitch'><span class='fit'>MISTAKE on OUT-DN-3B (W 19.7% · swing 33.7%) — COLD/take on dump OUT-DN-3B; HOT in-zone LO-MID/HEART</span></p>
+<p class='pitch'>CONFIRM HOT LO-MID ← mainly CH (W 6.7%) · HOT HEART ← mainly SI (W 7.2%) · COLD OUT-DN-3B ← mainly CH (W 19.7%) · COLD OUT-DN-1B ← mainly ST (W 16.2%)</p>
+<p class='note'>CONFIRM HOT LO-MID · HOT HEART · COLD OUT-DN-3B · COLD OUT-DN-1B</p>
+</div>
+<div class='card'>
+<h2>David Hamilton</h2>
+<div class='imgs'>
+<figure><img src='david-hamilton-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
+<figure><img src='david-hamilton-batter-swing.png' alt='Batter swing %'/><figcaption>Batter swing %</figcaption></figure>
+<figure><img src='david-hamilton-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
+<figure><img src='david-hamilton-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
+</div>
+<p class='pitch'><span class='fit'>MISTAKE on OUT-DN-3B (W 19.7% · swing 35.2%) — COLD/take on dump OUT-DN-3B; HOT in-zone HEART/LO-IN</span></p>
+<p class='pitch'>CONFIRM COLD OUT-UP-3B ← mainly FF (W 13.6%) · COLD OUT-DN-1B ← mainly ST (W 16.2%) · COLD OUT-DN-3B ← mainly CH (W 19.7%) · HOT HEART ← mainly SI (W 7.2%)</p>
+<p class='note'>CONFIRM COLD OUT-UP-3B · COLD OUT-DN-1B · COLD OUT-DN-3B · HOT HEART</p>
+</div>
+<div class='card'>
+<h2>Sal Frelick</h2>
+<div class='imgs'>
+<figure><img src='sal-frelick-pitcher-vsL.png' alt='Pitcher throws %'/><figcaption>Pitcher throws %</figcaption></figure>
+<figure><img src='sal-frelick-batter-swing.png' alt='Batter swing %'/><figcaption>Batter swing %</figcaption></figure>
+<figure><img src='sal-frelick-batter-damage.png' alt='Batter damage'/><figcaption>Batter damage</figcaption></figure>
+<figure><img src='sal-frelick-overlap.png' alt='Overlap (+ pitch)'/><figcaption>Overlap (+ pitch)</figcaption></figure>
+</div>
+<p class='pitch'><span class='fit'>COLD on OUT-DN-3B (W 19.7% · swing 33.0%) — COLD on dump OUT-DN-3B — pass Hits vs this tunnel</span></p>
+<p class='pitch'>CONFIRM COLD OUT-DN-1B ← mainly ST (W 16.2%) · COLD OUT-DN-3B ← mainly CH (W 19.7%)</p>
+<p class='note'>CONFIRM COLD OUT-DN-1B · COLD OUT-DN-3B · LOW_SAMPLE_RECENT</p>
+</div>
+</div></body></html>

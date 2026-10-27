@@ -132,10 +132,12 @@ P(2+) max **6%**. **No 2+ Hits tickets.**
 4. **Yelich Hits / HRR O0.5** — size down.  
 5. **Bauers Hits O0.5** — size down.  
 6. **2-man A★:** **Aranda Hits + Contreras Hits** (1★ = Aranda; CONFIRM leg = Contreras).  
-7. **2-man cross:** **Yandy Hits + Contreras Hits** — no second Aranda.
+7. **2-man cross:** **Yandy Hits + Contreras Hits** — no second Aranda.  
+8. **3-man lock:** **Aranda Hits + Contreras HRR + Yelich HRR** — one 1★, two MIL 2–3–4. Not Aranda+Yandy+Contreras (both TB legs die if May hooks).
 
 **Kalshi solos:** Aranda Hits 0.5 · Contreras H+R+RBI 0.5 · Yandy Hits 0.5 · Yelich H+R+RBI 0.5 · Bauers Hits 0.5.  
-**Do not** put Aranda on both 2-mans. One 1★ bat, one pair.
+**Kalshi 3-man:** Aranda Hits 0.5 · Contreras H+R+RBI 0.5 · Yelich H+R+RBI 0.5. All O0.5.  
+**Do not** put Aranda on both 2-mans. One 1★ bat, one pair. Do not swap Caminero or Bauers onto the 3-man.
 
 **Pass list:** **Caminero** · Palacios · Frelick · Simpson as a lock · Mesa (out) · Vilade vs R · Yandy 2+/HRR · anyone 2+ · Jax O5.5+ / U4.5 · May juiced K either side · TB ML
 

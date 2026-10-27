@@ -39,7 +39,7 @@
 - **May** Exp **3.85 SOFT BAL** · **SPIKE** L3 K9 13.5 · **4.3 IP / 18 BF** · TB Exp H **3.51**. Pass juiced K. Playoff boxes 3/1/3/1 IP — hook ≤2 voids vs-SP.
 - TB vs May: **Aranda TUNNEL 1★**. Yandy Hits (heart, COLD dump). **Caminero PASS** (CONFIRM COLD). Hicks tiny TUNNEL. Palacios pass. Simpson TAKE tiny.
 - MIL vs Jax: **Contreras** Hits/HRR engine. Yelich / Bauers size down. Frelick 6-hole still **COLD fade**. Pratt only TUNNEL (tiny).
-- 2-man: Aranda+Contreras · Yandy+Contreras. No Caminero.
+- 2-man: Aranda+Contreras · Yandy+Contreras. **3-man lock:** Aranda Hits + Contreras HRR + Yelich HRR. No Caminero.
 - **Win lean:** MIL slightly (fresh pen, Jax into a fried TB pen). Not a hammer.
 
 ## Open / next

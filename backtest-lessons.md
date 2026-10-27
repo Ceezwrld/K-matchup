@@ -794,6 +794,21 @@ Misses: **Yandy** 0-5, 1 R, 3 K · 2-man **B** Yandy+Contreras. User 2+/3+ slip 
 5. Keep **SPIKE / Stuff+110 no chalk soft under** (Henderson 4 K / 3.0 would cash U5.5; veto stands).
 6. 2+/3+ live slips are **not** the O0.5 card. G1 cash rule stays: 4/5 in + 1 PA vs closer → cash ≥ ~$15. A 1/3-cashed multi-HRR combo is a different ticket.
 
+### WS G3 grade — MIL 10, TB 1 (locked 10/26)
+
+Full grade: `backtest-2026-10-26-ws-g3.md`. Gasser **3 K / 6.0 W** (1 H, 0 R) UNDER_OK FLY · Peralta **4 K / 4.2 L** (7 H, 5 ER) STRONG/BAL hook · Booser 0.0 IP, 4 R.  
+Cashed: **Contreras** 3-5 HRR 5 · **Yelich** 2-3 HRR 4 · **Yandy** 2-4 Hits · 2-man **B** Yandy+Contreras.  
+Misses: **Caminero** 0-3 (1★) · **Vilade** 0-2 · **Bauers** 0-4 Hits (HRR 0.5 would HIT) · 2-man **A** Caminero+Contreras · **TB ML**.
+
+**Process locks (apply G4)**
+1. Keep **Caminero fire vs LHP** after a 0-fer. Do not pass the next LHP because G3 died.
+2. Keep **Contreras** as the MIL O0.5 engine (WS HRR 3 / 3 / 5).
+3. Keep **Yandy Hits, not 1★ / not 2+**. Tonight printed; that is not a promotion.
+4. Keep **one 1★ bat on one 2-man only** (G3 A MISS / B HIT).
+5. **UNDER_OK FLY gem** (Gasser 1 H / 6.0) — Hits vs that arm are one-bat tickets, not a team ML.
+6. Keep **vs-SP ≠ full box** (Frelick 2B vs Booser).
+7. **ML slight leans are not process locks.**
+
 ---
 
 ## Ticket lock routine (USE THIS before every card)

@@ -94,20 +94,52 @@ def _nb_loglik(y: np.ndarray, mu: np.ndarray, r: float) -> float:
     )
 
 
+# Tag corrections (additive K) learned from graded history. Held-out test
+# (fit Jul 31–Aug, test Sep–Oct) improved NLL, Brier and MAE vs Exp K alone.
+TAG_FEATURES = {
+    "ticket_outlook": ("SPIKE", "MATCHUP_OK", "FILLER", "THIN_TOTAL", "UNDER_OK"),
+    "arsenal_abs_grade": ("elite", "strong", "soft"),
+    "pitcher_style": ("whiff", "contact_gb", "fly_popup"),
+}
+TAG_RIDGE = 8.0  # shrinks thin tags (e.g. THIN_TOTAL) toward 0
+TAGS_FROM = "2026-07-31"  # first slate with all three tags populated
+
+
+def _design(g: pd.DataFrame) -> tuple[np.ndarray, list[tuple[str, str]]]:
+    cols = [np.ones(len(g)), g["expected_ks"].to_numpy(float)]
+    names: list[tuple[str, str]] = []
+    for col, levels in TAG_FEATURES.items():
+        vals = g[col].astype(str) if col in g.columns else pd.Series("", index=g.index)
+        for lvl in levels:
+            cols.append((vals == lvl).to_numpy(float))
+            names.append((col, lvl))
+    return np.column_stack(cols), names
+
+
 def fit_calibration(g: pd.DataFrame) -> dict:
-    e = g["expected_ks"].to_numpy(float)
-    y = g["actual_ks"].to_numpy(float)
-    b, a = np.polyfit(e, y, 1)
-    mu = np.clip(a + b * e, 0.3, None)
+    y_all = g["actual_ks"].to_numpy(float)
+    b0, a0 = np.polyfit(g["expected_ks"].to_numpy(float), y_all, 1)
+    t = g[g["date"] >= TAGS_FROM]
+    X, names = _design(t)
+    y = t["actual_ks"].to_numpy(float)
+    pen = np.diag([0.0, 0.0] + [TAG_RIDGE] * len(names))
+    beta = np.linalg.solve(X.T @ X + pen, X.T @ y)
+    mu = np.clip(X @ beta, 0.3, None)
     grid = [5, 8, 12, 16, 20, 25, 30, 37, 45, 55, 70, 90, 120, 200]
     best_r = max(grid, key=lambda r: _nb_loglik(y, mu, r))
+    tags: dict[str, dict[str, float]] = {}
+    for (col, lvl), coef in zip(names, beta[2:]):
+        tags.setdefault(col, {})[lvl] = round(float(coef), 3)
     return {
-        "a": round(float(a), 3),
-        "b": round(float(b), 3),
+        "a": round(float(beta[0]), 3),
+        "b": round(float(beta[1]), 3),
         "r": float(best_r),
-        "n": int(len(g)),
-        "fit_through": str(g["date"].max()),
-        "fit_from": str(g["date"].min()),
+        "tags": tags,
+        "a_no_tags": round(float(a0), 3),
+        "b_no_tags": round(float(b0), 3),
+        "n": int(len(t)),
+        "fit_through": str(t["date"].max()),
+        "fit_from": str(t["date"].min()),
     }
 
 
@@ -159,7 +191,9 @@ def main() -> int:
         )
 
     cal = fit_calibration(g)
-    print(f"\nCalibration: mu = {cal['a']} + {cal['b']} × Exp K, NB r = {cal['r']}")
+    print(f"\nCalibration: mu = {cal['a']} + {cal['b']} × Exp K + tag terms, NB r = {cal['r']}")
+    for col, levels in cal["tags"].items():
+        print(f"  {col}: " + ", ".join(f"{k} {v:+.2f}" for k, v in levels.items()))
 
     if not args.no_write:
         keep = [

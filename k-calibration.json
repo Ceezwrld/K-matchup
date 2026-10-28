@@ -1,8 +1,29 @@
 {
-  "a": 0.552,
-  "b": 0.874,
-  "r": 37.0,
-  "n": 1868,
+  "a": 0.46,
+  "b": 0.87,
+  "r": 90.0,
+  "tags": {
+    "ticket_outlook": {
+      "SPIKE": 0.196,
+      "MATCHUP_OK": -0.479,
+      "FILLER": -0.193,
+      "THIN_TOTAL": 0.009,
+      "UNDER_OK": -0.241
+    },
+    "arsenal_abs_grade": {
+      "elite": -0.438,
+      "strong": -0.158,
+      "soft": 0.109
+    },
+    "pitcher_style": {
+      "whiff": 0.86,
+      "contact_gb": -0.131,
+      "fly_popup": 0.353
+    }
+  },
+  "a_no_tags": 0.552,
+  "b_no_tags": 0.874,
+  "n": 1617,
   "fit_through": "2026-10-27",
-  "fit_from": "2026-07-21"
+  "fit_from": "2026-07-31"
 }

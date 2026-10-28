@@ -61,7 +61,11 @@ If a starter is missing from the Savant arsenal board (common for returning arms
 
 **K ladder (Kalshi “N+ strikeouts”)**
 
-`expected_ks` is recalibrated against every graded start (`mu = a + b × Exp K`) and run through a negative binomial to get `p_k3 … p_k9` = P(K ≥ N). Fair YES price in cents = 100 × P (5+ is the same bet as O4.5). Shown as the K ladder on each card. `grade_history.py` regrades all `rankings-*.csv` files against MLB game logs and rewrites `k-calibration.json` + `graded-history.csv`; the daily workflow runs it before each refresh. Display / sizing only — Exp K is unchanged.
+`expected_ks` is recalibrated against every graded start (`mu = a + b × Exp K + tag terms`; ticket outlook, solo grade and pitcher style each carry a history-fit K adjustment — e.g. SPIKE / WHIFF arms beat Exp K, MATCHUP_OK / ELITE fall short; hold-out tested) and run through a negative binomial to get `p_k3 … p_k9` = P(K ≥ N). Fair YES price in cents = 100 × P (5+ is the same bet as O4.5). Shown as the K ladder on each card. `grade_history.py` regrades all `rankings-*.csv` files against MLB game logs and rewrites `k-calibration.json` + `graded-history.csv`; the daily workflow runs it before each refresh. Display / sizing only — Exp K is unchanged.
+
+**Hits / H+R+RBI / RBI chances (`hit_probs.py`)**
+
+Per-PA hit chance vs the starter = log5(batter season-to-date H/PA, starter H/BF, league), shrunk toward league. The batter's slot and the starter's projected BF set how many PAs come vs the starter (rest vs a league-average bullpen); hits = binomial mix over the slot's PA distribution. H+R+RBI and RBI use a history-fit mean with per-line logistic calibration. `grade_hits.py` rebuilds every saved lineup with as-of-that-morning stats, grades it against box scores, prints a hold-out test and writes `hits-calibration.json`. Columns `p_h1/p_h2/p_h3`, `p_hrr1…4`, `p_rbi1/2` in the hits CSV and Hits board. Display only.
 
 **Strike-zone layer (`zones.py`)**
 

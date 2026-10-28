@@ -42,6 +42,7 @@ from sharpen import (  # noqa: E402
 )
 from k_probs import apply_k_probs, load_calibration  # noqa: E402
 from zones import enrich_lineup_zones  # noqa: E402
+from hit_probs import enrich_board_hit_probs  # noqa: E402
 from vs_team_history import (  # noqa: E402
     enrich_dataframe_vs_team_history,
     format_vs_team_console,
@@ -1865,6 +1866,11 @@ def main(argv: list[str] | None = None) -> int:
             if hist:
                 print(hist)
 
+    # Hits / H+R+RBI / RBI "N+" probabilities (mutates batter_detail dicts in place).
+    try:
+        enrich_board_hit_probs(out.to_dict(orient="records"), game_date, log=log)
+    except Exception as exc:  # noqa: BLE001 - never block the K board
+        log(True, f"hit probabilities skipped: {exc}")
     hits_rows = build_hits_board(out.to_dict(orient="records"))
     if hits_rows:
         print("\nHits board (display-only; does not affect expected_ks)")

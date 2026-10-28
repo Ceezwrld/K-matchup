@@ -208,6 +208,13 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "zone_whiff_pct": _json_safe(b.get("zone_whiff_pct")),
                     "zone_whiff_delta": _json_safe(b.get("zone_whiff_delta")),
                     "zone_hot_share": _json_safe(b.get("zone_hot_share")),
+                    **{
+                        k: _json_safe(b.get(k))
+                        for k in (
+                            "exp_pa", "exp_hits", "p_h1", "p_h2", "p_h3", "exp_hrr",
+                            "p_hrr1", "p_hrr2", "p_hrr3", "p_hrr4", "p_rbi1", "p_rbi2",
+                        )
+                    },
                     "pitches": pitches,
                 }
             )
@@ -691,7 +698,8 @@ def _render_k_ladder(row: dict[str, Any]) -> str:
     return (
         "<div class='k-ladder'>"
         "<div class='kl-head'><span class='meta-label'>K ladder · Kalshi “N+ strikeouts”</span>"
-        f"<span class='kl-sub'>calibrated mean {_fmt(mu, 2)} · median {_esc(med)} · "
+        f"<span class='kl-sub'>Exp K {_fmt(row.get('expected_ks'), 2)} → history-adjusted "
+        f"<strong>{_fmt(mu, 2)}</strong> (outlook / grade / style track record) · median {_esc(med)} · "
         "fair YES price = chance</span></div>"
         f"<div class='kl-row'>{''.join(pills)}</div>"
         "</div>"
@@ -826,6 +834,13 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
                 f"{'' if b.get('hard_hit_pct') is None else ' · hh ' + _fmt(b.get('hard_hit_pct'), 1) + '%'}"
                 f"</span>"
             )
+        if b.get("p_h1") is not None:
+            hits_html += (
+                f"<span class='hits-meta' title='Calibrated chances · fair YES price in cents'>"
+                f"1+H {100 * float(b['p_h1']):.0f}% · 2+H {100 * float(b.get('p_h2') or 0):.0f}% · "
+                f"HRR 2+ {100 * float(b.get('p_hrr2') or 0):.0f}% · "
+                f"RBI {100 * float(b.get('p_rbi1') or 0):.0f}%</span>"
+            )
         cards.append(
             f"<div class='batter {'missing' if miss else ''}'>"
             f"<span><span class='slot'>{_esc(b.get('slot'))}.</span> "
@@ -843,38 +858,57 @@ def _render_lineup_panel(row: dict[str, Any]) -> str:
     )
 
 
+def _pct_cell(value: Any, cls: str = "", title: str = "") -> str:
+    v = _json_safe(value)
+    if v is None:
+        return f"<span class='num {cls}'>—</span>"
+    p = float(v)
+    tone = "p-hi" if p >= 0.6 else ("p-mid" if p >= 0.4 else "p-lo")
+    t = f" title='{_esc(title)} · fair YES {round(100 * p)}¢'" if title else ""
+    return f"<span class='num pcell {tone} {cls}'{t}>{100 * p:.0f}%</span>"
+
+
 def _render_hits_board(hits_board: list[dict[str, Any]] | None) -> str:
     if not hits_board:
         return ""
     rows = []
-    for r in hits_board[:15]:
+    for r in hits_board[:20]:
+        zd = r.get("zone_xwoba_delta")
+        zone_txt = "—" if zd is None else _fmt(zd, 3, signed=True).replace("0.", ".")
         rows.append(
             "<div class='hits-row'>"
             f"<span class='rk'>{_esc(r.get('rank'))}</span>"
-            f"<span class='name'>{_esc(r.get('batter') or '—')}</span>"
-            f"<span class='vs'>vs {_esc(r.get('pitcher') or '—')} "
+            f"<span class='name'>{_esc(r.get('batter') or '—')}"
+            f"<span class='vs-m'>{_esc(r.get('team') or '')} vs {_esc(r.get('pitcher') or '—')}</span></span>"
+            f"<span class='vs m-hide'>vs {_esc(r.get('pitcher') or '—')} "
             f"({_esc(r.get('pitch_hand') or '?')}HP)</span>"
-            f"<span class='num'>{_fmt(r.get('hits_score'), 0)}</span>"
-            f"<span class='num'>{_fmt(r.get('hr_rbi_score'), 0)}</span>"
-            f"<span class='num'>{_fmt(r.get('barrel_pct'), 1)}</span>"
-            f"<span class='num'>{_fmt(r.get('hard_hit_pct'), 1)}</span>"
-            f"<span class='num'>{_fmt(r.get('avg_vs_hand'), 3)}</span>"
+            f"{_pct_cell(r.get('p_h1'), title='P(1+ hit)')}"
+            f"{_pct_cell(r.get('p_h2'), 'm-hide', 'P(2+ hits)')}"
+            f"{_pct_cell(r.get('p_hrr2'), title='P(H+R+RBI 2+)')}"
+            f"{_pct_cell(r.get('p_hrr3'), 'm-hide', 'P(H+R+RBI 3+)')}"
+            f"{_pct_cell(r.get('p_rbi1'), 'm-hide', 'P(1+ RBI)')}"
+            f"<span class='num m-hide'>{_fmt(r.get('hits_score'), 0)}</span>"
+            f"<span class='num m-hide'>{_fmt(r.get('barrel_pct'), 1)}</span>"
+            f"<span class='num m-hide'>{_fmt(r.get('avg_vs_hand'), 3)}</span>"
             f"<span class='num zone-num zfit-t-{_esc(r.get('zone_fit') or 'none')}' "
-            f"title='xwOBA on contact where this pitcher throws vs his average'>"
-            f"{_fmt(r.get('zone_xwoba_delta'), 3, signed=True).replace('0.', '.') if r.get('zone_xwoba_delta') is not None else '—'}"
-            f"</span>"
+            f"title='xwOBA on contact where this pitcher throws vs his average'>{zone_txt}</span>"
             "</div>"
         )
     return (
         "<section class='hits-board' id='hitsBoard'>"
         "<h2>Hits board <span>(display-only)</span></h2>"
-        "<p class='hits-lede'>Barrel%, hard-hit%, xwOBA, and AVG vs pitcher hand — "
-        "ranked for Hits / H+R+RBI props. <strong>Zone</strong> = how the pitcher’s locations line up "
-        "with the batter’s hot boxes (see each card’s Strike zone tab). "
-        "This board never feeds the strikeout model.</p>"
+        "<p class='hits-lede'>Percent columns are calibrated chances for Kalshi “N+” props "
+        "(fair YES price in ¢ = the %), from season-to-date hit / run / RBI rates, the starter’s "
+        "hits allowed, lineup slot and how many times the batter should see him. "
+        "Backtested on 16.5k batter-games: well calibrated, but most props sit near coin-flip "
+        "prices — the edge is in comparing against Kalshi’s price, not in the % alone. "
+        "<strong>Zone</strong> = how the pitcher’s locations line up with the batter’s hot boxes. "
+        "Order is by Hits score. Never feeds the strikeout model.</p>"
         "<div class='hits-colhead'>"
-        "<div>#</div><div>Batter</div><div>Matchup</div>"
-        "<div>Hits</div><div>H+R+RBI</div><div>Brl%</div><div>HH%</div><div>AVG vs</div>"
+        "<div>#</div><div>Batter</div><div class='m-hide'>Matchup</div>"
+        "<div>1+ H</div><div class='m-hide'>2+ H</div><div>HRR 2+</div>"
+        "<div class='m-hide'>HRR 3+</div><div class='m-hide'>RBI 1+</div>"
+        "<div class='m-hide'>Hits sc</div><div class='m-hide'>Brl%</div><div class='m-hide'>AVG vs</div>"
         "<div title='Strike-zone fit: xwOBA on contact where this pitcher throws, vs the batter average'>Zone</div>"
         "</div>"
         f"<div class='hits-list'>{''.join(rows)}</div>"
@@ -2127,26 +2161,31 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .hits-lede { margin: 0 0 0.75rem; color: var(--muted); font-size: 0.8rem; }
   .hits-colhead, .hits-row {
     display: grid;
-    grid-template-columns: 2rem minmax(7rem,1.2fr) minmax(9rem,1.4fr) repeat(6, 3.2rem);
-    gap: 0.4rem; align-items: center;
+    grid-template-columns: 1.8rem minmax(7rem,1.2fr) minmax(8rem,1.3fr) repeat(9, 3.1rem);
+    gap: 0.35rem; align-items: center;
   }
   .hits-colhead {
-    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;
+    font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em;
     color: var(--muted); padding: 0 0 0.35rem; border-bottom: 1px solid var(--line);
   }
+  .hits-colhead div:nth-child(n+4) { text-align: right; }
   .hits-row { padding: 0.35rem 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 0.82rem; }
   .hits-row .rk { color: var(--muted); font-variant-numeric: tabular-nums; }
-  .hits-row .name { font-weight: 650; }
+  .hits-row .name { font-weight: 650; min-width: 0; }
   .hits-row .vs { color: var(--muted); font-size: 0.75rem; }
-  .hits-row .num { font-variant-numeric: tabular-nums; text-align: right; }
+  .hits-row .vs-m { display: none; }
+  .hits-row .num { display: block; min-width: 0; padding-right: 0; font-variant-numeric: tabular-nums; text-align: right; }
+  .hits-row .num.pcell { justify-self: end; }
+  .pcell { font-weight: 750; border-radius: 6px; padding: 0.1rem 0.3rem; justify-self: end; }
+  .p-hi { background: rgba(15,106,77,0.13); color: #0b4f39; }
+  .p-mid { background: rgba(154,91,18,0.09); color: #6b3f0c; }
+  .p-lo { color: var(--muted); }
   @media (max-width: 720px) {
     .hits-colhead, .hits-row {
-      grid-template-columns: 1.6rem minmax(5rem,1fr) repeat(3, 3.4rem);
+      grid-template-columns: 1.5rem minmax(0,1fr) repeat(3, 3.1rem);
     }
-    .hits-colhead div:nth-child(3), .hits-row .vs,
-    .hits-colhead div:nth-child(6), .hits-row .num:nth-child(6),
-    .hits-colhead div:nth-child(7), .hits-colhead div:nth-child(8),
-    .hits-row .num:nth-child(7), .hits-row .num:nth-child(8) { display: none; }
+    .m-hide { display: none !important; }
+    .hits-row .vs-m { display: block; color: var(--muted); font-size: 0.7rem; font-weight: 500; }
   }
   .empty { padding: 1.2rem; text-align: center; color: var(--muted); }
   .footnote { margin-top: 1rem; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }

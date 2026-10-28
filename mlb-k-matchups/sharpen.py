@@ -1974,6 +1974,19 @@ def build_hits_board(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "zone_xwoba_delta": b.get("zone_xwoba_delta"),
                     "zone_hot_share": b.get("zone_hot_share"),
                     "zone_whiff_pct": b.get("zone_whiff_pct"),
+                    # Calibrated "N+" prop probabilities (hit_probs.py).
+                    "exp_pa": b.get("exp_pa"),
+                    "exp_hits": b.get("exp_hits"),
+                    "p_h1": b.get("p_h1"),
+                    "p_h2": b.get("p_h2"),
+                    "p_h3": b.get("p_h3"),
+                    "exp_hrr": b.get("exp_hrr"),
+                    "p_hrr1": b.get("p_hrr1"),
+                    "p_hrr2": b.get("p_hrr2"),
+                    "p_hrr3": b.get("p_hrr3"),
+                    "p_hrr4": b.get("p_hrr4"),
+                    "p_rbi1": b.get("p_rbi1"),
+                    "p_rbi2": b.get("p_rbi2"),
                 }
             )
     board.sort(

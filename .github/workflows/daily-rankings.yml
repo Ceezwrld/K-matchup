@@ -50,7 +50,9 @@ jobs:
           echo "Scoring date: $DATE"
 
       - name: Re-grade history and refit K-ladder calibration
-        run: python3 mlb-k-matchups/grade_history.py || echo "grading skipped"
+        run: |
+          python3 mlb-k-matchups/grade_history.py || echo "K grading skipped"
+          python3 mlb-k-matchups/grade_hits.py || echo "hits grading skipped"
 
       - name: Run K-matchup model
         run: |
@@ -67,7 +69,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add rankings.html index.html "rankings-${{ steps.date.outputs.date }}.csv"
-          git add "hits-${{ steps.date.outputs.date }}.csv" k-calibration.json graded-history.csv 2>/dev/null || true
+          git add "hits-${{ steps.date.outputs.date }}.csv" k-calibration.json graded-history.csv hits-calibration.json graded-hits-history.csv 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No rankings changes to commit."
             exit 0

@@ -17,6 +17,8 @@ import pandas as pd
 
 # Canonical public board URL. Bookmark this — never commit-SHA previews.
 # htmlpreview renders interactive tabs; always point at main (not a commit SHA).
+from k_probs import K_LINES, ladder as k_ladder
+
 STABLE_BOARD_URL = (
     "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
     "Ceezwrld/K-matchup/main/index.html"
@@ -62,6 +64,8 @@ def _fmt(value: Any, digits: int = 2, *, signed: bool = False) -> str:
         return "—"
     try:
         x = float(v)
+        if round(x, digits) == 0:
+            x = 0.0  # avoid "-0.000"
         return f"{x:+.{digits}f}" if signed else f"{x:.{digits}f}"
     except (TypeError, ValueError):
         return "—"
@@ -191,6 +195,19 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                     "hits_score": _json_safe(b.get("hits_score")),
                     "hr_rbi_score": _json_safe(b.get("hr_rbi_score")),
                     "hits_thin_sample": bool(b.get("hits_thin_sample")),
+                    "zone_side": b.get("zone_side"),
+                    "zone_profile": b.get("zone_profile"),
+                    "zone_loc": b.get("zone_loc"),
+                    "zone_fit": b.get("zone_fit"),
+                    "zone_xba": _json_safe(b.get("zone_xba")),
+                    "zone_xba_base": _json_safe(b.get("zone_xba_base")),
+                    "zone_xba_delta": _json_safe(b.get("zone_xba_delta")),
+                    "zone_xwoba": _json_safe(b.get("zone_xwoba")),
+                    "zone_xwoba_base": _json_safe(b.get("zone_xwoba_base")),
+                    "zone_xwoba_delta": _json_safe(b.get("zone_xwoba_delta")),
+                    "zone_whiff_pct": _json_safe(b.get("zone_whiff_pct")),
+                    "zone_whiff_delta": _json_safe(b.get("zone_whiff_delta")),
+                    "zone_hot_share": _json_safe(b.get("zone_hot_share")),
                     "pitches": pitches,
                 }
             )
@@ -322,6 +339,10 @@ def rows_for_html(df: pd.DataFrame) -> list[dict[str, Any]]:
                 "vs_team_games_detail": _clean_vs_team_games(
                     r.get("vs_team_games_detail")
                 ),
+                "k_mu": _json_safe(r.get("k_mu")),
+                "k_median": _json_safe(r.get("k_median")),
+                **{f"p_k{n}": _json_safe(r.get(f"p_k{n}")) for n in K_LINES},
+                "pitcher_zones": _clean_pitcher_zones(r.get("pitcher_zones")),
                 "arsenal": clean_arsenal,
                 "pitch_lineup_avg": clean_pitch_avg,
                 "batters": clean_detail,
@@ -542,6 +563,250 @@ def _render_pitch_matrix(row: dict[str, Any], uid: str | None = None) -> str:
 
 
 
+def _clean_pitcher_zones(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    out: dict[str, Any] = {}
+    for side in ("L", "R"):
+        m = raw.get(side)
+        if isinstance(m, dict) and m.get("share"):
+            out[side] = {
+                "pitches": _json_safe(m.get("pitches")),
+                "share": m.get("share"),
+                "whiff": m.get("whiff"),
+                "in_zone_pct": _json_safe(m.get("in_zone_pct")),
+            }
+    return out or None
+
+
+# Strike-zone SVG (5x5 grid, catcher's view; inner 3x3 = rulebook zone).
+_ZONE_HOT = (196, 64, 26)  # good for the batter
+_ZONE_COLD = (38, 99, 196)  # good for the pitcher
+_ZONE_MID = (250, 247, 240)
+_ZONE_LOC = (15, 106, 77)
+
+
+def _mix(c1: tuple[int, int, int], c2: tuple[int, int, int], t: float) -> str:
+    t = max(0.0, min(1.0, t))
+    r, g, b = (round(a + (bb - a) * t) for a, bb in zip(c1, c2))
+    return f"rgb({r},{g},{b})"
+
+
+def _zone_fill(value: Any, base: Any, span: float, invert: bool = False) -> str:
+    if value is None or base is None:
+        return "rgb(236,233,226)"
+    d = (float(value) - float(base)) / span
+    if invert:
+        d = -d
+    if d >= 0:
+        return _mix(_ZONE_MID, _ZONE_HOT, d)
+    return _mix(_ZONE_MID, _ZONE_COLD, -d)
+
+
+def _zone_svg(
+    fills: list[str],
+    titles: list[str],
+    *,
+    dots: list[float | None] | None = None,
+    labels: list[str] | None = None,
+    cell: int = 17,
+    aria: str = "",
+) -> str:
+    n = 5
+    pad = 2
+    size = n * cell + 2 * pad
+    parts = [
+        f"<svg class='zone-svg' viewBox='0 0 {size} {size}' width='{size}' height='{size}' "
+        f"role='img' aria-label='{_esc(aria)}'>"
+    ]
+    dmax = max((d or 0.0) for d in dots) if dots else 0.0
+    for i in range(n * n):
+        r, c = divmod(i, n)
+        x, y = pad + c * cell, pad + r * cell
+        parts.append(
+            f"<rect x='{x}' y='{y}' width='{cell}' height='{cell}' fill='{fills[i]}' "
+            f"stroke='rgba(20,32,26,0.10)' stroke-width='0.6'><title>{_esc(titles[i])}</title></rect>"
+        )
+        if labels and labels[i]:
+            parts.append(
+                f"<text x='{x + cell / 2}' y='{y + cell / 2 + 3}' text-anchor='middle' "
+                f"class='zone-lab'>{_esc(labels[i])}</text>"
+            )
+        if dots and dmax > 0:
+            d = dots[i] or 0.0
+            if d >= 0.02:
+                rad = (d / dmax) ** 0.5 * cell * 0.36
+                parts.append(
+                    f"<circle cx='{x + cell / 2}' cy='{y + cell / 2}' r='{rad:.1f}' "
+                    f"fill='rgba(20,32,26,0.55)' pointer-events='none'/>"
+                )
+    zx = pad + cell
+    parts.append(
+        f"<rect x='{zx}' y='{zx}' width='{3 * cell}' height='{3 * cell}' fill='none' "
+        f"stroke='#14201a' stroke-width='1.6' pointer-events='none'/>"
+    )
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def _pitcher_loc_svg(m: dict[str, Any], side: str) -> str:
+    share = [float(v or 0.0) for v in m.get("share") or []]
+    whiff = m.get("whiff") or [None] * 25
+    if len(share) != 25:
+        return ""
+    smax = max(share) or 1.0
+    fills = [_mix(_ZONE_MID, _ZONE_LOC, (v / smax) ** 0.8) for v in share]
+    titles = []
+    labels = []
+    for i, v in enumerate(share):
+        w = whiff[i] if i < len(whiff) else None
+        titles.append(
+            f"{100 * v:.1f}% of pitches vs {side}HB"
+            + ("" if w is None else f" · his whiff {100 * float(w):.0f}%")
+        )
+        labels.append(f"{100 * v:.0f}" if v >= 0.035 else "")
+    return _zone_svg(
+        fills, titles, labels=labels, cell=22, aria=f"Pitch locations vs {side}HB"
+    )
+
+
+def _render_k_ladder(row: dict[str, Any]) -> str:
+    steps = k_ladder(row)
+    if not steps:
+        return ""
+    pills = []
+    for st in steps:
+        p = st["p"]
+        tone = "hi" if p >= 0.6 else ("mid" if p >= 0.4 else "lo")
+        pills.append(
+            f"<div class='kl-pill kl-{tone}' title='P(K ≥ {st['n']}) = {100 * p:.1f}% · "
+            f"fair YES {st['fair_yes']}¢ / NO {st['fair_no']}¢ · same as {st['line']}'>"
+            f"<span class='kl-n'>{st['n']}+</span>"
+            f"<span class='kl-p'>{100 * p:.0f}%</span>"
+            f"<span class='kl-c'>{st['fair_yes']}¢</span>"
+            "</div>"
+        )
+    mu = row.get("k_mu")
+    med = row.get("k_median")
+    return (
+        "<div class='k-ladder'>"
+        "<div class='kl-head'><span class='meta-label'>K ladder · Kalshi “N+ strikeouts”</span>"
+        f"<span class='kl-sub'>calibrated mean {_fmt(mu, 2)} · median {_esc(med)} · "
+        "fair YES price = chance</span></div>"
+        f"<div class='kl-row'>{''.join(pills)}</div>"
+        "</div>"
+    )
+
+
+def _render_zone_panel(row: dict[str, Any]) -> str:
+    pz = row.get("pitcher_zones") or {}
+    hand = row.get("pitch_hand") or "?"
+    pieces: list[str] = []
+    pmaps = []
+    for side in ("L", "R"):
+        m = pz.get(side)
+        if not m:
+            continue
+        pmaps.append(
+            "<figure class='zone-fig'>"
+            f"{_pitcher_loc_svg(m, side)}"
+            f"<figcaption>vs {side}HB · {_esc(m.get('pitches'))} pitches · "
+            f"{_fmt(m.get('in_zone_pct'), 0)}% in zone</figcaption>"
+            "</figure>"
+        )
+    if pmaps:
+        pieces.append(
+            "<div class='zone-pitcher'>"
+            f"<div class='zone-h'>{_esc(row.get('pitcher') or 'Pitcher')} — where he throws "
+            "<span>(% of pitches per box)</span></div>"
+            f"<div class='zone-figs'>{''.join(pmaps)}</div>"
+            "</div>"
+        )
+
+    cards = []
+    for b in row.get("batters") or []:
+        prof = b.get("zone_profile")
+        if not prof:
+            continue
+        loc = b.get("zone_loc")
+        side = b.get("zone_side") or "?"
+        maps = []
+        specs = [
+            ("xba", "Hits · xBA", 0.120, False, "xBA on contact"),
+            ("xwoba", "Damage · xwOBA", 0.160, False, "xwOBA on contact"),
+            ("whiff", "Whiff %", 0.150, True, "whiff per swing"),
+        ]
+        for key, cap, span, invert, what in specs:
+            vals = prof.get(key) or []
+            base = prof.get(f"{key}_base")
+            if len(vals) != 25:
+                continue
+            fills = [_zone_fill(v, base, span, invert) for v in vals]
+            titles = []
+            for i, v in enumerate(vals):
+                if key == "whiff":
+                    t = f"{what} {100 * float(v):.0f}% (his avg {100 * float(base):.0f}%)"
+                else:
+                    t = f"{what} {float(v):.3f} (his avg {float(base):.3f})"
+                if loc and loc[i]:
+                    t += f" · pitcher puts {100 * float(loc[i]):.1f}% here"
+                titles.append(t)
+            maps.append(
+                "<figure class='zone-fig'>"
+                f"{_zone_svg(fills, titles, dots=loc, aria=cap)}"
+                f"<figcaption>{_esc(cap)}</figcaption>"
+                "</figure>"
+            )
+        fit = (b.get("zone_fit") or "").strip()
+        fit_html = ""
+        if fit:
+            fit_label = {"hot": "ZONE HOT", "cold": "ZONE COLD"}.get(fit, "ZONE NEUTRAL")
+            fit_html = f"<span class='zfit zfit-{_esc(fit)}'>{fit_label}</span>"
+        stats = []
+        if b.get("zone_xba") is not None:
+            stats.append(
+                f"xBA where he pitches <strong>{_fmt(b.get('zone_xba'), 3).lstrip('0')}</strong> "
+                f"({_fmt(b.get('zone_xba_delta'), 3, signed=True)})"
+            )
+        if b.get("zone_xwoba") is not None:
+            stats.append(
+                f"xwOBA <strong>{_fmt(b.get('zone_xwoba'), 3).lstrip('0')}</strong> "
+                f"({_fmt(b.get('zone_xwoba_delta'), 3, signed=True)})"
+            )
+        if b.get("zone_hot_share") is not None:
+            stats.append(f"{_fmt(b.get('zone_hot_share'), 0)}% of pitches into his hot boxes")
+        if b.get("zone_whiff_pct") is not None:
+            stats.append(f"whiff {_fmt(b.get('zone_whiff_pct'), 0)}%")
+        bside = _hand_label(b.get("bat_side"), "B")
+        cards.append(
+            "<div class='zone-card'>"
+            "<div class='zone-card-h'>"
+            f"<span class='slot'>{_esc(b.get('slot'))}.</span> "
+            f"<span class='name'>{_esc(b.get('batter') or '—')}</span>"
+            f"{'' if not bside else ' <span class=hand>' + _esc(bside) + '</span>'}"
+            f"{fit_html}"
+            "</div>"
+            f"<div class='zone-figs'>{''.join(maps)}</div>"
+            f"<div class='zone-stats'>{' · '.join(stats) if stats else 'no pitcher location map for this side'}</div>"
+            f"<div class='zone-n'>{_esc(prof.get('pitches_vs_hand'))} pitches seen vs {_esc(hand)}HP this season</div>"
+            "</div>"
+        )
+    if not pieces and not cards:
+        return "<p class='hint'>No pitch-location data for this matchup.</p>"
+    pieces.append(f"<div class='zone-grid'>{''.join(cards)}</div>")
+    pieces.append(
+        "<p class='hint'>Catcher’s view; the bold box is the strike zone, the outer ring is the "
+        "chase area. Batter maps are vs this pitcher’s hand: "
+        "<span class='zkey zkey-hot'>red</span> = better than his own average, "
+        "<span class='zkey zkey-cold'>blue</span> = worse (on the whiff map, blue = more misses). "
+        "Dots = where this pitcher throws to that side (bigger = more often). "
+        "<em>Where he pitches</em> numbers weight each box by how often the pitcher goes there and how "
+        "often the batter makes contact there; ZONE HOT/COLD = xwOBA ±.015 vs his average. "
+        "Display only — does not change Exp K. Thin boxes are pulled toward his average.</p>"
+    )
+    return "<div class='zone-panel'>" + "".join(pieces) + "</div>"
+
+
 def _render_lineup_panel(row: dict[str, Any]) -> str:
     cards = []
     for b in row.get("batters") or []:
@@ -594,16 +859,23 @@ def _render_hits_board(hits_board: list[dict[str, Any]] | None) -> str:
             f"<span class='num'>{_fmt(r.get('barrel_pct'), 1)}</span>"
             f"<span class='num'>{_fmt(r.get('hard_hit_pct'), 1)}</span>"
             f"<span class='num'>{_fmt(r.get('avg_vs_hand'), 3)}</span>"
+            f"<span class='num zone-num zfit-t-{_esc(r.get('zone_fit') or 'none')}' "
+            f"title='xwOBA on contact where this pitcher throws vs his average'>"
+            f"{_fmt(r.get('zone_xwoba_delta'), 3, signed=True).replace('0.', '.') if r.get('zone_xwoba_delta') is not None else '—'}"
+            f"</span>"
             "</div>"
         )
     return (
         "<section class='hits-board' id='hitsBoard'>"
         "<h2>Hits board <span>(display-only)</span></h2>"
         "<p class='hits-lede'>Barrel%, hard-hit%, xwOBA, and AVG vs pitcher hand — "
-        "ranked for Hits / H+R+RBI props. This board never feeds the strikeout model.</p>"
+        "ranked for Hits / H+R+RBI props. <strong>Zone</strong> = how the pitcher’s locations line up "
+        "with the batter’s hot boxes (see each card’s Strike zone tab). "
+        "This board never feeds the strikeout model.</p>"
         "<div class='hits-colhead'>"
         "<div>#</div><div>Batter</div><div>Matchup</div>"
         "<div>Hits</div><div>H+R+RBI</div><div>Brl%</div><div>HH%</div><div>AVG vs</div>"
+        "<div title='Strike-zone fit: xwOBA on contact where this pitcher throws, vs the batter average'>Zone</div>"
         "</div>"
         f"<div class='hits-list'>{''.join(rows)}</div>"
         "</section>"
@@ -932,6 +1204,8 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         "</div>"
         "</div>"
     )
+    if scored:
+        head += _render_k_ladder(row)
     ticket_note = (row.get("ticket_note") or "").strip()
     # Banner for flagged outlooks (FILLER / MATCHUP_OK / SPIKE / THIN_TOTAL / UNDER_OK).
     if outlook:
@@ -956,6 +1230,11 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"<span class='tab-full'>Batting order</span>"
         f"<span class='tab-short'>Order</span>"
         f"</label>"
+        f"<input type='radio' name='tab-{uid}' id='tab-{uid}-zones' />"
+        f"<label class='tab' for='tab-{uid}-zones'>"
+        f"<span class='tab-full'>Strike zone</span>"
+        f"<span class='tab-short'>Zones</span>"
+        f"</label>"
         f"<input type='radio' name='tab-{uid}' id='tab-{uid}-history' />"
         f"<label class='tab' for='tab-{uid}-history'>"
         f"<span class='tab-full'>vs Team history</span>"
@@ -963,6 +1242,7 @@ def _render_matchup_card(row: dict[str, Any], idx: int) -> str:
         f"</label>"
         f"<div class='tab-panel panel-pitches'>{_render_pitch_matrix(row, uid)}</div>"
         f"<div class='tab-panel panel-lineup'>{_render_lineup_panel(row)}</div>"
+        f"<div class='tab-panel panel-zones'>{_render_zone_panel(row)}</div>"
         f"<div class='tab-panel panel-history'>{_render_vs_team_panel(row)}</div>"
         f"</div>"
     )
@@ -1552,7 +1832,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
   .tabs {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 0;
     align-items: stretch;
     width: 100%;
@@ -1597,6 +1877,53 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .tabs > input[id$="-pitches"]:checked ~ .panel-pitches { display: block; }
   .tabs > input[id$="-lineup"]:checked ~ .panel-lineup { display: block; }
   .tabs > input[id$="-history"]:checked ~ .panel-history { display: block; }
+  .tabs > input[id$="-zones"]:checked ~ .panel-zones { display: block; }
+  /* K ladder */
+  .k-ladder { margin: 0.6rem 0 0.2rem; padding: 0.6rem 0.7rem; border: 1px solid var(--line);
+    border-radius: 14px; background: rgba(255,255,255,0.6); }
+  .kl-head { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; align-items: baseline; margin-bottom: 0.45rem; }
+  .kl-sub { color: var(--muted); font-size: 0.74rem; }
+  .kl-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.35rem; }
+  .kl-pill { display: grid; justify-items: center; padding: 0.35rem 0.2rem; border-radius: 10px;
+    border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .kl-n { font-size: 0.72rem; color: var(--muted); font-weight: 700; }
+  .kl-p { font-size: 1rem; font-weight: 800; }
+  .kl-c { font-size: 0.68rem; color: var(--muted); }
+  .kl-hi { background: rgba(15,106,77,0.12); border-color: rgba(15,106,77,0.3); }
+  .kl-mid { background: rgba(154,91,18,0.08); border-color: rgba(154,91,18,0.22); }
+  .kl-lo { background: rgba(20,32,26,0.03); }
+  @media (max-width: 560px) {
+    .kl-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  /* Strike zone */
+  .zone-panel { display: grid; gap: 0.8rem; }
+  .zone-h { font-weight: 800; font-size: 0.9rem; margin-bottom: 0.35rem; }
+  .zone-h span { color: var(--muted); font-weight: 600; font-size: 0.76rem; }
+  .zone-figs { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .zone-fig { margin: 0; display: grid; justify-items: center; gap: 0.2rem; }
+  .zone-fig figcaption { font-size: 0.7rem; color: var(--muted); text-align: center; }
+  .zone-svg { display: block; max-width: 100%; height: auto; }
+  .zone-lab { font-size: 8px; font-weight: 700; fill: #14201a; font-family: Manrope, sans-serif; }
+  .zone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 0.6rem; }
+  .zone-card { border: 1px solid var(--line); border-radius: 14px; padding: 0.6rem 0.65rem;
+    background: rgba(255,255,255,0.6); min-width: 0; }
+  .zone-card-h { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;
+    margin-bottom: 0.45rem; font-size: 0.86rem; }
+  .zone-card-h .name { font-weight: 750; }
+  .zone-card-h .slot { color: var(--muted); }
+  .zone-card .zone-figs { justify-content: space-between; gap: 0.35rem; }
+  .zone-stats { margin-top: 0.45rem; font-size: 0.75rem; line-height: 1.4; }
+  .zone-n { margin-top: 0.15rem; font-size: 0.68rem; color: var(--muted); }
+  .zfit { margin-left: auto; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.04em;
+    padding: 0.15rem 0.45rem; border-radius: 999px; border: 1px solid var(--line); }
+  .zfit-hot { background: rgba(196,64,26,0.12); color: #8a2d10; border-color: rgba(196,64,26,0.3); }
+  .zfit-cold { background: rgba(38,99,196,0.12); color: #1d4a8f; border-color: rgba(38,99,196,0.3); }
+  .zfit-neutral { color: var(--muted); }
+  .zkey { font-weight: 700; }
+  .zkey-hot { color: #a8361a; }
+  .zkey-cold { color: #2563c4; }
+  .zfit-t-hot { color: #a8361a; font-weight: 800; }
+  .zfit-t-cold { color: #2563c4; font-weight: 800; }
   .vs-summary {
     display: grid;
     gap: 0.55rem;
@@ -1800,7 +2127,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .hits-lede { margin: 0 0 0.75rem; color: var(--muted); font-size: 0.8rem; }
   .hits-colhead, .hits-row {
     display: grid;
-    grid-template-columns: 2rem minmax(7rem,1.2fr) minmax(9rem,1.4fr) repeat(5, 3.2rem);
+    grid-template-columns: 2rem minmax(7rem,1.2fr) minmax(9rem,1.4fr) repeat(6, 3.2rem);
     gap: 0.4rem; align-items: center;
   }
   .hits-colhead {
@@ -1814,9 +2141,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .hits-row .num { font-variant-numeric: tabular-nums; text-align: right; }
   @media (max-width: 720px) {
     .hits-colhead, .hits-row {
-      grid-template-columns: 1.6rem minmax(5rem,1fr) repeat(3, 2.6rem);
+      grid-template-columns: 1.6rem minmax(5rem,1fr) repeat(3, 3.4rem);
     }
     .hits-colhead div:nth-child(3), .hits-row .vs,
+    .hits-colhead div:nth-child(6), .hits-row .num:nth-child(6),
     .hits-colhead div:nth-child(7), .hits-colhead div:nth-child(8),
     .hits-row .num:nth-child(7), .hits-row .num:nth-child(8) { display: none; }
   }

@@ -59,6 +59,20 @@ Barrel%, hard-hit% (EV95%), xwOBA/xBA from Savant plus AVG vs pitcher hand feed 
 
 If a starter is missing from the Savant arsenal board (common for returning arms below the default `min` PA filter), the model falls back to **Statcast pitch-level usage** for that pitcher instead of leaving them unscored.
 
+**K ladder (Kalshi “N+ strikeouts”)**
+
+`expected_ks` is recalibrated against every graded start (`mu = a + b × Exp K`) and run through a negative binomial to get `p_k3 … p_k9` = P(K ≥ N). Fair YES price in cents = 100 × P (5+ is the same bet as O4.5). Shown as the K ladder on each card. `grade_history.py` regrades all `rankings-*.csv` files against MLB game logs and rewrites `k-calibration.json` + `graded-history.csv`; the daily workflow runs it before each refresh. Display / sizing only — Exp K is unchanged.
+
+**Strike-zone layer (`zones.py`)**
+
+Uses the Statcast pitch-level pulls the K model already makes (no extra requests). 5×5 catcher’s-view grid (inner 3×3 = zone, outer ring = chase):
+
+- Pitcher: share of pitches per box vs LHB / RHB.
+- Batter (vs today’s pitcher hand): xBA and xwOBA on contact, whiff% per box, shrunk toward his own average.
+- Zone fit: contact quality where *this* pitcher throws (each box weighted by pitcher share × batter contact rate) vs the batter’s average → `zone_xba_delta`, `zone_xwoba_delta`, `zone_hot_share` (% of pitches into his hot boxes), `zone_fit` = hot / cold at ±.015 xwOBA.
+
+Shown in the **Strike zone** tab and the Hits board **Zone** column; written to the hits CSV. Does not change `hits_score` or `expected_ks`.
+
 ## Daily automation (GitHub Actions)
 
 After this workflow is on `main`, rankings refresh automatically **twice a day** (no Cursor tokens used):

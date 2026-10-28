@@ -40,6 +40,8 @@ from sharpen import (  # noqa: E402
     summarize_lineup_offense,
     usage_for_batter_side,
 )
+from k_probs import apply_k_probs, load_calibration  # noqa: E402
+from zones import enrich_lineup_zones  # noqa: E402
 from vs_team_history import (  # noqa: E402
     enrich_dataframe_vs_team_history,
     format_vs_team_console,
@@ -1661,6 +1663,13 @@ def main(argv: list[str] | None = None) -> int:
                     hand_rates=batter_k_vs_hand,
                     offense=batter_offense,
                 )
+                # Strike-zone maps + zone fit (display / Hits context only).
+                try:
+                    row["pitcher_zones"] = enrich_lineup_zones(
+                        detail, pid, pitcher_hand
+                    )
+                except Exception as exc:  # noqa: BLE001 - never block the K board
+                    log(True, f"zone layer skipped for {pid}: {exc}")
                 row.update(scores)
                 row["batter_detail"] = detail
                 if detail:
@@ -1732,6 +1741,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # Soft-contact FILLER gated by opposing lineup arsenal rank on this slate.
     out = apply_ticket_outlook(out)
+
+    # Kalshi-style K ladder: P(K >= N) from calibrated Exp K (display only).
+    out = apply_k_probs(out, load_calibration())
 
     # Career + recent pitcher-vs-opposing-team history (home/away in game logs).
     try:
@@ -1893,6 +1905,7 @@ def main(argv: list[str] | None = None) -> int:
                 "arsenal",
                 "pitch_lineup_avg",
                 "vs_team_games_detail",
+                "pitcher_zones",
             ],
             errors="ignore",
         )

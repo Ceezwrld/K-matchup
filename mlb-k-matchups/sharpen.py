@@ -183,6 +183,34 @@ PITCH_NAMES = {
 }
 
 
+# Slim pitch-level frames kept from Statcast pulls already made for the K model,
+# so the strike-zone layer (zones.py) never refetches. Key: ("pitcher"|"batter", id).
+ZONE_FRAME_COLUMNS = (
+    "pitch_type",
+    "plate_x",
+    "plate_z",
+    "sz_top",
+    "sz_bot",
+    "stand",
+    "p_throws",
+    "description",
+    "type",
+    "events",
+    "estimated_ba_using_speedangle",
+    "estimated_woba_using_speedangle",
+)
+STATCAST_FRAMES: dict[tuple[str, int], pd.DataFrame] = {}
+
+
+def _remember_frame(kind: str, player_id: int, df: pd.DataFrame | None) -> None:
+    if df is None or df.empty:
+        return
+    cols = [c for c in ZONE_FRAME_COLUMNS if c in df.columns]
+    if "plate_x" not in cols or "plate_z" not in cols:
+        return
+    STATCAST_FRAMES[(kind, int(player_id))] = df[cols].copy()
+
+
 def _get(url: str, verbose: bool, log: Callable[[bool, str], None]) -> requests.Response:
     log(verbose, f"GET {url}")
     resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=90)
@@ -390,6 +418,7 @@ def fetch_pitcher_hand_mixes(
         except Exception as exc:  # noqa: BLE001 - keep slate scoring alive
             log(verbose, f"hand-mix fetch failed for {pid}: {exc}")
             return pid, None
+        _remember_frame("pitcher", pid, df)
         counts = _counts_from_pitch_df(df)
         mixes: dict[str, Any] = {
             "pitches_all": int(sum(counts["ALL"].values())),
@@ -786,6 +815,7 @@ def fetch_batter_pitch_k_vs_hand(
         except Exception as exc:  # noqa: BLE001
             log(verbose, f"batter pitch×hand fetch failed for {bid}: {exc}")
             return bid, None
+        _remember_frame("batter", bid, df)
         if df.empty or "events" not in df.columns or "p_throws" not in df.columns:
             return bid, None
         pa = df[df["events"].notna() & (df["events"].astype(str).str.len() > 0)].copy()
@@ -1936,6 +1966,14 @@ def build_hits_board(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "hits_thin_sample": b.get("hits_thin_sample"),
                     # K% shown for context only — not an input to hits_score blend beyond display.
                     "expected_k_pct": b.get("expected_k_pct"),
+                    # Strike-zone fit vs this pitcher's locations (display only).
+                    "zone_fit": b.get("zone_fit"),
+                    "zone_xba": b.get("zone_xba"),
+                    "zone_xba_delta": b.get("zone_xba_delta"),
+                    "zone_xwoba": b.get("zone_xwoba"),
+                    "zone_xwoba_delta": b.get("zone_xwoba_delta"),
+                    "zone_hot_share": b.get("zone_hot_share"),
+                    "zone_whiff_pct": b.get("zone_whiff_pct"),
                 }
             )
     board.sort(

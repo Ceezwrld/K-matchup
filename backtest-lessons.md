@@ -6,6 +6,7 @@ Living rules. Update after every backtest. Soft lines assume ~0.75+ edge unless 
 
 Run this **every morning** before tickets. Goal: one clear outlook for **every** probable starter.
 
+0. **`git pull origin main` first.** GitHub Actions already refreshes and publishes the board twice a day with the current code (K ladder, Strike zone tab, hit chances). Never publish from a stale local checkout — see `AGENTS.md`.
 1. **Refresh the board** (probable starters; usually all prior early):
    ```bash
    TZ=America/Chicago python3 mlb-k-matchups/k_matchups.py \

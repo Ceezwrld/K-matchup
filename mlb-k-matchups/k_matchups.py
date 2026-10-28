@@ -1873,7 +1873,7 @@ def main(argv: list[str] | None = None) -> int:
         log(True, f"hit probabilities skipped: {exc}")
     hits_rows = build_hits_board(out.to_dict(orient="records"))
     if hits_rows:
-        print("\nHits board (display-only; does not affect expected_ks)")
+        print("\nHits board — sorted by P(1+ hit) (display-only; does not affect expected_ks)")
         print(
             f"{'rk':>3} {'batter':22} {'vs':3} {'pitcher':18} "
             f"{'hits':>5} {'hrbi':>5} {'avgH':>5} {'brl':>5} {'hh':>5}"

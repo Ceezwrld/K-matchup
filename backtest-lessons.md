@@ -809,6 +809,25 @@ Misses: **Caminero** 0-3 (1★) · **Vilade** 0-2 · **Bauers** 0-4 Hits (HRR 0.
 6. Keep **vs-SP ≠ full box** (Frelick 2B vs Booser).
 7. **ML slight leans are not process locks.**
 
+### WS G4 grade — TB 4, MIL 3 (12) (locked 10/27–10/28)
+
+Full grade: `backtest-2026-10-27-ws-g4.md`. Jax **6 K / 4.0** WHIFF SPIKE · May **3 K / 3.0** SOFT BAL SPIKE (hook, playoff 3/1/3/1) · Seymour W · Drohan L/BS 0.0 IP, 4 H. Series **MIL 3–1**.  
+Cashed: **Yandy** 1-4 Hits (vs Uribe, 0-2 vs May).  
+Misses: **Aranda** 0-5 (1★) · **Contreras** 0-4 HRR 0 (first WS 0-fer) · **Yelich** 0-3 2 BB · **Bauers** 0-6 · 2-man **A** and **B** · **3-man** Aranda+Contreras+Yelich · **MIL ML**.  
+Pass result-misses: Caminero 1B vs May · Frelick 1B vs Jax · Simpson 3-5 HRR 4 (2H+3HRR would HIT) · Pratt 4-5 HR (7-hole tiny) · Jax O5.5 (6 K) · TB ML.
+
+**Process locks (apply G5)**
+1. Keep **Caminero pass vs RHP dump** (G4 1B vs May; G1 2B, G2 RBI). Fire vs LHP only.
+2. Keep **Contreras** as the MIL O0.5 engine after HRR 3 / 3 / 5 / **0**. One miss ≠ pass; streak ≠ 1★.
+3. Keep **Yandy Hits, not 1★ / not 2+** (cashed vs Uribe, 0-2 vs May).
+4. Keep **Aranda TUNNEL 1★ vs that RHP dump** after a 0-fer.
+5. Keep **7-hole TUNNEL tiny** (Pratt 4-5 is size, not a promotion).
+6. Keep **SPIKE no juiced over** (Jax 6 K / 4.0; Exp 4.28, k_p50 4).
+7. Keep **Kwan-type Hits, not a 2H+3HRR lock** (Simpson 3-5 / HRR 4).
+8. Keep **throw out leftover SP names** when official nines differ (Drohan 12th L/BS ≠ G4 starter).
+9. Keep **one 1★ bat on one 2-man only.** Opposite-script 3-man cannot save a 0-for-3.
+10. **ML slight leans are not process locks.** G4 MIL miss after G3 TB miss.
+
 ---
 
 ## Ticket lock routine (USE THIS before every card)

@@ -67,6 +67,14 @@ If a starter is missing from the Savant arsenal board (common for returning arms
 
 Per-PA hit chance vs the starter = log5(batter season-to-date H/PA, starter H/BF, league), shrunk toward league. The batter's slot and the starter's projected BF set how many PAs come vs the starter (rest vs a league-average bullpen); hits = binomial mix over the slot's PA distribution. H+R+RBI and RBI use a history-fit mean with per-line logistic calibration. `grade_hits.py` rebuilds every saved lineup with as-of-that-morning stats, grades it against box scores, prints a hold-out test and writes `hits-calibration.json`. Columns `p_h1/p_h2/p_h3`, `p_hrr1…4`, `p_rbi1/2` in the hits CSV and Hits board. Display only.
 
+**Prior-season blending (`prior_season.py`)**
+
+Every input is current-season only, so early April would score almost nobody. Each player's current sample is topped up with last season's until it reaches a target, then last season fades out (`weight = min(1, (target − current) / prior)`): season-level rates at 200 PA / 250 BF, pitch-type and pitch-location splits at 600 PA / 2,500 pitches. Recent form (L3 starts, last-10-game K%) is never blended. Rookies with no prior are unchanged. On by default (prior = year − 1); `--prior-year YYYY` or `--no-prior` to override. Opening-Day test (2027 data empty, 2026 prior): both starters scored with arsenal K% within 0.2 of the full-data board; with `--no-prior` the run cannot score anyone.
+
+**Off days**
+
+The model exits cleanly when there are no regular-season or postseason games, and the workflow skips grading, the run and the commit on those days. Spring training, exhibitions and the All-Star Game are not scored.
+
 **Strike-zone layer (`zones.py`)**
 
 Uses the Statcast pitch-level pulls the K model already makes (no extra requests). 5×5 catcher’s-view grid (inner 3×3 = zone, outer ring = chase):

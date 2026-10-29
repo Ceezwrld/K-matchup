@@ -49,12 +49,28 @@ jobs:
           echo "date=$DATE" >> "$GITHUB_OUTPUT"
           echo "Scoring date: $DATE"
 
+      - name: Check for MLB games (regular season / postseason)
+        id: games
+        run: |
+          N=$(python3 - "${{ steps.date.outputs.date }}" <<'PY'
+          import sys, requests
+          url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={sys.argv[1]}"
+          d = requests.get(url, timeout=60).json()
+          print(sum(1 for x in d.get("dates", []) for g in x.get("games", [])
+                    if str(g.get("gameType") or "R").upper() not in {"S", "E", "A"}))
+          PY
+          )
+          echo "count=$N" >> "$GITHUB_OUTPUT"
+          if [ "$N" = "0" ]; then echo "No MLB games on ${{ steps.date.outputs.date }} — skipping refresh."; fi
+
       - name: Re-grade history and refit K-ladder calibration
+        if: steps.games.outputs.count != '0'
         run: |
           python3 mlb-k-matchups/grade_history.py || echo "K grading skipped"
           python3 mlb-k-matchups/grade_hits.py || echo "hits grading skipped"
 
       - name: Run K-matchup model
+        if: steps.games.outputs.count != '0'
         run: |
           python3 mlb-k-matchups/k_matchups.py \
             --date "${{ steps.date.outputs.date }}" \
@@ -64,6 +80,7 @@ jobs:
           # write_interactive_html also writes index.html for the stable Pages URL
 
       - name: Commit and push rankings
+        if: steps.games.outputs.count != '0'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

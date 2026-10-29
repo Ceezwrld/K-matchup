@@ -26,6 +26,7 @@ validated against graded history and must not be lost.
 - `mlb-k-matchups/k_probs.py` — K ladder (P(K ≥ N), tag-adjusted)
 - `mlb-k-matchups/hit_probs.py` — 1+H / 2+H / H+R+RBI / RBI chances
 - `mlb-k-matchups/grade_history.py`, `mlb-k-matchups/grade_hits.py` — graders
+- `mlb-k-matchups/prior_season.py` — last-season blending (needed on Opening Day)
 - `k-calibration.json`, `hits-calibration.json`, `graded-history.csv`,
   `graded-hits-history.csv` — written by the graders; never hand-edit
 - In `rankings_html.py`: the **Strike zone** tab, the **K ladder**, the Hits
@@ -35,7 +36,7 @@ validated against graded history and must not be lost.
   worse than random — do not switch back)
 - In `k_matchups.py`: the `enrich_lineup_zones`, `apply_k_probs`, and
   `enrich_board_hit_probs` calls
-- The grading steps in `.github/workflows/daily-rankings.yml`
+- The no-game-day check and grading steps in `.github/workflows/daily-rankings.yml`
 
 ## Before committing any model change
 Run `python3 mlb-k-matchups/k_matchups.py --date YYYY-MM-DD -o /tmp/r.csv --html /tmp/r.html`

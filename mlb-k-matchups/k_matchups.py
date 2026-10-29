@@ -43,6 +43,7 @@ from sharpen import (  # noqa: E402
 from k_probs import apply_k_probs, load_calibration  # noqa: E402
 from zones import enrich_lineup_zones  # noqa: E402
 from hit_probs import enrich_board_hit_probs  # noqa: E402
+import prior_season  # noqa: E402
 from vs_team_history import (  # noqa: E402
     enrich_dataframe_vs_team_history,
     format_vs_team_console,
@@ -52,6 +53,8 @@ SAVANT_URL = (
     "https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats"
     "?type={kind}&year={year}&min={min_pa}&csv=true"
 )
+NON_SCORED_GAME_TYPES = {"S", "E", "A"}  # spring training, exhibition, All-Star
+
 SCHEDULE_URL = (
     "https://statsapi.mlb.com/api/v1/schedule"
     "?sportId=1&date={date}&hydrate=probablePitcher,team,lineups"
@@ -574,6 +577,10 @@ def fetch_probable_matchups(game_date: str, verbose: bool) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
     for day in payload.get("dates", []):
         for game in day.get("games", []):
+            # Regular season + postseason only (skip spring training,
+            # exhibitions and the All-Star Game).
+            if str(game.get("gameType") or "R").upper() in NON_SCORED_GAME_TYPES:
+                continue
             home = game.get("teams", {}).get("home", {})
             away = game.get("teams", {}).get("away", {})
             home_team = normalize_team(home.get("team", {}).get("abbreviation"))
@@ -1275,6 +1282,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Savant season year (default: year of --date, else current year)",
     )
     p.add_argument(
+        "--prior-year",
+        type=int,
+        default=None,
+        help="Season used to top up thin early-season samples (default: year - 1)",
+    )
+    p.add_argument(
+        "--no-prior",
+        action="store_true",
+        help="Disable prior-season blending (current season only)",
+    )
+    p.add_argument(
         "--min-pa",
         type=int,
         default=50,
@@ -1362,6 +1380,78 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
+def _blend_prior_season_stats(
+    prior_year: int,
+    batter_ids: list[int],
+    pitcher_ids: list[int],
+    verbose: bool,
+    *,
+    batter_k_vs_hand: dict,
+    fangraphs: dict,
+    api_rates: dict,
+    batter_offense: dict,
+    batter_contact: dict,
+) -> tuple[dict, dict, dict, dict, dict]:
+    """Top up season-level inputs with last season (fades out by target)."""
+    ps = prior_season
+
+    def _with_total(d: dict) -> dict:
+        for v in d.values():
+            v["pa_total"] = float(v.get("pa_vs_lhp") or 0) + float(v.get("pa_vs_rhp") or 0)
+        return d
+
+    hand = ps.blend_player_dicts(
+        _with_total(batter_k_vs_hand),
+        _with_total(fetch_batter_hand_k_rates(batter_ids, prior_year, verbose, log)),
+        n_key="pa_total",
+        target=ps.TARGET_BATTER_PA,
+        count_keys=("pa_vs_lhp", "pa_vs_rhp"),
+        rate_weights={
+            "k_pct_vs_lhp": "pa_vs_lhp",
+            "avg_vs_lhp": "pa_vs_lhp",
+            "k_pct_vs_rhp": "pa_vs_rhp",
+            "avg_vs_rhp": "pa_vs_rhp",
+        },
+    )
+    fg = ps.blend_player_dicts(
+        fangraphs,
+        fetch_fangraphs_pitching(prior_year, verbose, log),
+        n_key="tbf",
+        target=ps.TARGET_PITCHER_BF,
+    )
+    api = ps.blend_player_dicts(
+        api_rates,
+        fetch_pitcher_rate_stats(pitcher_ids, prior_year, verbose, log),
+        n_key="bf",
+        target=ps.TARGET_PITCHER_BF,
+    )
+    off = ps.blend_player_dicts(
+        batter_offense,
+        fetch_batter_offense_profiles(batter_ids, prior_year, verbose, log),
+        n_key="season_pa",
+        target=ps.TARGET_BATTER_PA,
+        count_keys=("season_ab", "season_so"),
+        rate_weights={"season_avg": "season_ab"},
+        keep_current=(
+            "recent_k_pct", "recent_avg", "recent_pa", "recent_ab",
+            "recent_so", "recent_bb_pct", "recent_bip_pct",
+        ),
+    )
+    for v in off.values():  # prior-only batters: no recent sample yet
+        for k in ("recent_pa", "recent_ab", "recent_so"):
+            if v.get(k) is None:
+                v[k] = 0.0
+    contact = ps.blend_player_dicts(
+        batter_contact,
+        fetch_batter_contact_quality(prior_year, verbose, log),
+        n_key="pa",
+        target=ps.TARGET_BATTER_PA,
+        count_keys=("bip", "bip_expected"),
+        rate_weights={"barrel_pct": "bip", "hard_hit_pct": "bip", "avg_ev": "bip"},
+    )
+    return hand, fg, api, off, contact
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
@@ -1383,6 +1473,16 @@ def main(argv: list[str] | None = None) -> int:
         matchups = fetch_probable_matchups(game_date, args.verbose)
         ref_year = int(game_date[:4])
         if matchups.empty:
+            sched = fetch_json(SCHEDULE_URL.format(date=game_date), args.verbose)
+            games = [
+                g
+                for d in sched.get("dates", [])
+                for g in d.get("games", [])
+                if str(g.get("gameType") or "R").upper() not in NON_SCORED_GAME_TYPES
+            ]
+            if not games:
+                print(f"No MLB games on {game_date} — nothing to score.")
+                return 0
             print(f"No probable pitchers found for {game_date}.", file=sys.stderr)
             return 1
 
@@ -1398,9 +1498,43 @@ def main(argv: list[str] | None = None) -> int:
         game_date, args.lineup_lookback, args.verbose
     )
 
-    arsenal = load_pitcher_arsenal(year, args.min_pa, args.verbose)
+    # Prior-season blending: tops up thin early-season samples, fades out as
+    # the current season fills (see prior_season.py).
+    prior_year = None if args.no_prior else (args.prior_year or year - 1)
+    prior_season.configure(prior_year)
+    if prior_year is not None:
+        log(args.verbose, f"Prior-season blending on (prior={prior_year})")
+
+    def _safe(fn, *a):
+        try:
+            df = fn(*a)
+            return df if df is not None and not df.empty else None
+        except Exception as exc:  # noqa: BLE001 - empty/new season boards
+            log(args.verbose, f"{fn.__name__}({a[0]}) unavailable: {exc}")
+            return None
+
+    arsenal = _safe(load_pitcher_arsenal, year, args.min_pa, args.verbose)
+    batter_df = _safe(load_batter_pitch_rates, year, args.min_pa_batter, args.verbose)
+    if prior_year is not None:
+        arsenal = prior_season.blend_long_frame(
+            arsenal,
+            _safe(load_pitcher_arsenal, prior_year, args.min_pa, args.verbose),
+            count_col="pitches",
+            rate_cols=["k_percent", "whiff_percent"],
+            target=prior_season.TARGET_PITCHER_PITCHES,
+            usage_col="pitch_usage",
+        )
+        batter_df = prior_season.blend_long_frame(
+            batter_df,
+            _safe(load_batter_pitch_rates, prior_year, args.min_pa_batter, args.verbose),
+            count_col="pa",
+            rate_cols=["k_percent", "whiff_percent"],
+            target=prior_season.TARGET_BATTER_PITCH_PA,
+        )
+    if arsenal is None or arsenal.empty or batter_df is None or batter_df.empty:
+        print("No Savant arsenal data available for this season.", file=sys.stderr)
+        return 1
     savant_pitcher_stuff = build_savant_pitcher_stuff(arsenal)
-    batter_df = load_batter_pitch_rates(year, args.min_pa_batter, args.verbose)
     id_to_name, name_to_id = build_pitcher_indexes(arsenal)
 
     # Resolve pitchers first so we can batch-fetch season outing lengths + hands.
@@ -1447,6 +1581,13 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     season_outings = fetch_pitcher_season_outings(pitcher_ids, year, args.verbose)
+    if prior_year is not None:
+        season_outings = prior_season.blend_totals(
+            season_outings,
+            fetch_pitcher_season_outings(pitcher_ids, prior_year, args.verbose),
+            n_key="bf",
+            target=prior_season.TARGET_PITCHER_BF,
+        )
     people = fetch_people_profiles(pitcher_ids + batter_ids, args.verbose)
 
     # Sharpening layers: hand mixes, batter platoon K%, recent form, risk rates.
@@ -1491,6 +1632,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     # Hits-prop contact quality (barrel/hard-hit/xwOBA). Display-only vs K model.
     batter_contact = fetch_batter_contact_quality(year, args.verbose, log)
+    if prior_year is not None:
+        batter_k_vs_hand, fangraphs, api_rates, batter_offense, batter_contact = (
+            _blend_prior_season_stats(
+                prior_year,
+                batter_ids,
+                pitcher_ids,
+                args.verbose,
+                batter_k_vs_hand=batter_k_vs_hand,
+                fangraphs=fangraphs,
+                api_rates=api_rates,
+                batter_offense=batter_offense,
+                batter_contact=batter_contact,
+            )
+        )
 
     results: list[dict[str, Any]] = []
     for item in resolved:

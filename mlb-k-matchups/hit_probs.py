@@ -24,6 +24,8 @@ from typing import Any, Iterable
 import pandas as pd
 import requests
 
+import prior_season
+
 GAMELOG_URL = (
     "https://statsapi.mlb.com/api/v1/people?personIds={ids}"
     "&hydrate=stats(group=[{group}],type=[gameLog],season={year},gameType=[{gt}])"
@@ -272,6 +274,19 @@ def enrich_board_hit_probs(
     pit_logs = fetch_gamelogs(pit_ids, year, "pitching")
     bat_tot = to_date_totals(bat_logs, game_date)
     pit_tot = to_date_totals(pit_logs, game_date)
+    py = prior_season.prior_year()
+    if py is not None:
+        # Early season: top up thin season-to-date totals with last season.
+        prev_b = fetch_gamelogs(bat_ids, py, "hitting")
+        prev_p = fetch_gamelogs(pit_ids, py, "pitching")
+        bat_tot = prior_season.blend_totals(
+            bat_tot, to_date_totals(prev_b, f"{py + 1}-01-01"),
+            n_key="pa", target=prior_season.TARGET_BATTER_PA,
+        )
+        pit_tot = prior_season.blend_totals(
+            pit_tot, to_date_totals(prev_p, f"{py + 1}-01-01"),
+            n_key="pa", target=prior_season.TARGET_PITCHER_BF,
+        )
     for row in rows:
         if row.get("status") != "ok":
             continue

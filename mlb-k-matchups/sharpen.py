@@ -28,6 +28,8 @@ import math
 import pandas as pd
 import requests
 
+import prior_season
+
 USER_AGENT = (
     "mlb-k-matchups/1.0 (+https://github.com; research; contact: local-cli)"
 )
@@ -211,6 +213,36 @@ def _remember_frame(kind: str, player_id: int, df: pd.DataFrame | None) -> None:
     if "plate_x" not in cols or "plate_z" not in cols:
         return
     STATCAST_FRAMES[(kind, int(player_id))] = df[cols].copy()
+
+
+def _statcast_csv(url: str, verbose: bool, log: Callable[[bool, str], None]) -> pd.DataFrame | None:
+    try:
+        resp = _get(url, verbose, log)
+        text = resp.content.decode("utf-8-sig")
+        if not text.strip() or "pitch_type" not in text.split("\n", 1)[0]:
+            return None
+        df = pd.read_csv(StringIO(text))
+        return None if df.empty else df
+    except Exception as exc:  # noqa: BLE001 - keep slate scoring alive
+        log(verbose, f"Statcast fetch failed ({url}): {exc}")
+        return None
+
+
+def _statcast_with_prior(
+    template: str,
+    year: int,
+    ids: dict[str, int],
+    target: int,
+    verbose: bool,
+    log: Callable[[bool, str], None],
+) -> pd.DataFrame | None:
+    """Current-season pitch log, topped up from last season while thin."""
+    df = _statcast_csv(template.format(year=year, **ids), verbose, log)
+    py = prior_season.prior_year()
+    if py is not None and (df is None or len(df) < target):
+        prev = _statcast_csv(template.format(year=py, **ids), verbose, log)
+        df = prior_season.fill_pitch_frame(df, prev, target)
+    return df
 
 
 def _get(url: str, verbose: bool, log: Callable[[bool, str], None]) -> requests.Response:
@@ -410,15 +442,15 @@ def fetch_pitcher_hand_mixes(
     out: dict[int, dict[str, Any]] = {}
 
     def _one(pid: int) -> tuple[int, dict[str, Any] | None]:
-        url = STATCAST_PITCHER_URL.format(year=year, pitcher_id=pid)
-        try:
-            resp = _get(url, verbose, log)
-            text = resp.content.decode("utf-8-sig")
-            if not text.strip() or "pitch_type" not in text.split("\n", 1)[0]:
-                return pid, None
-            df = pd.read_csv(StringIO(text))
-        except Exception as exc:  # noqa: BLE001 - keep slate scoring alive
-            log(verbose, f"hand-mix fetch failed for {pid}: {exc}")
+        df = _statcast_with_prior(
+            STATCAST_PITCHER_URL,
+            year,
+            {"pitcher_id": pid},
+            prior_season.TARGET_PITCHER_PITCHES,
+            verbose,
+            log,
+        )
+        if df is None:
             return pid, None
         _remember_frame("pitcher", pid, df)
         counts = _counts_from_pitch_df(df)
@@ -807,15 +839,15 @@ def fetch_batter_pitch_k_vs_hand(
     out: dict[int, dict[str, dict[str, dict[str, float]]]] = {}
 
     def _one(bid: int) -> tuple[int, dict[str, dict[str, dict[str, float]]] | None]:
-        url = STATCAST_BATTER_URL.format(year=year, batter_id=bid)
-        try:
-            resp = _get(url, verbose, log)
-            text = resp.content.decode("utf-8-sig")
-            if not text.strip() or "pitch_type" not in text.split("\n", 1)[0]:
-                return bid, None
-            df = pd.read_csv(StringIO(text))
-        except Exception as exc:  # noqa: BLE001
-            log(verbose, f"batter pitch×hand fetch failed for {bid}: {exc}")
+        df = _statcast_with_prior(
+            STATCAST_BATTER_URL,
+            year,
+            {"batter_id": bid},
+            prior_season.TARGET_BATTER_PITCHES,
+            verbose,
+            log,
+        )
+        if df is None:
             return bid, None
         _remember_frame("batter", bid, df)
         if df.empty or "events" not in df.columns or "p_throws" not in df.columns:
@@ -1009,6 +1041,7 @@ def fetch_fangraphs_pitching(
                 "pitcher_fb_pct": _fg_pct(row.get("FB%")),
                 "pitcher_iffb_pct": _fg_pct(row.get("IFFB%")),
                 "pitcher_soft_pct": _fg_pct(row.get("Soft%")),
+                "tbf": float(row.get("TBF") or 0),
             }
         except (TypeError, ValueError):
             continue
@@ -1065,6 +1098,7 @@ def fetch_pitcher_rate_stats(
                     "pitcher_contact_pct": float("nan"),
                     "pitcher_iffb_pct": float("nan"),
                     "pitcher_soft_pct": float("nan"),
+                    "bf": bf,
                 }
                 break
     return out
